@@ -1,0 +1,12 @@
+# Python virtual environments and caches
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+
+# Environment variables and secrets (Never upload these!)
+.env
+
+# Local database files or logs
+*.log
