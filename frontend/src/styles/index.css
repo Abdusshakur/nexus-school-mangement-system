@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@import "./fonts.css";
+
+@theme {
+  /* Custom colors */
+  --color-brand-50: #f0eefe;
+  --color-brand-500: #6c5ce7;
+  --color-brand-600: #5b4bd6;
+  --color-brand-900: #2a1f6e;
+
+  --color-dark-bg: #0f1117;
+
+  /* Fonts */
+
+  --font-inter: "Inter", sans-serif;
+
+  /*  breakpoints */
+}
