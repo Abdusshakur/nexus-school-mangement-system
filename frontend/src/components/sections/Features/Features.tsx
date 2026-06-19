@@ -90,8 +90,8 @@ export default function Features() {
             id="features-desc"
             className="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed"
           >
-            Built specifically for K-12 schools. No bloat, no complexity just
-            the tools you actually use, every day.
+            Built specifically for schools. No complexity just the tools you
+            actually use, every day.
           </p>
         </div>
 

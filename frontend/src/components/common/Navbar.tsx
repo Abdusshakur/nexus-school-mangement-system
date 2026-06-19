@@ -26,7 +26,7 @@ export default function Navbar() {
     { name: "Features", href: "#features" },
     { name: "Pricing", href: "#pricing" },
     { name: "FAQ", href: "#faq" },
-    { name: "Contact", href: "#contact" },
+    { name: "CTA", href: "#cta" },
   ];
 
   return (
@@ -40,19 +40,13 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
-          <a
-            href="#"
-            id="nav-logo"
-            className="flex items-center space-x-2 group focus:outline-none"
-          >
-            <div className="relative w-28 h-10 transition-transform ">
-              <img
-                src={Logo}
-                alt="Nexus Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </a>
+          <div className="relative w-28 h-10 transition-transform ">
+            <img
+              src={Logo}
+              alt="Nexus Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
 
           {/* Desktop screen */}
           <div className="hidden md:flex items-center space-x-8">
