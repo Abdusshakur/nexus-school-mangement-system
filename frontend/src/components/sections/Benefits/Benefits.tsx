@@ -68,7 +68,7 @@ export default function Benefits() {
   return (
     <section
       id="benefits"
-      className="py-20 md:py-28 `overflow-hidden font-inter"
+      className="py-20 md:py-20 overflow-hidden font-inter"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
