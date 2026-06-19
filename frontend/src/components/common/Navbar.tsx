@@ -26,7 +26,7 @@ export default function Navbar() {
     { name: "Features", href: "#features" },
     { name: "Pricing", href: "#pricing" },
     { name: "FAQ", href: "#faq" },
-    { name: "Contact", href: "#contact" },
+    { name: "CTA", href: "#cta" },
   ];
 
   return (
