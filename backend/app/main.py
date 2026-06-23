@@ -1,29 +1,57 @@
-from contextlib import asynccontextmanager
 
+# backend/app/main.py
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
-
 from backend.app.db.database import engine
-from backend.app.routers import auth, students
+# Import your existing routers
+from backend.app.routers import auth, students, parents, relationships, attendance, announcements, dashboard
+
+# Add these imports to backend/app/main.py
+from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("App starting up... verifying database tables...")
+    print("🚀 NexusSchoolEngine Booting... syncing PostgreSQL schemas...")
     SQLModel.metadata.create_all(engine)
     yield
-    print("App shutting down...")
-
+    print("🛑 Shutting down server...")
 
 app = FastAPI(
-    title="School Management System API",
-    lifespan=lifespan,
+    title="NexusSchoolEngine API",
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-app.include_router(auth.router)
-app.include_router(students.router)
+# ... right after your app = FastAPI(...) instantiation ...
+origins = [
+    "http://localhost:3000",        # For your local frontend testing
+    "http://localhost:5173",        # Common default port if you are using Vite locally
+    "https://your-app-name.vercel.app"  # 👈 PASTE YOUR EXACT LIVE VERCEL URL HERE!
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,          # Allows your Vercel site to bypass browser blocks
+    allow_credentials=True,
+    allow_methods=["*"],            # Allows all standard methods (GET, POST, PUT, DELETE)
+    allow_headers=["*"],            # Allows all headers (including JWT Authorization)
+)
+
+
+# Apply the API Version Prefix (/api/v1) uniformly across your routers
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(students.router, prefix="/api/v1")
+app.include_router(parents.router, prefix="/api/v1")
+app.include_router(relationships.router, prefix="/api/v1")
+app.include_router(attendance.router, prefix="/api/v1") # Mount bulk attendance engine 
+app.include_router(announcements.router, prefix="/api/v1") 
+app.include_router(dashboard.router, prefix="/api/v1") # Mount analytics dashboard module 
 
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the School Management System API!"}
+    return {"message": "Welcome to NexusSchoolEngine Core API Engine"}
+
+
