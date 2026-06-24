@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Logo from "../../assets/images/logo.png";
 import { Menu, X, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,11 +42,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="relative w-28 h-10 transition-transform ">
-            <img
-              src={Logo}
-              alt="Nexus Logo"
-              className="w-full h-full object-contain"
-            />
+            <Link to="/">
+              <img
+                src={Logo}
+                alt="Nexus Logo"
+                className="w-full h-full object-contain"
+              />
+            </Link>
           </div>
 
           {/* Desktop screen */}
@@ -63,13 +66,13 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center space-x-5">
-            <a
-              href="/login"
+            <Link
+              to="/login"
               id="nav-btn-login"
               className="text-slate-600 hover:text-indigo-500 font-medium text-sm transition-colors duration-200 px-3 py-2"
             >
               Login
-            </a>
+            </Link>
             <a
               href="#pricing"
               id="nav-btn-get-started"
