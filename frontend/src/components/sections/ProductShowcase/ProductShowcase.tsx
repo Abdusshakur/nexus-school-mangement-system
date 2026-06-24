@@ -1,4 +1,3 @@
-import React from "react";
 import ProductMockup from "../../../assets/images/productshowcase.png";
 
 export default function ProductShowcase() {
@@ -24,7 +23,7 @@ export default function ProductShowcase() {
           </h2>
           <p
             id="showcase-desc"
-            className="mt-4 text-base sm:text-lg text-gray-650 leading-relaxed"
+            className="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed"
           >
             A clean, intuitive interface your staff will actually enjoy using.
           </p>

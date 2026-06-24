@@ -1,11 +1,16 @@
 from uuid import UUID
-
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Session
 
-from backend.app.core.auth_utils import create_access_token, hash_password, verify_password
+from backend.app.core.auth_utils import (
+    create_access_token,
+    hash_password,
+    verify_password,
+    get_current_token_payload,
+)
 from backend.app.db.database import get_session
 from backend.app.models import ParentProfile, StudentProfile, User, UserRole
 from backend.app.schemas_events import BaseEvent
@@ -16,25 +21,38 @@ router = APIRouter(
     tags=["Authentication"],
 )
 
+# --- REQUEST/RESPONSE SCHEMAS ---
 
 class UserRegisterRequest(BaseModel):
     email: EmailStr
     password: str
     role: UserRole
-    admission_number: str | None = None
-    class_name: str | None = None
-    phone_number: str | None = None
-
+    admission_number: Optional[str] = None
+    class_name: Optional[str] = None
+    phone_number: Optional[str] = None
 
 class UserRegisterResponse(BaseModel):
     user_id: UUID
     email: EmailStr
     role: UserRole
-    profile_id: UUID | None = None
+    profile_id: Optional[UUID] = None
 
+class UserSummary(BaseModel):
+    id: UUID
+    role: UserRole
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserSummary
+
+
+# --- ENDPOINTS ---
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRegisterResponse)
 def register_user(request: UserRegisterRequest, session: Session = Depends(get_session)):
+    """Registers a central user identity and conditionally spins up their profile."""
+    # 1. Prevent duplicate registrations
     existing_user = session.query(User).filter(User.email == request.email).first()
     if existing_user:
         raise HTTPException(
@@ -42,6 +60,7 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
             detail="Email is already registered",
         )
 
+    # 2. Scramble password securely using native bcrypt
     hashed_pwd = hash_password(request.password)
 
     new_user = User(
@@ -50,10 +69,11 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
         role=request.role,
     )
     session.add(new_user)
-    session.flush()
+    session.flush()  # Generates new_user.id UUID early
 
     profile_id = None
 
+    # 3. Handle data structure branches according to chosen system role
     if request.role == UserRole.STUDENT:
         if not request.admission_number or not request.class_name:
             raise HTTPException(
@@ -83,8 +103,10 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
         session.flush()
         profile_id = parent_prof.id
 
+    # Commit ensures all steps succeeded, otherwise rolls back completely
     session.commit()
 
+    # 4. Broadcast the event outward to background services
     event = BaseEvent(
         event_type="user_registered",
         payload={
@@ -104,21 +126,15 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
     )
 
 
-@router.post("/token")
+@router.post("/login", response_model=LoginResponse)
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
+    """Verifies incoming credentials and signs a new access token matching your custom MVP format."""
     user = session.query(User).filter(User.email == form_data.username).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if not verify_password(form_data.password, user.password_hash):
+    if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -128,8 +144,33 @@ def login_for_access_token(
     token_data = {
         "sub": user.email,
         "user_id": str(user.id),
-        "role": user.role.value,
+        "role": str(user.role.value if hasattr(user.role, 'value') else user.role)
     }
 
     access_token = create_access_token(data=token_data)
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    return LoginResponse(
+        access_token=access_token,
+        user=UserSummary(id=user.id, role=user.role)
+    )
+
+
+@router.get("/me")
+def get_current_user_profile(
+    payload: dict = Depends(get_current_token_payload),
+    session: Session = Depends(get_session)
+):
+    """Safely decodes any validated user token and reads back account tracking details."""
+    user_id = payload.get("user_id")
+    user = session.get(User, user_id)
+    
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found")
+        
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at
+    }

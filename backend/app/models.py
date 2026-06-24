@@ -50,3 +50,33 @@ class ParentProfile(SQLModel, table=True):
         back_populates="parents",
         link_model=ParentStudentLink,
     )
+
+class AttendanceStatus(str, Enum):
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    LATE = "LATE"
+
+class Attendance(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
+    class_name: str  # Matches the student's class name string for simplified MVP grouping
+    status: AttendanceStatus
+    attendance_date: datetime = Field(index=True)
+    recorded_by: UUID = Field(foreign_key="user.id") # Tracks which teacher/admin took attendance
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Announcement(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    title: str
+    content: str
+    status: str = Field(default="DRAFT") # DRAFT, PUBLISHED, ARCHIVED
+    author_id: UUID = Field(foreign_key="user.id")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ActivityLog(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    activity_type: str # e.g., "STUDENT_CREATED", "ATTENDANCE_RECORDED"
+    message: str       # Descriptive string: "Teacher Jane marked John Doe as ABSENT"
+    performed_by: UUID = Field(foreign_key="user.id")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
