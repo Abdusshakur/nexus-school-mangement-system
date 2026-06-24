@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 export default function CTA() {
   return (
     <section
-      id="contact"
+      id="CTA"
       className="py-20 md:py-20 bg-white relative overflow-hidden font-inter"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,7 +39,7 @@ export default function CTA() {
               <a
                 href="#"
                 id="cta-btn-request-demo"
-                className="flex items-center justify-center w-full sm:w-auto bg-indigo-600/80 hover:bg-indigo-600 border border-slate-500 text-white font-bold px-8 py-4 rounded-xl transition-all duration-200 active:scale-98"
+                className="flex items-center justify-center w-full sm:w-auto bg-indigo-600/80 hover:bg-indigo-600 border border-slate-300 text-white font-bold px-8 py-4 rounded-xl transition-all duration-200 active:scale-98"
               >
                 Request Custom Demo
               </a>
