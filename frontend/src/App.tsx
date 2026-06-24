@@ -1,10 +1,10 @@
-import Home from "./components/pages/Home";
+import AppRoutes from "./routes";
 import "./styles/index.css";
 
 function App() {
   return (
     <>
-      <Home />
+      <AppRoutes />
     </>
   );
 }

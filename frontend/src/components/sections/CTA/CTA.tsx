@@ -38,7 +38,7 @@ export default function CTA() {
               <a
                 href="#"
                 id="cta-btn-request-demo"
-                className="flex items-center justify-center w-full sm:w-auto bg-indigo-600/80 hover:bg-indigo-600 border border-slate-500 text-white font-bold px-8 py-4 rounded-xl transition-all duration-200 active:scale-98"
+                className="flex items-center justify-center w-full sm:w-auto bg-indigo-600/80 hover:bg-indigo-600 border border-slate-100 text-white font-bold px-8 py-4 rounded-xl transition-all duration-200"
               >
                 Request Custom Demo
               </a>
