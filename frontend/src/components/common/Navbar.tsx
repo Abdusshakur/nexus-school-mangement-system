@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Logo from "../../assets/images/logo.png";
 import { Menu, X, ArrowRight } from "lucide-react";
 
@@ -64,7 +64,7 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center space-x-5">
             <a
-              href="#login"
+              href="/login"
               id="nav-btn-login"
               className="text-slate-600 hover:text-indigo-500 font-medium text-sm transition-colors duration-200 px-3 py-2"
             >
@@ -73,7 +73,7 @@ export default function Navbar() {
             <a
               href="#pricing"
               id="nav-btn-get-started"
-              className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-md shadow-brand-500/10 hover:shadow-brand-600/20 active:scale-98 transition-all duration-200"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-md shadow-indigo-500/10 hover:shadow-indigo-600/20 active:scale-98 transition-all duration-200"
             >
               Get Started
             </a>
@@ -120,7 +120,7 @@ export default function Navbar() {
           ))}
           <div className="pt-4 border-t border-slate-100 flex flex-col space-y-3 px-4">
             <a
-              href="#login"
+              href="/login"
               id="mobile-nav-btn-login"
               onClick={() => setIsOpen(false)}
               className="flex items-center justify-center py-2.5 rounded-xl text-slate-700 hover:text-indigo-500 font-medium text-base hover:bg-indigo-50"

@@ -1,10 +1,9 @@
-import React from "react";
 import { ArrowRight } from "lucide-react";
 
 export default function CTA() {
   return (
     <section
-      id="contact"
+      id="cta"
       className="py-20 md:py-20 bg-white relative overflow-hidden font-inter"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,7 +32,7 @@ export default function CTA() {
                 className="group flex items-center justify-center gap-2 w-full sm:w-auto bg-white hover:bg-indigo-50 text-indigo-500 font-bold px-8 py-4 rounded-xl shadow-lg transition-all duration-200 active:scale-98"
               >
                 <span>Get Started Now</span>
-                <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
 
               <a

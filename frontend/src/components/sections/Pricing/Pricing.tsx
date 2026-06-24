@@ -1,4 +1,3 @@
-import React from "react";
 import { Check } from "lucide-react";
 
 export default function Pricing() {
@@ -78,7 +77,7 @@ export default function Pricing() {
           </span>
           <h2
             id="pricing-title"
-            className="text-[40px] sm:text-4xl font-extrabold text-gray-900 "
+            className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-gray-900"
           >
             Simple, transparent pricing
           </h2>
@@ -155,7 +154,7 @@ export default function Pricing() {
                           }`}
                         />
                         <span
-                          className={`${plan.isHighlighted ? "text-white" : "text-gray-650"}`}
+                          className={`${plan.isHighlighted ? "text-white" : "text-gray-600"}`}
                         >
                           {feat}
                         </span>

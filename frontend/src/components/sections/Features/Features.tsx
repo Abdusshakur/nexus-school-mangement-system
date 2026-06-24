@@ -1,4 +1,3 @@
-import React from "react";
 import {
   GraduationCap,
   Users,
@@ -101,7 +100,7 @@ export default function Features() {
             <div
               key={feat.id}
               id={feat.id}
-              className={`bg-white rounded-2xl border border-gray-200 p-6 text-left shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:border-gray-300 transition-all duration-300 flex flex-col justify-between  `}
+              className={`group bg-white rounded-2xl border border-gray-200 p-6 text-left shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 ${feat.borderColor || "hover:border-gray-300"} transition-all duration-300 flex flex-col justify-between`}
             >
               <div className="space-y-4">
                 {/* Icon box */}

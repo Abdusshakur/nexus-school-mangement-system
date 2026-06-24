@@ -1,4 +1,3 @@
-import React from "react";
 import { Clock, MessageSquare, FileText, Eye, Star } from "lucide-react";
 
 export default function Benefits() {
@@ -109,7 +108,7 @@ export default function Benefits() {
                   <h3 className="font-extrabold text-gray-900 text-base tracking-tight mb-2">
                     {metitems.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-550 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
                     {metitems.description}
                   </p>
                 </div>
@@ -135,7 +134,7 @@ export default function Benefits() {
                   ))}
                 </div>
 
-                <p className="text-sm sm:text-base italic text-gray-650 leading-relaxed font-medium mb-6">
+                <p className="text-sm sm:text-base italic text-gray-600 leading-relaxed font-medium mb-6">
                   "{test.quote}"
                 </p>
 
