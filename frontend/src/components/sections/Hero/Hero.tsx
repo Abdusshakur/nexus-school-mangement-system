@@ -1,4 +1,3 @@
-import React from "react";
 import { ArrowRight, Star } from "lucide-react";
 import HeroImg from "../../../assets/images/hero.png";
 
@@ -52,7 +51,7 @@ export default function Hero() {
                 className="group flex items-center justify-center gap-2 w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600  text-white px-7 py-3.5 rounded-xl font-semibold shadow-lg  transition-all duration-200"
               >
                 <span>Get Started</span>
-                <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
 
               <a

@@ -1,4 +1,3 @@
-import React from "react";
 import { Mail } from "lucide-react";
 
 import {
@@ -35,8 +34,8 @@ export default function Footer() {
 
   return (
     <footer
-      id="footer animate-fade-in"
-      className="bg-[#0f111a] text-slate-400 font-inter"
+      id="footer"
+      className="bg-[#0f111a] text-slate-400 font-inter animate-fade-in"
     >
       {/* Footer Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 border-b border-gray-800">
@@ -151,7 +150,7 @@ export default function Footer() {
             id="footer-email-link"
             className="flex items-center gap-1.5 font-bold hover:text-white transition-all duration-200"
           >
-            <Mail className="w-4 h-4 text-brand-500" />
+            <Mail className="w-4 h-4 text-indigo-500" />
             <span>hello@nexusschool.io</span>
           </a>
         </div>

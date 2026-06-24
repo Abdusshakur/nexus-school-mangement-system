@@ -63,7 +63,7 @@ export default function FAQ() {
           </h2>
           <p
             id="faq-desc"
-            className="mt-4 text-base sm:text-lg text-gray-650 flex flex-wrap items-center justify-center gap-1.5 font-normal"
+            className="mt-4 text-base sm:text-lg text-gray-600 flex flex-wrap items-center justify-center gap-1.5 font-normal"
           >
             <span>Still have questions? Reach us at</span>
             <a
