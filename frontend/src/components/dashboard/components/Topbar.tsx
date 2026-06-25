@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Menu, X, Search, Bell } from "lucide-react";
 import { NAV_ITEMS } from "./navItems";
@@ -16,7 +16,7 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
     NAV_ITEMS.find((n) =>
       n.href === "/"
         ? location.pathname === "/"
-        : location.pathname.startsWith(n.href)
+        : location.pathname.startsWith(n.href),
     )?.label ?? "";
 
   return (
@@ -45,7 +45,10 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
         <p className="font-semibold text-slate-900 text-sm leading-none font-sans">
           Westwood Academy
         </p>
-        <p className="text-slate-400 leading-none mt-0.5 font-sans" style={{ fontSize: 12 }}>
+        <p
+          className="text-slate-400 leading-none mt-0.5 font-sans"
+          style={{ fontSize: 12 }}
+        >
           {currentLabel}
         </p>
       </div>
@@ -110,10 +113,7 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
             className="w-8 h-8 rounded-full flex items-center justify-center"
             style={{ background: "#6366F1" }}
           >
-            <span
-              className="text-white font-semibold"
-              style={{ fontSize: 13 }}
-            >
+            <span className="text-white font-semibold" style={{ fontSize: 13 }}>
               SA
             </span>
           </div>
@@ -121,7 +121,10 @@ export function Topbar({ collapsed, onToggle }: TopbarProps) {
             <p className="text-sm font-medium text-slate-900 leading-none font-sans">
               Sarah Admin
             </p>
-            <p className="text-slate-400 leading-none mt-0.5 font-sans" style={{ fontSize: 11 }}>
+            <p
+              className="text-slate-400 leading-none mt-0.5 font-sans"
+              style={{ fontSize: 11 }}
+            >
               Administrator
             </p>
           </div>
