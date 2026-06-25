@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Plus, ChevronRight, CheckCircle, XCircle } from "lucide-react";
 import { allStudents } from "./data";
@@ -110,7 +110,7 @@ export function StudentList() {
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-semibold text-xs ${s.avatarBg}`}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs ${s.avatarBg}`}
                     >
                       <span>{s.avatar}</span>
                     </div>

@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, LogOut } from "lucide-react";
 import { NAV_ITEMS } from "./navItems";
