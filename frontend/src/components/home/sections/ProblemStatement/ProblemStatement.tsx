@@ -79,12 +79,12 @@ export default function ProblemStatement() {
             <div
               key={prob.id}
               id={prob.id}
-              className={`flex items-start gap-4 p-5 rounded-2xl border-2 border-gray-200 bg-gray-50/30 hover:bg-white hover:shadow-lg hover:shadow-gray-100/40 hover:-translate-y-0.5 transition-all duration-300`}
+              className={`flex items-start gap-4 p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/30 hover:bg-white hover:shadow-lg hover:shadow-slate-100/40 hover:-translate-y-0.5 transition-all duration-300`}
             >
               <div className={`p-3 rounded-xl ${prob.bgColor} shrink-0`}>
                 {prob.icon}
               </div>
-              <p className="text-sm sm:text-base font-semibold text-gray-800 text-left leading-snug pt-1">
+              <p className="text-sm sm:text-base font-semibold text-slate-800 text-left leading-snug pt-1">
                 {prob.text}
               </p>
             </div>

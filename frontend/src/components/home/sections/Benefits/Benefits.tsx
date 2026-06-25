@@ -80,7 +80,7 @@ export default function Benefits() {
           </span>
           <h2
             id="benefits-title"
-            className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight"
+            className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight"
           >
             Results schools actually see
           </h2>
@@ -91,10 +91,10 @@ export default function Benefits() {
             <div
               key={metitems.id}
               id={metitems.id}
-              className="bg-white border border-gray-100 rounded-2xl p-6 text-left shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+              className="bg-white border border-slate-100 rounded-2xl p-6 text-left shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
             >
               <div className="space-y-4">
-                <div className="p-2.5 bg-gray-50 rounded-xl w-fit">
+                <div className="p-2.5 bg-slate-50 rounded-xl w-fit">
                   {metitems.icon}
                 </div>
 
@@ -105,10 +105,10 @@ export default function Benefits() {
                 </div>
 
                 <div>
-                  <h3 className="font-extrabold text-gray-900 text-base tracking-tight mb-2">
+                  <h3 className="font-extrabold text-slate-900 text-base tracking-tight mb-2">
                     {metitems.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
                     {metitems.description}
                   </p>
                 </div>
@@ -123,7 +123,7 @@ export default function Benefits() {
               <div
                 key={test.id}
                 id={test.id}
-                className="bg-gray-50/50 border border-gray-200 rounded-2xl p-6 text-left hover:bg-white "
+                className="bg-slate-50/50 border border-slate-200 rounded-2xl p-6 text-left hover:bg-white "
               >
                 <div className="flex items-center gap-0.5 mb-4">
                   {[...Array(5)].map((_, i) => (
@@ -134,15 +134,15 @@ export default function Benefits() {
                   ))}
                 </div>
 
-                <p className="text-sm sm:text-base italic text-gray-600 leading-relaxed font-medium mb-6">
+                <p className="text-sm sm:text-base italic text-slate-600 leading-relaxed font-medium mb-6">
                   "{test.quote}"
                 </p>
 
                 <div className="pt-4">
-                  <h4 className="font-bold text-gray-900 text-sm">
+                  <h4 className="font-bold text-slate-900 text-sm">
                     {test.author}
                   </h4>
-                  <p className="text-xs text-gray-500 font-medium mt-0.5">
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
                     {test.role}
                   </p>
                 </div>
