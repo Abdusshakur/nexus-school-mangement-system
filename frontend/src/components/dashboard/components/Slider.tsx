@@ -1,5 +1,3 @@
-import React from "react";
-
 interface SliderProps {
   label?: string;
   min?: number;
@@ -24,7 +22,11 @@ export function Slider({
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-2">
-        {label && <label className="text-sm font-semibold text-slate-700">{label}</label>}
+        {label && (
+          <label className="text-sm font-semibold text-slate-700">
+            {label}
+          </label>
+        )}
         <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
           {value}
           {suffix}
