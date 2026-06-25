@@ -1,5 +1,5 @@
 import { ArrowRight, Star } from "lucide-react";
-import HeroImg from "../../../assets/images/hero.png";
+import HeroImg from "../../../../assets/images/hero.png";
 
 export default function Hero() {
   return (
@@ -24,7 +24,7 @@ export default function Hero() {
 
             <h1
               id="hero-title"
-              className="text-4xl sm:text-5xl md:text-[54px] lg:text-5xl xl:text-[54px] font-extrabold tracking-tight text-gray-900 leading-tight"
+              className="text-4xl sm:text-5xl md:text-[54px] lg:text-5xl xl:text-[54px] font-extrabold tracking-tight text-slate-900 leading-tight"
             >
               Run Your School
               <br className="hidden sm:inline text-dark-text-100" />
@@ -57,7 +57,7 @@ export default function Hero() {
               <a
                 href="#contact"
                 id="hero-btn-secondary"
-                className="flex items-center justify-center w-full sm:w-auto bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 active:scale-98 px-7 py-3.5 rounded-xl font-semibold transition-all duration-200"
+                className="flex items-center justify-center w-full sm:w-auto bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 active:scale-98 px-7 py-3.5 rounded-xl font-semibold transition-all duration-200"
               >
                 Request Demo
               </a>
@@ -65,7 +65,7 @@ export default function Hero() {
 
             {/* Social Proof rating and Avatars */}
             <div
-              className="mt-10 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-8 w-full"
+              className="mt-10 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-8 w-full"
               id="hero-rating-block"
             >
               <div className="flex -space-x-3">
@@ -106,7 +106,7 @@ export default function Hero() {
           {/* Right Column */}
           <div className="lg:col-span-7 w-full flex items-center justify-center">
             <div
-              className="w-full max-w-[620px] bg-white rounded-2xl shadow-2xl border border-gray-200/80 overflow-hidden transform hover:scale-[1.01] transition-transform duration-300"
+              className="w-full max-w-[620px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden transform hover:scale-[1.01] transition-transform duration-300"
               id="dashboard-browser-window"
             >
               <img

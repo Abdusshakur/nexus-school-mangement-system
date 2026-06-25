@@ -81,13 +81,13 @@ export default function Features() {
           </span>
           <h2
             id="features-title"
-            className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight"
+            className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight"
           >
             Everything your school needs, <br /> finally in one place
           </h2>
           <p
             id="features-desc"
-            className="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed"
+            className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed"
           >
             Built specifically for schools. No complexity just the tools you
             actually use, every day.
@@ -100,7 +100,7 @@ export default function Features() {
             <div
               key={feat.id}
               id={feat.id}
-              className={`group bg-white rounded-2xl border border-gray-200 p-6 text-left shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 ${feat.borderColor || "hover:border-gray-300"} transition-all duration-300 flex flex-col justify-between`}
+              className={`group bg-white rounded-2xl border border-slate-200 p-6 text-left shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 ${feat.borderColor || "hover:border-slate-300"} transition-all duration-300 flex flex-col justify-between`}
             >
               <div className="space-y-4">
                 {/* Icon box */}
@@ -109,10 +109,10 @@ export default function Features() {
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg tracking-tight group-hover:text-indigo-500 transition-colors">
+                  <h3 className="font-bold text-slate-900 text-lg tracking-tight group-hover:text-indigo-500 transition-colors">
                     {feat.title}
                   </h3>
-                  <p className="mt-2.5 text-sm sm:text-base text-gray-500 leading-relaxed">
+                  <p className="mt-2.5 text-sm sm:text-base text-slate-500 leading-relaxed">
                     {feat.description}
                   </p>
                 </div>

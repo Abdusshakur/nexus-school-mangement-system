@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
-import Dashboard from "../../assets/images/hero.png";
-import Logo from "../../assets/images/logo2.png";
-import SecondLogo from "../../assets/images/logo.png";
+import { Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
+import Dashboard from "../../../assets/images/hero.png";
+import Logo from "../../../assets/images/logo2.svg";
+import SecondLogo from "../../../assets/images/logo.svg";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,24 +13,24 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     setTimeout(() => {
       setIsSubmitting(false);
-      navigate("/");
+      navigate("/dashboard");
     }, 300);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-inter">
-      {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-indigo-500 p-14 relative overflow-hidden">
+      {/* Left Side */}
+      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-indigo-600 p-14 relative overflow-hidden">
         <Link
           to="/"
           onClick={() => navigate("/")}
-          className="relative flex items-center gap-2.5 cursor-pointer group"
+          className="relative flex items-center mb-2 cursor-pointer group"
         >
           <div className=" rounded-xl backdrop-blur flex items-center justify-center ">
             <img src={Logo} alt="Nexus Logo" />
@@ -73,9 +73,15 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right panel */}
+      {/* Right Side */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        {/* Mobile logo */}
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-1.5 text-slate-400 hover:text-slate-700 text-sm transition-colors mb-4 self-start md: right-16"
+        >
+          <ArrowLeft size={16} /> Back to home
+        </button>
+        {/* logo to appear on mobile screen */}
         <div
           onClick={() => navigate("/")}
           className="lg:hidden flex items-center justify-center gap-2.5 mb-8 cursor-pointer"
@@ -180,7 +186,6 @@ export default function Login() {
             Request a Demo
           </button>
 
-          {/* Support link */}
           <p className="text-center text-slate-400 text-sm mt-6">
             Need help?{" "}
             <a
@@ -190,13 +195,6 @@ export default function Login() {
               Contact Support
             </a>
           </p>
-
-          <button
-            onClick={() => navigate("/")}
-            className="block mx-auto mt-4 text-slate-400 text-xs font-semibold hover:text-slate-600 transition-colors"
-          >
-            Back to home
-          </button>
         </div>
       </div>
     </div>

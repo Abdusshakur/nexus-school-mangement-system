@@ -19,7 +19,7 @@ export default function Pricing() {
       buttonText: "Get Started",
       isHighlighted: false,
       btnStyle:
-        "bg-white hover:bg-indigo-500 hover:text-white text-indigo-600 border border-gray-200",
+        "bg-white hover:bg-indigo-500 hover:text-white text-indigo-600 border border-slate-200",
     },
     {
       id: "pro-plan",
@@ -77,13 +77,13 @@ export default function Pricing() {
           </span>
           <h2
             id="pricing-title"
-            className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-gray-900"
+            className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-slate-900"
           >
             Simple, transparent pricing
           </h2>
           <p
             id="pricing-description"
-            className="mt-4 font-normal sm:text-lg text-gray-500 text-lg"
+            className="mt-4 font-normal sm:text-lg text-slate-500 text-lg"
           >
             30-day free trial. No credit card required.
           </p>
@@ -98,7 +98,7 @@ export default function Pricing() {
               className={`rounded-3xl p-8 text-left flex flex-col justify-between transition-all duration-300 relative ${
                 plan.isHighlighted
                   ? "bg-indigo-500 text-white shadow-xl shadow-indigo-500/25 md:scale-[1.03] z-10 border border-indigo-500"
-                  : "bg-white border border-gray-200 text-gray-700 hover:shadow-xl hover:shadow-gray-100"
+                  : "bg-white border border-slate-200 text-slate-700 hover:shadow-xl hover:shadow-slate-100"
               }`}
             >
               <div>
@@ -110,7 +110,7 @@ export default function Pricing() {
 
                 {/* Plan Name */}
                 <h3
-                  className={`text-xl font-extrabold ${plan.isHighlighted ? "text-white" : "text-gray-950"}`}
+                  className={`text-xl font-extrabold ${plan.isHighlighted ? "text-white" : "text-slate-950"}`}
                 >
                   {plan.name}
                 </h3>
@@ -118,14 +118,14 @@ export default function Pricing() {
                 {/* Price Tag */}
                 <div className="flex mt-4 mb-2">
                   <span
-                    className={`text-4xl sm:text-5xl font-extrabold ${plan.isHighlighted ? "text-white" : "text-gray-950"}`}
+                    className={`text-4xl sm:text-5xl font-extrabold ${plan.isHighlighted ? "text-white" : "text-slate-950"}`}
                   >
                     {plan.price.startsWith("C") ? "" : "$"}
                     {plan.price}
                   </span>
                   {plan.period && (
                     <span
-                      className={`text-sm font-medium ml-1 ${plan.isHighlighted ? "text-indigo-100" : "text-gray-400"}`}
+                      className={`text-sm font-medium ml-1 ${plan.isHighlighted ? "text-indigo-100" : "text-slate-400"}`}
                     >
                       /{plan.period}
                     </span>
@@ -133,13 +133,13 @@ export default function Pricing() {
                 </div>
 
                 <p
-                  className={`text-sm leading-relaxed mb-6 font-medium ${plan.isHighlighted ? "text-indigo-100" : "text-gray-400"}`}
+                  className={`text-sm leading-relaxed mb-6 font-medium ${plan.isHighlighted ? "text-indigo-100" : "text-slate-400"}`}
                 >
                   {plan.subtext}
                 </p>
 
                 {/* Features Check List */}
-                <div className="border-t border-gray-100/10 md:border-t-0 pt-6">
+                <div className="border-t border-slate-100/10 md:border-t-0 pt-6">
                   <ul className="space-y-4 mb-8">
                     {plan.features.map((feat, idx) => (
                       <li
@@ -154,7 +154,7 @@ export default function Pricing() {
                           }`}
                         />
                         <span
-                          className={`${plan.isHighlighted ? "text-white" : "text-gray-600"}`}
+                          className={`${plan.isHighlighted ? "text-white" : "text-slate-600"}`}
                         >
                           {feat}
                         </span>

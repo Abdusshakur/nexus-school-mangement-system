@@ -6,7 +6,7 @@ import {
   IconBrandX,
 } from "@tabler/icons-react";
 
-import Logo from "../../assets/images/logo2.png";
+import Logo from "../../assets/images/logo2.svg";
 
 export default function Footer() {
   const productLinks = [
@@ -38,7 +38,7 @@ export default function Footer() {
       className="bg-[#0f111a] text-slate-400 font-inter animate-fade-in"
     >
       {/* Footer Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 border-b border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 border-b border-slate-800">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10">
           {/* Brand description details */}
           <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-6">

@@ -1,4 +1,4 @@
-import ProductMockup from "../../../assets/images/productshowcase.png";
+import ProductMockup from "../../../../assets/images/productshowcase.png";
 
 export default function ProductShowcase() {
   return (
@@ -17,13 +17,13 @@ export default function ProductShowcase() {
           </span>
           <h2
             id="showcase-title"
-            className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight"
+            className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight"
           >
             See Nexus in action
           </h2>
           <p
             id="showcase-desc"
-            className="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed"
+            className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed"
           >
             A clean, intuitive interface your staff will actually enjoy using.
           </p>
@@ -31,7 +31,7 @@ export default function ProductShowcase() {
 
         {/* Browser Mockup */}
         <div
-          className="w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-200/90 overflow-hidden"
+          className="w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden"
           id="students-table-showcase"
         >
           <img
