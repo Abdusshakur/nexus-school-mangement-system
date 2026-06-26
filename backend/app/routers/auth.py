@@ -40,6 +40,8 @@ class UserRegisterResponse(BaseModel):
 class UserSummary(BaseModel):
     id: UUID
     role: UserRole
+    first_name: Optional[str] = "John"
+    last_name: Optional[str] = "Doe"
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -141,6 +143,7 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 1. Package token payload details securely
     token_data = {
         "sub": user.email,
         "user_id": str(user.id),
@@ -149,11 +152,39 @@ def login_for_access_token(
 
     access_token = create_access_token(data=token_data)
     
+    # 2. Establish defaults for fallback handling
+    first_name = "Campus"
+    last_name = "User"
+
+    # 3. Handle relational lookups dynamically based on system role types
+    if user.role == UserRole.STUDENT:
+        profile = session.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
+        if profile:
+            first_name = getattr(profile, "first_name", "Student")
+            last_name = getattr(profile, "last_name", "")
+            
+    elif user.role == UserRole.PARENT:
+        profile = session.query(ParentProfile).filter(ParentProfile.user_id == user.id).first()
+        if profile:
+            first_name = getattr(profile, "first_name", "Parent")
+            last_name = getattr(profile, "last_name", "")
+            
+    elif user.role == UserRole.TEACHER or user.role == UserRole.ADMIN:
+        # Optional: In case you want a specialized fallback identifier label for staff users
+        first_name = "Staff"
+        last_name = "Member"
+
+    # 4. Return the complete aggregated payload back to the client interface in a single execution shot
     return LoginResponse(
         access_token=access_token,
-        user=UserSummary(id=user.id, role=user.role)
+        token_type="bearer",  # Ensures OAuth2 schema compliance
+        user=UserSummary(
+            id=user.id, 
+            role=user.role,
+            first_name=first_name,
+            last_name=last_name
+        )
     )
-
 
 @router.get("/me")
 def get_current_user_profile(
