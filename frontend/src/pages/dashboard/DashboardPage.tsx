@@ -24,7 +24,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// ─── Inline stat card ─────────────────────────────────────────────────────────
+
+
 
 interface StatCardProps {
   label: string;
@@ -77,7 +78,9 @@ function StatCard({
   );
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+
+
+
 
 const attendanceData = [
   { day: "Mon", present: 210, absent: 15 },
