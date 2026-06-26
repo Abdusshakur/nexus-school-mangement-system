@@ -1,9 +1,13 @@
 import React, { useState } from "react";
+
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
-import Dashboard from "../../../assets/images/hero.png";
-import Logo from "../../../assets/images/logo2.svg";
-import SecondLogo from "../../../assets/images/logo.svg";
+import Dashboard from "../../assets/images/hero.png";
+import Logo from "../../assets/images/logo2.svg";
+import SecondLogo from "../../assets/images/logo.svg";
+import { login } from "../../api/auth";
+import { saveAuth } from "../../utils/auth";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,14 +17,29 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: React.SyntheticEvent<HTMLFormElement, SubmitEvent>,
+  ) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const data = await login(email, password);
+
+      saveAuth(data);
+
+      toast.success("Login successful!");
+
       navigate("/dashboard");
-    }, 300);
+    } catch (err) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Unable to connect to the server.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,7 +86,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Dashboard preview */}
+        {/* Dashboard preview image*/}
         <div className="relative scale-90 origin-bottom-left -mb-6  overflow-hidden">
           <img src={Dashboard} alt="Dashboard preview" />
         </div>

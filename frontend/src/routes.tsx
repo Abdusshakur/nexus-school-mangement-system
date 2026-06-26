@@ -1,15 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Home from "./components/home/pages/Home";
-import Login from "./components/auth/pages/Login";
+import Home from "./pages/home/Home";
+import Login from "./pages/auth/Login";
 // import ForgotPassword from "./components/pages/auth/ForgotPassword";
 
 // Import dashboard components
-import { DashboardLayout } from "./components/dashboard/pages/DashboardLayout";
-import { DashboardPage } from "./components/dashboard/pages/DashboardPage";
-import {
-  StudentsPage,
-  StudentDetailPage,
-} from "./components/dashboard/pages/Students";
+import { DashboardLayout } from "./pages/dashboard/DashboardLayout";
+import { DashboardPage } from "./pages/dashboard/DashboardPage";
+import { StudentsPage, StudentDetailPage } from "./pages/dashboard/Students";
 
 export default function AppRoutes() {
   return (
