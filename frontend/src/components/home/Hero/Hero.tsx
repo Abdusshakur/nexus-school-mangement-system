@@ -1,5 +1,5 @@
 import { ArrowRight, Star } from "lucide-react";
-import HeroImg from "../../../../assets/images/hero.png";
+import HeroImg from "../../../assets/images/hero.png";
 
 export default function Hero() {
   return (

@@ -1,4 +1,4 @@
-import ProductMockup from "../../../../assets/images/productshowcase.png";
+import ProductMockup from "../../../assets/images/productshowcase.png";
 
 export default function ProductShowcase() {
   return (
