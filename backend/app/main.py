@@ -28,7 +28,7 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",        # For your local frontend testing
     "http://localhost:5173",        # Common default port if you are using Vite locally
-    "https://your-app-name.vercel.app"  # 👈 PASTE YOUR EXACT LIVE VERCEL URL HERE!
+    "https://nexus-school-mangement-system.vercel.app"  # 👈 PASTE YOUR EXACT LIVE VERCEL URL HERE!
 ]
 
 app.add_middleware(
