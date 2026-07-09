@@ -6,7 +6,15 @@ import Login from "./pages/auth/Login";
 // Import dashboard components
 import { DashboardLayout } from "./pages/dashboard/DashboardLayout";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
-import { StudentsPage, StudentDetailPage } from "./pages/dashboard/Students";
+import {
+  StudentsPage,
+  StudentDetailPage,
+  AddStudentPage,
+} from "./pages/dashboard/Students";
+import { ParentDetail } from "./pages/parents/ParentDetailPage";
+import { ParentList } from "./pages/parents/ParentPage";
+import { TeacherDetailPage } from "./pages/teachers/TeacherDetailPage";
+import { TeachersPage } from "./pages/teachers/TeachersPage";
 
 export default function AppRoutes() {
   return (
@@ -22,6 +30,15 @@ export default function AppRoutes() {
         {/* Student Directory & Details */}
         <Route path="/students" element={<StudentsPage />} />
         <Route path="/students/:id" element={<StudentDetailPage />} />
+        <Route path="/students/add" element={<AddStudentPage />} />
+
+        {/* Teachers Directory & Details */}
+        <Route path="/teachers" element={<TeachersPage />} />
+        <Route path="/teachers/:id" element={<TeacherDetailPage />} />
+
+        {/* Parent Directory */}
+        <Route path="/parents" element={<ParentList />} />
+        <Route path="/parents/:id" element={<ParentDetail />} />
 
         {/* System Settings */}
       </Route>
