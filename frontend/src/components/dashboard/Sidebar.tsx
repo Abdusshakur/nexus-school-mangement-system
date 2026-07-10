@@ -103,8 +103,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
             (e.currentTarget as HTMLElement).style.color = "#A5B4FC";
           }}
         >
-          <LogOut size={18} />
-          {!collapsed && <span className="text-sm font-medium">Logout</span>}
+          <LogOut size={18} className="text-red-400" />
+          {!collapsed && (
+            <span className="text-sm font-medium text-red-400">Logout</span>
+          )}
         </Link>
       </div>
     </aside>
