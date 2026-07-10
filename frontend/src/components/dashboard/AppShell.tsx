@@ -10,10 +10,7 @@ export function AppShell({ children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div
-      id="dashboard-app-shell"
-      className="flex h-screen overflow-hidden font-inter"
-    >
+    <div id="dashboard-app-shell" className="flex h-screen overflow-hidden ">
       <Sidebar collapsed={collapsed} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar

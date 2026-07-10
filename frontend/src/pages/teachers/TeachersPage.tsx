@@ -25,14 +25,12 @@ export function TeachersPage() {
   });
 
   return (
-    <div className="flex-1 flex flex-col ">
-      <header className=" px-8 py-5 flex items-center justify-between">
+    <div className="flex flex-col ">
+      <header className=" flex items-center justify-between">
         <div>
-          <h1 className="text-slate-900 text-2xl font-bold ">
-            Teachers Directory
-          </h1>
+          <h1 className="text-slate-900 text-2xl font-bold ">Teachers</h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            Manage academic departments and instructor profiles
+            {teachersList.length} teaching staffs
           </p>
         </div>
         <button className="flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10">
@@ -40,7 +38,7 @@ export function TeachersPage() {
         </button>
       </header>
 
-      <main className="flex-1 p-8 space-y-6 max-w-7xl w-full mx-auto">
+      <main className="flex-1 py-4 space-y-6 max-w-full w-full ">
         {/* Filters */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
@@ -55,7 +53,7 @@ export function TeachersPage() {
             <select
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
-              className="w-full px-4 py-3.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all h-[46px]"
+              className="w-full px-4 py-3.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all h-11"
             >
               <option value="All">All Departments</option>
               {["Science & Engineering", "Arts & Languages", "Mathematics"].map(

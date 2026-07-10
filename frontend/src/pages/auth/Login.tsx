@@ -43,7 +43,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-inter">
+    <div className="min-h-screen bg-slate-50 flex ">
       {/* Left Side */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-indigo-600 p-14 relative overflow-hidden">
         <Link

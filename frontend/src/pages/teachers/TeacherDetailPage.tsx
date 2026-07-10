@@ -8,7 +8,7 @@ export function TeacherDetailPage() {
     teachersList.find((teacher) => teacher.id === id) || teachersList[0];
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50">
+    <div className="flex-1 flex flex-col bg-slate-50 ">
       <header className="bg-white border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex items-center gap-4">
         <Link
           to="/teachers"
@@ -85,7 +85,7 @@ export function TeacherDetailPage() {
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-150">
+            <div className="px-6 py-5 border-b border-slate-300">
               <h3 className="font-extrabold text-slate-900 text-lg">
                 Active Subjects & Classrooms
               </h3>

@@ -48,7 +48,7 @@ export default function ProblemStatement() {
   ];
 
   return (
-    <section id="problem" className="py-10 md:py-28 bg-white font-inter">
+    <section id="problem" className="py-10 md:py-28 bg-white ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">

@@ -22,7 +22,7 @@ export function ParentList() {
         </div>
       </header>
 
-      <main className="flex-1 p-8 space-y-6 max-w-7xl w-full mx-auto">
+      <main className="flex-1 py-8 space-y-6 max-w-full w-full ">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <div className="relative max-w-md">
             <Search
@@ -47,7 +47,7 @@ export function ParentList() {
               <div>
                 <div className="flex items-center gap-3.5 mb-5">
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: p.avatarColor }}
                   >
                     <span className="text-white font-bold text-sm">
@@ -68,10 +68,7 @@ export function ParentList() {
                     { icon: MapPin, label: p.address },
                   ].map(({ icon: Icon, label }, i) => (
                     <div key={i} className="flex items-center gap-2.5 min-w-0">
-                      <Icon
-                        size={14}
-                        className="text-slate-400 flex-shrink-0"
-                      />
+                      <Icon size={14} className="text-slate-400 shrink-0" />
                       <p className="text-sm text-slate-500 font-medium truncate">
                         {label}
                       </p>
@@ -84,7 +81,7 @@ export function ParentList() {
                   {p.children.map((child, i) => (
                     <div
                       key={i}
-                      className="w-7 h-7 rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center shadow-sm flex-shrink-0"
+                      className="w-7 h-7 rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center shadow-sm shrink-0"
                       title={child}
                     >
                       <span className="text-indigo-600 font-extrabold text-[10px]">

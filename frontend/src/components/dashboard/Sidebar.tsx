@@ -12,7 +12,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
   return (
     <aside
       id="dashboard-sidebar"
-      className="flex flex-col h-full transition-all duration-300 font-inter"
+      className="flex flex-col h-full transition-all duration-300 "
       style={{
         width: collapsed ? 72 : 256,
         background: "#1E1B4B",

@@ -9,3 +9,11 @@
 
   --font-inter: "Inter", sans-serif;
 }
+
+@utility body {
+  font-family: var(--font-inter);
+}
+
+body {
+  font-family: var(--font-inter);
+}

@@ -15,6 +15,13 @@ import { ParentDetail } from "./pages/parents/ParentDetailPage";
 import { ParentList } from "./pages/parents/ParentPage";
 import { TeacherDetailPage } from "./pages/teachers/TeacherDetailPage";
 import { TeachersPage } from "./pages/teachers/TeachersPage";
+import { AttendanceDashboard } from "./pages/attendance/AttendanceDashboard";
+import { MarkAttendance } from "./pages/attendance/MarkAttendance";
+import { AttendanceReport } from "./pages/attendance/AttendanceReport";
+import { AnnouncementList } from "./pages/announcements/AnnoncemenntList";
+import { CreateAnnouncement } from "./pages/announcements/createAnnouncement";
+import { AnnouncementDetail } from "./pages/announcements/AnnoncementDetails";
+import { Settings } from "./pages/settings/Settings";
 
 export default function AppRoutes() {
   return (
@@ -40,7 +47,18 @@ export default function AppRoutes() {
         <Route path="/parents" element={<ParentList />} />
         <Route path="/parents/:id" element={<ParentDetail />} />
 
-        {/* System Settings */}
+        {/* Attendance Dashboard */}
+        <Route path="/attendance" element={<AttendanceDashboard />} />
+        <Route path="/attendance/mark" element={<MarkAttendance />} />
+        <Route path="/attendance/report" element={<AttendanceReport />} />
+
+        {/* Announcements */}
+        <Route path="/announcements" element={<AnnouncementList />} />
+        <Route path="/announcements/create" element={<CreateAnnouncement />} />
+        <Route path="/announcements/:id" element={<AnnouncementDetail />} />
+
+        {/* Settings */}
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

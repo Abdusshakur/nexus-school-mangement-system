@@ -5,7 +5,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="relative pt-32 pb-10 md:pt-40 md:pb-28 overflow-hidden  font-inter"
+      className="relative pt-32 pb-10 md:pt-40 md:pb-28 overflow-hidden  "
     >
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-10 right-10 w-64 h-64 bg-indigo-100/20 rounded-full blur-2xl pointer-events-none -z-10" />

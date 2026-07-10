@@ -24,9 +24,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-
-
-
 interface StatCardProps {
   label: string;
   value: string | number;
@@ -77,10 +74,6 @@ function StatCard({
     </div>
   );
 }
-
-
-
-
 
 const attendanceData = [
   { day: "Mon", present: 210, absent: 15 },
@@ -197,7 +190,7 @@ export function DashboardPage() {
   }).format(new Date());
 
   return (
-    <div className="space-y-6 font-inter">
+    <div className="space-y-6 ">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
