@@ -38,12 +38,12 @@ export default function Features() {
     },
     {
       id: "feat-attendance-tracking",
-      icon: <ClipboardCheck className="w-6 h-6 text-emerald-600" />,
+      icon: <ClipboardCheck className="w-6 h-6 text-indigo-600" />,
       title: "Attendance Tracking",
       description:
         "Mark and monitor daily attendance by class or student. Generate instant reports and automate parent notifications.",
-      iconBg: "bg-emerald-50",
-      borderColor: "hover:border-emerald-200/60",
+      iconBg: "bg-indigo-50",
+      borderColor: "hover:border-indigo-200/60",
     },
     {
       id: "feat-announcements",

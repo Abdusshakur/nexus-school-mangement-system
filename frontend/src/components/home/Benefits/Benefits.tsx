@@ -22,9 +22,9 @@ export default function Benefits() {
     },
     {
       id: "ben-3",
-      icon: <FileText className="w-5 h-5 text-emerald-600" />,
+      icon: <FileText className="w-5 h-5 text-indigo-600" />,
       pillText: "100% records digitized",
-      pillBg: "bg-emerald-50 text-emerald-700",
+      pillBg: "bg-indigo-50 text-indigo-700",
       title: "Better Record Keeping",
       description:
         "All student, teacher, and financial records stored securely in the cloud. No more lost files or version conflicts.",

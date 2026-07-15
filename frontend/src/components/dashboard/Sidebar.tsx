@@ -1,30 +1,41 @@
 import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, LogOut } from "lucide-react";
-import { NAV_ITEMS } from "./navItems";
+import { getNavItems } from "./navItems";
+import { useUIStore } from "../../store/ui";
+import { useAuthStore } from "../../store/auth";
+import { ROUTES } from "../../config/routes";
 
-interface SidebarProps {
-  collapsed: boolean;
-}
-
-export function Sidebar({ collapsed }: SidebarProps) {
+export function Sidebar() {
   const location = useLocation();
+  const { sidebarCollapsed: collapsed } = useUIStore();
+  const { user, logout } = useAuthStore();
+  const role = user?.role || "admin";
+  const NAV_ITEMS = getNavItems(role);
+
+
+  const theme = {
+    sidebar: "bg-indigo-950",
+    activeLink: "bg-indigo-600",
+    hoverLink: "hover:bg-white/10 hover:text-white",
+    inactiveText: "text-indigo-200",
+    logoBg: "bg-indigo-600",
+  };
 
   return (
     <aside
       id="dashboard-sidebar"
-      className="flex flex-col h-full transition-all duration-300 "
+      className={`flex flex-col h-full transition-all duration-300 shrink-0 ${theme.sidebar}`}
       style={{
         width: collapsed ? 72 : 256,
-        background: "#1E1B4B",
-        flexShrink: 0,
       }}
     >
       {/* Logo */}
       <div
-        className="flex items-center gap-3 px-5 py-5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+        className="flex items-center gap-3 px-5 py-5 border-b border-white/10"
       >
-        <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
+        <div
+          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${theme.logoBg}`}
+        >
           <span className="font-bold text-white">N</span>
         </div>
         {!collapsed && (
@@ -39,34 +50,26 @@ export function Sidebar({ collapsed }: SidebarProps) {
       {/* Nav links */}
       <nav className="flex-1 py-4 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
+          // Exact match for dashboard roots, prefix match for subpages
           const active =
-            item.href === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.href);
+            (item.href === ROUTES.ADMIN.DASHBOARD &&
+              location.pathname === ROUTES.ADMIN.DASHBOARD) ||
+            (item.href === ROUTES.TEACHER.DASHBOARD &&
+              location.pathname === ROUTES.TEACHER.DASHBOARD) ||
+            (item.href !== ROUTES.ADMIN.DASHBOARD &&
+              item.href !== ROUTES.TEACHER.DASHBOARD &&
+              location.pathname.startsWith(item.href));
+
           return (
             <Link
               key={item.href}
               to={item.href}
               title={item.label}
-              className="flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded-lg transition-colors duration-150"
-              style={
+              className={`flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded-lg transition-colors duration-150 ${
                 active
-                  ? { background: "#6366F1", color: "#fff" }
-                  : { color: "#A5B4FC" }
-              }
-              onMouseEnter={(e) => {
-                if (!active) {
-                  (e.currentTarget as HTMLElement).style.background =
-                    "rgba(255,255,255,0.08)";
-                  (e.currentTarget as HTMLElement).style.color = "#fff";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  (e.currentTarget as HTMLElement).style.background = "";
-                  (e.currentTarget as HTMLElement).style.color = "#A5B4FC";
-                }
-              }}
+                  ? `${theme.activeLink} text-white`
+                  : `${theme.inactiveText} ${theme.hoverLink}`
+              }`}
             >
               <item.icon size={18} className="shrink-0" />
               {!collapsed && (
@@ -86,22 +89,14 @@ export function Sidebar({ collapsed }: SidebarProps) {
 
       {/* Logout */}
       <div
-        className="px-3 py-4"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+        className="px-3 py-4 border-t border-white/10"
       >
         <Link
           to="/login"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 font-sans"
-          style={{ color: "#A5B4FC" }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background =
-              "rgba(255,255,255,0.08)";
-            (e.currentTarget as HTMLElement).style.color = "#fff";
+          onClick={() => {
+            logout();
           }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "";
-            (e.currentTarget as HTMLElement).style.color = "#A5B4FC";
-          }}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 font-sans ${theme.inactiveText} ${theme.hoverLink}`}
         >
           <LogOut size={18} className="text-red-400" />
           {!collapsed && (

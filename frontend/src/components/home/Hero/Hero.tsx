@@ -72,7 +72,7 @@ export default function Hero() {
                 <span className="w-9 h-9 rounded-full border-2 border-white bg-indigo-500 text-white flex items-center justify-center text-xs font-bold ">
                   P
                 </span>
-                <span className="w-9 h-9 rounded-full border-2 bg-green-500 text-white flex items-center justify-center text-xs font-bold ">
+                <span className="w-9 h-9 rounded-full border-2 bg-indigo-500 text-white flex items-center justify-center text-xs font-bold ">
                   T
                 </span>
                 <span className="w-9 h-9 rounded-full border-2 border-white bg-orange-500 text-white flex items-center justify-center text-xs font-bold ">
@@ -84,7 +84,7 @@ export default function Hero() {
               </div>
               <div className="flex flex-col text-left">
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-sm text-[#1D293D] font-semibold ">
+                  <span className="text-sm text-slate-800 font-semibold ">
                     Loved by 400+ schools
                   </span>
                   <div className="flex">
@@ -94,7 +94,7 @@ export default function Hero() {
                         className="w-4 h-4 fill-amber-400 text-amber-400"
                       />
                     ))}
-                    <span className="ml-1 text-xs text-[#90A1B9]">
+                    <span className="ml-1 text-xs text-slate-400">
                       4.9 / 5 rating
                     </span>
                   </div>

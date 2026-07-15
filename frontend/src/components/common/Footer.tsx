@@ -35,7 +35,7 @@ export default function Footer() {
   return (
     <footer
       id="footer"
-      className="bg-[#0f111a] text-slate-400  animate-fade-in"
+      className="bg-slate-950 text-slate-400 animate-fade-in"
     >
       {/* Footer Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 border-b border-slate-800">
@@ -56,7 +56,7 @@ export default function Footer() {
                 href="#"
                 id="social-X"
                 aria-label="X link"
-                className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#6366F1] transition-colors"
+                className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-500 transition-colors"
               >
                 <IconBrandX stroke={1.5} />
               </a>
@@ -64,7 +64,7 @@ export default function Footer() {
                 href="#"
                 id="social-linkedin"
                 aria-label="LinkedIn link"
-                className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#6366F1] transition-colors"
+                className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-500 transition-colors"
               >
                 <IconBrandLinkedin stroke={1.5} />
               </a>
@@ -72,7 +72,7 @@ export default function Footer() {
                 href="#"
                 id="social-facebook"
                 aria-label="Facebook link"
-                className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#6366F1] transition-colors"
+                className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-500 transition-colors"
               >
                 <IconBrandFacebook stroke={1.5} />
               </a>
