@@ -1,10 +1,11 @@
 # backend/app/routers/students.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlmodel import Session
+from sqlmodel import Session, select, func
+from datetime import datetime
 from typing import List, Optional
 from backend.app.db.database import get_session
-from backend.app.models import User, StudentProfile, UserRole
-from backend.app.schemas.student import StudentCreate, StudentResponse
+from backend.app.models import User, UserRole, StudentProfile, ParentProfile, ParentStudentLink
+from backend.app.schemas.student import UnifiedStudentOnboardingCreate, StudentResponse
 from backend.app.core.auth_utils import RoleChecker, hash_password
 
 router = APIRouter(
@@ -12,49 +13,137 @@ router = APIRouter(
     tags=["Student Management"]
 )
 
-# Enforce RBAC: Only Admin and Teacher can access student management
 allow_staff_only = RoleChecker(["admin", "teacher"])
 
+def generate_next_admission_number(session: Session) -> str:
+    """Safely calculates the next sequential admission number for the current year."""
+    current_year = datetime.now().year
+    prefix = f"NEX-{current_year}-"
+    
+    # Query database for the highest sequence number matching this year's prefix
+    # Postgres "FOR UPDATE" locks the rows to prevent simultaneous duplicate generation
+    statement = (
+        select(StudentProfile.admission_number)
+        .where(StudentProfile.admission_number.like(f"{prefix}%"))
+        .order_by(StudentProfile.admission_number.desc())
+        .limit(1)
+        .with_for_update() # 🔒 Atomic lock!
+    )
+    result = session.exec(statement).first()
+    
+    if not result:
+        # First student of the year!
+        return f"{prefix}0001"
+    
+    # Extract the numerical suffix (e.g., "0001" -> 1)
+    try:
+        last_sequence_str = result.replace(prefix, "")
+        next_sequence = int(last_sequence_str) + 1
+    except ValueError:
+        next_sequence = 1
+        
+    # Format back to padded string (e.g., NEX-2026-0002)
+    return f"{prefix}{next_sequence:04d}"
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=StudentResponse, dependencies=[Depends(allow_staff_only)])
-def create_student(request: StudentCreate, session: Session = Depends(get_session)):
-    """Creates a student user account and their associated student profile."""
-    # 1. Check if email already exists
-    existing_user = session.query(User).filter(User.email == request.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email is already registered")
+def create_student_with_parent_onboarding(
+    request: UnifiedStudentOnboardingCreate, 
+    session: Session = Depends(get_session)
+):
+    """Transactionally onboarding a student, auto-assigning admission numbers, and processing parents."""
+    
+    # 1. Ensure student email is unique
+    existing_student_user = session.query(User).filter(User.email == request.email).first()
+    if existing_student_user:
+        raise HTTPException(status_code=400, detail="Student email is already registered")
 
-    # 2. Check if admission number is unique
-    existing_student = session.query(StudentProfile).filter(StudentProfile.admission_number == request.admission_number).first()
-    if existing_student:
-        raise HTTPException(status_code=400, detail="Admission number must be unique")
+    try:
+        # 2. Safely generate a unique, locked sequential admission number
+        generated_admission_num = generate_next_admission_number(session)
 
-    # 3. Create the User account
-    new_user = User(
-        email=request.email,
-        password_hash=hash_password(request.password),
-        role=UserRole.STUDENT
-    )
-    session.add(new_user)
-    session.flush() # Grab the new_user.id UUID
+        # 3. Create Student User Account
+        student_user = User(
+            email=request.email,
+            password_hash=hash_password(request.password),
+            role=UserRole.STUDENT
+        )
+        session.add(student_user)
+        session.flush() # Yields student_user.id UUID
 
-    # 4. Create the Student Profile linked via foreign key
-    new_profile = StudentProfile(
-        user_id=new_user.id,
-        admission_number=request.admission_number,
-        class_name=request.class_name
-    )
-    session.add(new_profile)
-    session.commit()
-    session.refresh(new_profile)
+        # 4. Create Student Profile details
+        student_profile = StudentProfile(
+            user_id=student_user.id,
+            admission_number=generated_admission_num, # Backend generated!
+            first_name=request.first_name,
+            last_name=request.last_name,
+            gender=request.gender,
+            address=request.address,
+            phone_number=request.phone_number,
+            class_name=request.class_name
+        )
+        session.add(student_profile)
+        session.flush() # Yields student_profile.id UUID
 
+        # 5. Handle Parent Onboarding (Find or Create)
+        parent_user = session.query(User).filter(User.email == request.parent.email).first()
+        
+        if not parent_user:
+            # New parent! Set up credentials & profile
+            parent_user = User(
+                email=request.parent.email,
+                password_hash=hash_password("WelcomeNexus2026!"), # System default password
+                role=UserRole.PARENT
+            )
+            session.add(parent_user)
+            session.flush()
+
+            parent_profile = ParentProfile(
+                user_id=parent_user.id,
+                first_name=request.parent.first_name,
+                last_name=request.parent.last_name,
+                phone_number=request.parent.phone_number
+            )
+            session.add(parent_profile)
+            session.flush()
+        else:
+            # Parent exists. Let's pull their profile ID
+            parent_profile = session.query(ParentProfile).filter(ParentProfile.user_id == parent_user.id).first()
+            if not parent_profile:
+                raise HTTPException(status_code=404, detail="Parent credentials found, but profile is missing.")
+
+        # 6. Map the Relationship Link instantly
+        relationship = ParentStudentLink(
+            parent_id=parent_profile.id,
+            student_id=student_profile.id,
+            relationship_type="GUARDIAN"
+        )
+        session.add(relationship)
+
+        # Commit everything to PostgreSQL atomically!
+        session.commit()
+        session.refresh(student_profile)
+
+    except Exception as err:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Unified Onboarding Failed: {str(err)}"
+        )
+
+    # Return clean payload mapped cleanly to StudentResponse schema
     return StudentResponse(
-        id=new_profile.id,
-        user_id=new_user.id,
-        email=new_user.email,
-        admission_number=new_profile.admission_number,
-        class_name=new_profile.class_name,
-        created_at=new_profile.created_at
+        id=student_profile.id,
+        user_id=student_user.id,
+        email=student_user.email,
+        admission_number=student_profile.admission_number,
+        class_name=student_profile.class_name,
+        created_at=student_profile.created_at
     )
+
+
+
+
 
 @router.get("/", response_model=List[StudentResponse], dependencies=[Depends(allow_staff_only)])
 def list_students(
