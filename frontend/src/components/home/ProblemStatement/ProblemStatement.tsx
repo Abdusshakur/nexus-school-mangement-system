@@ -17,9 +17,9 @@ export default function ProblemStatement() {
     },
     {
       id: "prob-2",
-      icon: <MessagesSquare className="w-5 h-5 text-emerald-600" />,
+      icon: <MessagesSquare className="w-5 h-5 text-indigo-600" />,
       text: "Parent communication buried in WhatsApp groups",
-      bgColor: "bg-emerald-50/50",
+      bgColor: "bg-indigo-50/50",
     },
     {
       id: "prob-3",
@@ -48,13 +48,13 @@ export default function ProblemStatement() {
   ];
 
   return (
-    <section id="problem" className="py-10 md:py-28 bg-white font-inter">
+    <section id="problem" className="py-10 md:py-28 bg-white ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span
             id="problem-subtitle"
-            className="inline-block text-xs sm:text-sm font-bold uppercase tracking-widest text-[#FB2C36] bg-red-50 px-4 py-1.5 rounded-full mb-4 text-shadow-red-100 "
+            className="inline-block text-xs sm:text-sm font-bold uppercase tracking-widest text-red-500 bg-red-50 px-4 py-1.5 rounded-full mb-4 text-shadow-red-100 "
           >
             The Problem
           </span>

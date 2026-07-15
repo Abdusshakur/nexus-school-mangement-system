@@ -1,0 +1,43 @@
+export const ROUTES = {
+  PUBLIC: {
+    HOME: '/',
+    LOGIN: '/login',
+    FORGOT_PASSWORD: '/forgot-password',
+  },
+  ADMIN: {
+    DASHBOARD: '/admin/dashboard',
+    STUDENTS: '/admin/students',
+    STUDENT_ADD: '/admin/students/add',
+    STUDENT_DETAIL: (id: string) => `/admin/students/${id}`,
+    TEACHERS: '/admin/teachers',
+    TEACHER_DETAIL: (id: string) => `/admin/teachers/${id}`,
+    PARENTS: '/admin/parents',
+    PARENT_DETAIL: (id: string) => `/admin/parents/${id}`,
+    ATTENDANCE: '/admin/attendance',
+    ATTENDANCE_MARK: '/admin/attendance/mark',
+    ATTENDANCE_REPORT: '/admin/attendance/report',
+    ANNOUNCEMENTS: '/admin/announcements',
+    ANNOUNCEMENT_CREATE: '/admin/announcements/create',
+    ANNOUNCEMENT_DETAIL: (id: string) => `/admin/announcements/${id}`,
+    SETTINGS: '/admin/settings',
+  },
+  TEACHER: {
+    DASHBOARD: '/teacher/dashboard',
+    CLASSES: '/teacher/classes',
+    CLASS_DETAIL: (id: string) => `/teacher/classes/${id}`,
+    ASSIGNMENTS: '/teacher/assignments',
+    ATTENDANCE: '/teacher/attendance',
+    ANNOUNCEMENTS: '/teacher/announcements',
+    GRADES: '/teacher/grades',
+    STUDENTS: '/teacher/students',
+    MESSAGES: '/teacher/messages',
+    PROFILE: '/teacher/profile',
+    SETTINGS: '/teacher/settings',
+  },
+  STUDENT: {
+    DASHBOARD: '/student/dashboard',
+  },
+  PARENT: {
+    DASHBOARD: '/parent/dashboard',
+  }
+} as const;

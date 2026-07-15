@@ -1,0 +1,41 @@
+import {
+  CalendarCheck,
+  Upload,
+  Star,
+  ClipboardList,
+  Bell,
+  MessageSquare,
+  Users,
+  BookOpen
+} from "lucide-react";
+
+export const todaySchedule = [
+  { subject: "Biology", class: "SS2 Science", time: "8:00 – 8:50 AM", room: "Lab 3", colorText: "text-indigo-600", colorBg: "bg-indigo-600", colorSoft: "bg-indigo-50", colorBorder: "border-indigo-600", colorRing: "ring-indigo-600/20", colorDivider: "bg-indigo-600/30" },
+  { subject: "Biology", class: "SS1 Science", time: "10:00 – 10:50 AM", room: "Lab 3", colorText: "text-indigo-600", colorBg: "bg-indigo-600", colorSoft: "bg-indigo-50", colorBorder: "border-indigo-600", colorRing: "ring-indigo-600/20", colorDivider: "bg-indigo-600/30" },
+  { subject: "Basic Science", class: "JSS3 A", time: "12:00 – 12:50 PM", room: "Room 12", colorText: "text-indigo-500", colorBg: "bg-indigo-500", colorSoft: "bg-indigo-50", colorBorder: "border-indigo-500", colorRing: "ring-indigo-500/20", colorDivider: "bg-indigo-500/30" },
+  { subject: "Biology", class: "SS3 Science", time: "2:00 – 2:50 PM", room: "Lab 2", colorText: "text-indigo-600", colorBg: "bg-indigo-600", colorSoft: "bg-indigo-50", colorBorder: "border-indigo-600", colorRing: "ring-indigo-600/20", colorDivider: "bg-indigo-600/30" },
+];
+
+export const recentActivity = [
+  { text: "Attendance submitted for SS2 Science", time: "Today, 9:05 AM", icon: CalendarCheck, colorText: "text-indigo-500", colorSoft: "bg-indigo-500/10" },
+  { text: "Assignment uploaded: Cell Division Quiz", time: "Yesterday, 3:20 PM", icon: Upload, colorText: "text-indigo-500", colorSoft: "bg-indigo-500/10" },
+  { text: "Grades updated for SS1 Mid-Term", time: "Yesterday, 11:00 AM", icon: Star, colorText: "text-amber-500", colorSoft: "bg-amber-500/10" },
+  { text: "Attendance submitted for JSS3 A", time: "Jun 13, 2:15 PM", icon: CalendarCheck, colorText: "text-indigo-500", colorSoft: "bg-indigo-500/10" },
+  { text: "New assignment created: Photosynthesis Essay", time: "Jun 12, 10:40 AM", icon: ClipboardList, colorText: "text-violet-500", colorSoft: "bg-violet-500/10" },
+];
+
+export const notifications = [
+  { text: "New school announcement from Admin", time: "1h ago", icon: Bell, dotColor: "bg-indigo-500", iconColor: "text-indigo-500", iconBg: "bg-indigo-500/10" },
+  { text: "Parent message from Mr. Johnson (Amelia's dad)", time: "3h ago", icon: MessageSquare, dotColor: "bg-indigo-600", iconColor: "text-indigo-600", iconBg: "bg-indigo-600/10" },
+  { text: "Assignment due: SS2 Science — Biology Lab Report", time: "Tomorrow", icon: ClipboardList, dotColor: "bg-amber-500", iconColor: "text-amber-500", iconBg: "bg-amber-500/10" },
+  { text: "Staff meeting — Friday 2:00 PM", time: "Jun 20", icon: CalendarCheck, dotColor: "bg-red-500", iconColor: "text-red-500", iconBg: "bg-red-500/10" },
+];
+
+export const quickActions = [
+  { label: "Take Attendance", to: "/teacher/attendance", icon: CalendarCheck, colorText: "text-indigo-600", colorBg: "bg-indigo-600/10", hoverBg: "bg-indigo-50" },
+  { label: "Upload Assignment", to: "/teacher/assignments", icon: Upload, colorText: "text-indigo-500", colorBg: "bg-indigo-500/10", hoverBg: "bg-indigo-50" },
+  { label: "Enter Grades", to: "/teacher/grades", icon: Star, colorText: "text-amber-500", colorBg: "bg-amber-500/10", hoverBg: "bg-amber-50" },
+  { label: "View Students", to: "/teacher/students", icon: Users, colorText: "text-violet-500", colorBg: "bg-violet-500/10", hoverBg: "bg-violet-50" },
+  { label: "My Classes", to: "/teacher/classes", icon: BookOpen, colorText: "text-indigo-500", colorBg: "bg-indigo-500/10", hoverBg: "bg-indigo-50" },
+  { label: "Messages", to: "/teacher/messages", icon: MessageSquare, colorText: "text-pink-500", colorBg: "bg-pink-500/10", hoverBg: "bg-pink-50" },
+];
