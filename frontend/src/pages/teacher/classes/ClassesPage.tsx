@@ -26,9 +26,6 @@ export default function TeacherClasses() {
             key={cls.id}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow"
           >
-            {/* Color Strip */}
-            <div className={`h-2 w-full ${cls.color}`} />
-
             <div className="p-5 flex-1 flex flex-col">
               <div className="mb-4">
                 <span className="inline-block px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold tracking-wider uppercase mb-3">

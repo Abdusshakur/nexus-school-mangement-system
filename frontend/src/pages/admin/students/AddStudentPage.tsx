@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   GraduationCap,
   Users,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { API_BASE, getAuthHeaders } from "../../../api/client";
@@ -101,42 +102,37 @@ export function AddStudent() {
     parent_phone: "",
     parent_email: "",
   });
-
+  const [successData, setSuccessData] = useState<{
+    name: string;
+    email: string;
+    admissionNumber: string;
+    password: string;
+  } | null>(null);
   const set = (key: keyof CombinedStudentForm, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
 
-  // Handles safe local sequence building since /next-admission-number is not in swagger list
-  const handleGenerateAdmissionAndCredentials = () => {
-    // get current year for admission number
-
-    const currentYear = new Date().getFullYear();
-
-    console.log(currentYear);
-
-    // get first and last name from user inputted form
+  const handleGenerateCredentials = () => {
     const firstName = form.first_name.trim().toLowerCase();
     const lastName = form.last_name.trim().toLowerCase();
 
     if (!firstName || !lastName) {
-      toast.error("Please input First Name and Last Name");
+      toast.error("Please input First Name and Last Name first");
       return;
     }
 
-    // Generate a clean 4-digit unique tracking token sequential suffix
+    // const currentYear = new Date().getFullYear();ƶ
     const numericSuffix = Math.floor(1000 + Math.random() * 9000);
-    const calculatedNo = `NA/${currentYear}/${numericSuffix}`;
 
     const generatedEmail = `${firstName}${lastName}${numericSuffix}@nexusacademy.com`;
     const generatedPassword = Math.random().toString(36).slice(-8) + "Nx1!";
 
     setForm((prev) => ({
       ...prev,
-      admission_number: calculatedNo,
       email: generatedEmail,
       password: generatedPassword,
     }));
 
-    toast.success("Student credentials created successfully!");
+    toast.success("Student email & password generated successfully!");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,8 +142,14 @@ export function AddStudent() {
     if (
       !form.email ||
       !form.password ||
-      !form.admission_number ||
-      !form.class_name
+      !form.first_name ||
+      !form.last_name ||
+      !form.class_name ||
+      !form.gender ||
+      !form.address ||
+      !form.parent_name ||
+      !form.parent_phone ||
+      !form.parent_email
     ) {
       toast.error("Please complete all required fields.");
       setSaving(false);
@@ -155,12 +157,25 @@ export function AddStudent() {
     }
 
     try {
-      // Clean request structure extraction matching Swagger schema rules exactly
+      const nameParts = form.parent_name.trim().split(/\s+/);
+      const parentFirstName = nameParts[0] || "";
+      const parentLastName = nameParts.slice(1).join(" ") || "Guardian";
+
       const validFormDetails = {
         email: form.email,
         password: form.password,
-        admission_number: form.admission_number,
+        first_name: form.first_name,
+        last_name: form.last_name,
+        gender: form.gender,
+        address: form.address,
+        phone_number: form.phone || null,
         class_name: form.class_name,
+        parent: {
+          first_name: parentFirstName,
+          last_name: parentLastName,
+          email: form.parent_email,
+          phone_number: form.parent_phone,
+        },
       };
 
       const response = await fetch(`${API_BASE}/students/`, {
@@ -179,8 +194,12 @@ export function AddStudent() {
         );
       }
 
-      toast.success(`${form.first_name || "Student"} enrolled successfully !`);
-      navigate(ROUTES.ADMIN.STUDENTS);
+      setSuccessData({
+        name: `${form.first_name} ${form.last_name}`,
+        email: form.email,
+        admissionNumber: data.admission_number,
+        password: form.password,
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
@@ -246,26 +265,15 @@ export function AddStudent() {
             {/* Dynamic Admission Generator Input Block */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-700">
-                Admission Number <span className="text-rose-500">*</span>
+                Admission Number
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  name="admission_number"
-                  value={form.admission_number || ""}
-                  onChange={(e) => set("admission_number", e.target.value)}
-                  placeholder="Click Generate No →"
-                  required
-                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleGenerateAdmissionAndCredentials}
-                  className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center justify-center"
-                >
-                  Generate No
-                </button>
-              </div>
+              <input
+                type="text"
+                name="admission_number"
+                value="Auto-generated on Save"
+                disabled
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-400 bg-slate-50 font-medium select-none"
+              />
             </div>
 
             <Field
@@ -369,13 +377,22 @@ export function AddStudent() {
 
         {/* SECTION 3: System Access Account Verification Summary */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5 shadow-sm">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="font-semibold text-slate-900 text-base">
-              Portal Access Account
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Login credentials for student portal access.
-            </p>
+          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+            <div>
+              <h2 className="font-semibold text-slate-900 text-base">
+                Portal Access Account
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Login credentials for student portal access.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateCredentials}
+              className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center justify-center font-inter"
+            >
+              Generate Credentials
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -401,8 +418,8 @@ export function AddStudent() {
           <div className="flex gap-2.5 items-start bg-amber-50/50 border border-amber-200 p-4 rounded-xl text-amber-800 text-xs">
             <ShieldAlert size={16} className="shrink-0 mt-0.5 text-amber-600" />
             <p className="leading-normal">
-              Clicking the generate button auto-fills admission number, email
-              and password credentials. Keep somewhere safe before saving.
+              Clicking the generate button auto-fills email and password
+              credentials. Keep somewhere safe before saving.
             </p>
           </div>
         </div>
@@ -429,6 +446,97 @@ export function AddStudent() {
           </button>
         </div>
       </form>
+
+      {successData && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform scale-100 transition-all font-inter animate-in fade-in zoom-in duration-200">
+            <div className="text-center pb-4 mb-4 border-b border-slate-100">
+              <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Student Onboarded Successfully!
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Please copy or write down the student credentials before
+                continuing.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
+                  Full Name
+                </label>
+                <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-slate-800">
+                  {successData.name}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
+                  Admission Number
+                </label>
+                <div className="px-3.5 py-2.5 bg-indigo-50/55 border border-indigo-100 rounded-xl text-sm font-bold text-indigo-700 font-mono">
+                  {successData.admissionNumber}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
+                  Portal Login Email
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-800 font-mono select-all">
+                    {successData.email}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(successData.email);
+                      toast.success("Email copied!");
+                    }}
+                    className="px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-950 transition-colors rounded-xl text-xs font-semibold cursor-pointer"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
+                  Portal Password
+                </label>
+                <div className="flex gap-2">
+                  <div className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-800 font-mono select-all">
+                    {successData.password}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(successData.password);
+                      toast.success("Password copied!");
+                    }}
+                    className="px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-950 transition-colors rounded-xl text-xs font-semibold cursor-pointer"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.ADMIN.STUDENTS)}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/10 transition-all cursor-pointer text-center font-inter"
+              >
+                Go to Student List
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

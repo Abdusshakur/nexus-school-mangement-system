@@ -5,12 +5,15 @@ import { UserRole } from "../types/roles";
 // Placeholder for future Parent Dashboard implementation
 const ParentDashboardPlaceholder = () => (
   <div className="p-8">
-    <h1 className="text-2xl font-bold">Parent Dashboard (Coming Soon)</h1>
+    <h1 className="text-2xl font-bold">Parent Dashboard </h1>
   </div>
 );
 
 export const parentRoutes = (
-  <Route path="/parent" element={<RoleRoute allowedRoles={[UserRole.PARENT]} />}>
+  <Route
+    path="/parent"
+    element={<RoleRoute allowedRoles={[UserRole.PARENT]} />}
+  >
     <Route index element={<ParentDashboardPlaceholder />} />
     <Route path="dashboard" element={<ParentDashboardPlaceholder />} />
   </Route>
