@@ -10,9 +10,7 @@ interface Props {
 
 export function CreateAssignment({ onPost, onCancel }: Props) {
   const [title, setTitle] = useState("");
-  const [selectedClass, setSelectedClass] = useState(
-    "Physics & Thermodynamics",
-  );
+  const [selectedClass, setSelectedClass] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [maxPoints, setMaxPoints] = useState(100);
   const [description, setDescription] = useState("");

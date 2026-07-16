@@ -70,7 +70,28 @@ export const CLASSES_DATA: Classroom[] = [
 ];
 
 export const STUDENTS_ROSTERS: Record<string, string[]> = {
-  "CLS-101": ["Liam O'Connor", "Sofia Rodriguez", "Aiden Vance", "Zoe Chen", "Chloe Baker", "Lucas Vance"],
-  "CLS-102": ["Liam O'Connor", "Aiden Vance", "Zoe Chen", "Nathan Brooks", "Mila Patel", "Chloe Baker"],
-  "CLS-103": ["Sofia Rodriguez", "Lucas Vance", "Mila Patel", "Eli Bennett", "Maya Thompson", "Nathan Brooks"],
+  "CLS-101": [
+    "Liam O'Connor",
+    "Sofia Rodriguez",
+    "Aiden Vance",
+    "Zoe Chen",
+    "Chloe Baker",
+    "Lucas Vance",
+  ],
+  "CLS-102": [
+    "Liam O'Connor",
+    "Aiden Vance",
+    "Zoe Chen",
+    "Nathan Brooks",
+    "Mila Patel",
+    "Chloe Baker",
+  ],
+  "CLS-103": [
+    "Sofia Rodriguez",
+    "Lucas Vance",
+    "Mila Patel",
+    "Eli Bennett",
+    "Maya Thompson",
+    "Nathan Brooks",
+  ],
 };

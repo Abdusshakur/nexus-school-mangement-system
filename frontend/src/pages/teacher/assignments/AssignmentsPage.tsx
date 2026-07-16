@@ -7,7 +7,8 @@ import { AssignmentList } from "./AssignmentList";
 import { GradeSubmissions } from "./GradeSubmissions";
 
 export default function TeacherAssignments() {
-  const { assignments, submissions, addAssignment, gradeSubmission } = useAssignmentStore();
+  const { assignments, submissions, addAssignment, gradeSubmission } =
+    useAssignmentStore();
 
   const [isCreating, setIsCreating] = useState(false);
   const [activeAssignment, setActiveAssignment] = useState<Assignment | null>(
@@ -28,12 +29,10 @@ export default function TeacherAssignments() {
   ) => {
     if (!activeAssignment) return;
     gradeSubmission(submissionId, grade, feedback);
-    
-    // We update local state simply to force the GradeSubmissions component 
-    // to pick up the new updated assignment counts if needed.
-    // Zustand's hook will cause a re-render of this top level component,
-    // so activeAssignment just needs to be re-found from the updated assignments list.
-    const refreshedActive = useAssignmentStore.getState().assignments.find((a) => a.id === activeAssignment.id);
+
+    const refreshedActive = useAssignmentStore
+      .getState()
+      .assignments.find((a) => a.id === activeAssignment.id);
     if (refreshedActive) {
       setActiveAssignment(refreshedActive);
     }
