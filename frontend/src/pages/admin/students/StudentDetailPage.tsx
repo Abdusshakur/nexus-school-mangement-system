@@ -8,8 +8,6 @@ import { ResultsTab } from "./tabs/ResultsTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
 import { CoursesTab } from "./tabs/CoursesTab";
 
-// ─── Main StudentProfile component ───────────────────────────────────────────
-
 type ProfileTab = "profile" | "results" | "attendance" | "courses";
 
 export function StudentDetailPage() {
@@ -62,7 +60,11 @@ export function StudentDetailPage() {
         </div>
 
         {/* Session selector */}
-        <div className="relative">
+        <div className="flex gap-2">
+          {/* <button className="flex gap-2 justify-center items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all border-slate-300 text-slate-700 bg-white hover:bg-slate-200">
+            Edit
+            <Pencil size={12} />
+          </button> */}
           <button
             onClick={() => setSessionOpen((v) => !v)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all border-indigo-500 text-indigo-600 bg-indigo-50 hover:bg-indigo-100"

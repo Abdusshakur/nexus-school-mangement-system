@@ -11,13 +11,16 @@ import {
   Plus,
 } from "lucide-react";
 import { Input } from "../../../components/dashboard/Input";
-import { teachersList } from "./data";
+import { useTeacherStore } from "../../../store/teacher.store";
+import { AddTeacherWizard } from "./AddTeacher";
 
 export function TeachersPage() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("All");
+  const [showAdd, setShowAdd] = useState(false);
+  const { teachers } = useTeacherStore();
 
-  const filtered = teachersList.filter((t) => {
+  const filtered = teachers.filter((t) => {
     const matchesSearch =
       t.name.toLowerCase().includes(search.toLowerCase()) ||
       t.dept.toLowerCase().includes(search.toLowerCase());
@@ -31,10 +34,13 @@ export function TeachersPage() {
         <div>
           <h1 className="text-slate-900 text-2xl font-bold ">Teachers</h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            {teachersList.length} teaching staffs
+            {teachers.length} teaching staffs
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10">
+        <button
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
+        >
           <Plus size={16} /> Add Teacher
         </button>
       </header>
@@ -125,6 +131,7 @@ export function TeachersPage() {
           ))}
         </div>
       </main>
+      {showAdd && <AddTeacherWizard onClose={() => setShowAdd(false)} />}
     </div>
   );
 }
