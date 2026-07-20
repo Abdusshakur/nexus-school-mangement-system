@@ -6,6 +6,15 @@ from backend.app.db.database import get_session
 from backend.app.models import User, UserRole, StudentProfile, ParentProfile, Announcement, Attendance, AttendanceStatus
 from backend.app.schemas.dashboard import DashboardSummaryResponse, AttendanceTodaySummary
 from backend.app.core.auth_utils import RoleChecker
+from fastapi import APIRouter, Depends
+from sqlmodel import Session, select, func
+from datetime import datetime, timedelta
+from typing import List
+from backend.app.db.database import get_session
+from backend.app.models import Attendance  # Replace with your actual attendance log model name
+from backend.app.schemas.dashboard import DailyAttendanceMetric, AttendanceTrendResponse
+from backend.app.core.auth_utils import RoleChecker
+
 
 router = APIRouter(
     prefix="/dashboard",
@@ -58,3 +67,49 @@ def get_dashboard_metrics_summary(session: Session = Depends(get_session)):
             percentage=attendance_percentage
         )
     )
+
+
+@router.get("/attendance-trends", response_model=AttendanceTrendResponse, dependencies=[Depends(allow_staff_only)])
+def get_weekly_attendance_trends(session: Session = Depends(get_session)):
+    """Computes aggregate present, absent, and late log trend time-series for the past 5 operational days."""
+    
+    # 1. Calculate the start and end date range boundary for the past 5 days
+    today = datetime.now().date()
+    start_date = today - timedelta(days=5)
+
+    # 2. Query the database, using aggregation tricks to count statuses inside the date block
+    # This runs a highly optimized single-pass database group query lookup execution step!
+    statement = (
+        select(
+            Attendance.attendance_date,
+            func.count(func.nullif(Attendance.status != "PRESENT", True)).label("present_count"),
+            func.count(func.nullif(Attendance.status != "ABSENT", True)).label("absent_count"),
+            func.count(func.nullif(Attendance.status != "LATE", True)).label("late_count")
+        )
+        .where(Attendance.attendance_date >= start_date)
+        .where(Attendance.attendance_date <= today)
+        .group_by(Attendance.attendance_date)
+        .order_by(Attendance.attendance_date.asc())
+    )
+    
+    db_results = session.exec(statement).all()
+
+    # 3. Format database outputs directly to match UI Line-Chart target formats
+    trend_report: List[DailyAttendanceMetric] = []
+    
+    for row in db_results:
+        log_date = row[0]
+        # Format the date object into human readable abbreviations like "Mon", "Tue"
+        day_abbreviation = log_date.strftime("%a") 
+        
+        trend_report.append(
+            DailyAttendanceMetric(
+                day=day_abbreviation,
+                date=str(log_date),
+                present=row[1],
+                absent=row[2],
+                late=row[3]
+            )
+        )
+        
+    return trend_report

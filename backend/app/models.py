@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from uuid import UUID, uuid4
-
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -34,12 +33,19 @@ class StudentProfile(SQLModel, table=True):
     user_id: UUID = Field(foreign_key="user.id", unique=True)
     admission_number: str = Field(index=True, unique=True)
     class_name: str
+    first_name: str = Field(index=True) # Added index for faster search operations!
+    last_name: str = Field(index=True)  # Added index for faster search operations!
+    gender: str                         # e.g., "MALE", "FEMALE"
+    address: str
+    phone_number: Optional[str] = Field(default=None)
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Many-to-Many Relationship Link
     parents: List["ParentProfile"] = Relationship(
         back_populates="students",
         link_model=ParentStudentLink,
     )
-
 
 class ParentProfile(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)

@@ -1,6 +1,6 @@
 # backend/app/routers/students.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, or_
 from datetime import datetime
 from typing import List, Optional
 from backend.app.db.database import get_session
@@ -143,26 +143,41 @@ def create_student_with_parent_onboarding(
 
 
 
-
-
 @router.get("/", response_model=List[StudentResponse], dependencies=[Depends(allow_staff_only)])
 def list_students(
     search: Optional[str] = Query(None, description="Search by admission number"),
     class_name: Optional[str] = Query(None, alias="class", description="Filter by class name"),
+    name: Optional[str] = Query(None, description="Search by first name, last name, or full name"), # 🔑 Unified param!
     session: Session = Depends(get_session)
 ):
-    """Lists student profiles with optional query filters for class and search."""
-    # We join the StudentProfile table with the User table to retrieve emails efficiently
+    """Lists student profiles with optional query filters for class, admission number, or name."""
     query = session.query(StudentProfile, User).join(User, StudentProfile.user_id == User.id)
 
+    # 1. Class filter (Exact match)
     if class_name:
         query = query.filter(StudentProfile.class_name == class_name)
+        
+    # 2. Admission Number filter (Partial match)
     if search:
-        query = query.filter(StudentProfile.admission_number.contains(search))
-
+        query = query.filter(StudentProfile.admission_number.ilike(f"%{search}%"))
+        
+    # 3. 🧠 Smart Name filter (Checks First, Last, and Combined Full Name)
+    if name:
+        search_term = f"%{name}%"
+        
+        # This tells the database to stitch the fields together in memory: "Firstname Lastname"
+        full_name_concat = func.concat(StudentProfile.first_name, ' ', StudentProfile.last_name)
+        
+        query = query.filter(
+            or_(
+                StudentProfile.first_name.ilike(search_term),     # Matches "Jane"
+                StudentProfile.last_name.ilike(search_term),      # Matches "Smith"
+                full_name_concat.ilike(search_term)               # Matches "Jane Smith"
+            )
+        )
+    
     results = query.all()
 
-    # Convert our database join results into our clean response model structure
     return [
         StudentResponse(
             id=profile.id,
@@ -170,6 +185,8 @@ def list_students(
             email=user.email,
             admission_number=profile.admission_number,
             class_name=profile.class_name,
+            first_name=profile.first_name,
+            last_name=profile.last_name,
             created_at=profile.created_at
         )
         for profile, user in results

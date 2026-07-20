@@ -8,6 +8,7 @@ from backend.app.models import Attendance
 from backend.app.schemas.attendance import BulkAttendanceCreate, AttendanceResponse
 from backend.app.core.auth_utils import RoleChecker
 
+
 router = APIRouter(
     prefix="/attendance",
     tags=["Attendance Management"]
