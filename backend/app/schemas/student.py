@@ -28,6 +28,8 @@ class UnifiedStudentOnboardingCreate(BaseModel):
 class StudentResponse(BaseModel):
     id: UUID
     user_id: UUID
+    first_name: str
+    last_name: str
     email: str
     admission_number: str
     class_name: str
