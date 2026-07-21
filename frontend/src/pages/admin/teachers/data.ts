@@ -35,6 +35,10 @@ export const SENIOR_SUBJECTS = [
   "Literature-in-English",
   "Civic Education",
   "Financial Accounting",
+  "Commerce",
+  "Computer Science",
+  "Technical Drawing",
+  "Music",
 ];
 
 export const ALL_SUBJECTS = Array.from(
@@ -52,11 +56,11 @@ export const DEPARTMENTS = [
 
 export const QUALIFICATIONS = [
   "B.Ed. (Education)",
-  "B.Sc. + PGDE",
-  "B.A. + PGDE",
+  "B.Sc.",
+  "B.A",
   "NCE",
   "M.Ed.",
-  "M.Sc. + PGDE",
+  "M.Sc.",
   "Ph.D.",
   "Other",
 ];

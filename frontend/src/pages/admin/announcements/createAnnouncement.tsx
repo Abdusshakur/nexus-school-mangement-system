@@ -104,12 +104,12 @@ export function CreateAnnouncement() {
                     "All Students",
                     "All Parents",
                     "All Teachers",
-                    "Grade 7",
-                    "Grade 8",
-                    "Grade 9",
-                    "Grade 10",
-                    "Grade 11",
-                    "Grade 12",
+                    "JSS 1",
+                    "JSS 2",
+                    "JSS 3",
+                    "SS 1",
+                    "SS 2",
+                    "SS 3",
                   ].map((a) => (
                     <option key={a} value={a}>
                       {a}

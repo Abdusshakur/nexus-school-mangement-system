@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
 import { ArrowLeft, Calendar, ChevronDown, Users } from "lucide-react";
-import { STUDENT_DB, SESSIONS } from "./data";
+import { STUDENT_DB, SESSIONS, type Student } from "./data";
+import { fetchStudentsList, formatClassName } from "../../../api/students";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { ResultsTab } from "./tabs/ResultsTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
@@ -12,10 +13,93 @@ type ProfileTab = "profile" | "results" | "attendance" | "courses";
 
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const student = id ? STUDENT_DB[id] : null;
+  const [student, setStudent] = useState<Student | null>(
+    id && STUDENT_DB[id]
+      ? { ...STUDENT_DB[id], grade: formatClassName(STUDENT_DB[id].grade) }
+      : null,
+  );
+  const [loading, setLoading] = useState<boolean>(!student);
   const [tab, setTab] = useState<ProfileTab>("profile");
   const [session, setSession] = useState(SESSIONS[0]);
   const [sessionOpen, setSessionOpen] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let isLoaded = true;
+    const loadStudentFromApi = async () => {
+      try {
+        const apiStudents = await fetchStudentsList();
+        if (!isLoaded) return;
+
+        const found = apiStudents.find(
+          (s) => s.id === id || s.admission_number === id || s.user_id === id,
+        );
+
+        if (found) {
+          const initials = (
+            (found.first_name[0] || "") + (found.last_name[0] || "")
+          ).toUpperCase();
+
+          const mapped: Student = {
+            id: found.admission_number || found.id,
+            name: `${found.first_name} ${found.last_name}`,
+            initials: initials,
+            avatarColor: "bg-indigo-500",
+            grade: formatClassName(found.class_name),
+            gender: "Student",
+            dob: "2010-01-01",
+            phone: "+234 800 000 0000",
+            email: found.email,
+            address: "Westwood Campus",
+            parentName: "Parent / Guardian",
+            parentPhone: "+234 800 000 0001",
+            parentEmail: "parent@nexusacademy.com",
+            status: "Active",
+            joined: new Date(found.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }),
+
+            nationality: "Nigerian",
+            avatar: initials,
+            avatarBg: "bg-indigo-500",
+          };
+          setStudent(mapped);
+        } else if (STUDENT_DB[id]) {
+          setStudent({
+            ...STUDENT_DB[id],
+            grade: formatClassName(STUDENT_DB[id].grade),
+          });
+        }
+      } catch (err) {
+        console.error("Could not fetch student details:", err);
+        if (STUDENT_DB[id] && isLoaded)
+          setStudent({
+            ...STUDENT_DB[id],
+            grade: formatClassName(STUDENT_DB[id].grade),
+          });
+      } finally {
+        if (isLoaded) setLoading(false);
+      }
+    };
+
+    loadStudentFromApi();
+    return () => {
+      isLoaded = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+        <p className="text-sm font-medium animate-pulse">
+          Loading student profile…
+        </p>
+      </div>
+    );
+  }
 
   if (!student) {
     return (
@@ -24,9 +108,9 @@ export function StudentDetailPage() {
         <p className="mb-4 text-sm">Student not found.</p>
         <Link
           to={ROUTES.ADMIN.STUDENTS}
-          className="font-medium text-sm text-indigo-500 hover:text-indigo-600 transition-colors"
+          className="font-medium text-sm text-indigo-500 hover:text-indigo-600 transition-colors flex gap-2"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           Back to Students
         </Link>
       </div>

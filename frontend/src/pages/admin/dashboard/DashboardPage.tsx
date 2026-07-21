@@ -11,7 +11,6 @@ import {
   Plus,
   ArrowRight,
   CheckCircle,
-  XCircle,
   Clock,
   Triangle,
 } from "lucide-react";
@@ -26,8 +25,15 @@ import {
 } from "recharts";
 import {
   getDashboardSummary,
+  fetchAttendanceTrends,
   type DashboardSummaryResponse,
+  type DailyAttendance,
 } from "../../../api/dashboard";
+import {
+  fetchStudentsList,
+  formatClassName,
+  type StudentResponse,
+} from "../../../api/students";
 import { toast } from "sonner";
 
 interface StatCardProps {
@@ -77,55 +83,12 @@ function StatCard({
   );
 }
 
-const attendanceData = [
-  { day: "Mon", present: 210, absent: 15 },
-  { day: "Tue", present: 225, absent: 10 },
-  { day: "Wed", present: 205, absent: 20 },
-  { day: "Thu", present: 20, absent: 200 },
-  { day: "Fri", present: 220, absent: 15 },
-];
-
-const recentStudents = [
-  {
-    id: "S001",
-    name: "Amelia Johnson",
-    grade: "Grade 10",
-    status: "Active",
-    initials: "AJ",
-    bgClass: "bg-indigo-500",
-  },
-  {
-    id: "S002",
-    name: "Marcus Williams",
-    grade: "Grade 8",
-    status: "Active",
-    initials: "MW",
-    bgClass: "bg-indigo-500",
-  },
-  {
-    id: "S003",
-    name: "Sofia Rodriguez",
-    grade: "Grade 11",
-    status: "Active",
-    initials: "SR",
-    bgClass: "bg-amber-500",
-  },
-  {
-    id: "S004",
-    name: "Ethan Chen",
-    grade: "Grade 9",
-    status: "Inactive",
-    initials: "EC",
-    bgClass: "bg-rose-500",
-  },
-  {
-    id: "S005",
-    name: "Priya Patel",
-    grade: "Grade 12",
-    status: "Active",
-    initials: "PP",
-    bgClass: "bg-purple-500",
-  },
+const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
+  { day: "Mon", date: "2026-07-14", present: 210, absent: 15, late: 5 },
+  { day: "Tue", date: "2026-07-15", present: 225, absent: 10, late: 2 },
+  { day: "Wed", date: "2026-07-16", present: 205, absent: 20, late: 8 },
+  { day: "Thu", date: "2026-07-17", present: 230, absent: 8, late: 4 },
+  { day: "Fri", date: "2026-07-18", present: 220, absent: 15, late: 3 },
 ];
 
 const latestAnnouncements = [
@@ -195,11 +158,29 @@ export function DashboardPage() {
     day: "numeric",
   }).format(new Date());
 
+  const [recentStudents, setRecentStudents] = useState<StudentResponse[]>([]);
+  const [attendanceTrends, setAttendanceTrends] = useState<DailyAttendance[]>(
+    [],
+  );
+
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const data = await getDashboardSummary();
+        const [data, studentsData, trendsData] = await Promise.all([
+          getDashboardSummary(),
+          fetchStudentsList(),
+          fetchAttendanceTrends().catch(() => []),
+        ]);
         setMetrics(data);
+        if (trendsData) setAttendanceTrends(trendsData);
+        const sorted = [...studentsData]
+          .sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime(),
+          )
+          .slice(0, 5);
+        setRecentStudents(sorted);
       } catch (err: unknown) {
         if (err instanceof Error) {
           toast.error(err.message);
@@ -314,7 +295,11 @@ export function DashboardPage() {
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart
-              data={attendanceData}
+              data={
+                attendanceTrends.length > 0
+                  ? attendanceTrends
+                  : MOCK_ATTENDANCE_TRENDS
+              }
               margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
             >
               <defs>
@@ -446,46 +431,54 @@ export function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {recentStudents.map((s) => (
-                <tr
-                  key={s.id}
-                  className="transition-colors border-t border-slate-100 hover:bg-slate-50"
-                >
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-[11px] ${s.bgClass}`}
-                      >
-                        <span>{s.initials}</span>
+              {recentStudents.map((s) => {
+                const initials = (
+                  (s.first_name[0] || "") + (s.last_name[0] || "")
+                ).toUpperCase();
+                return (
+                  <tr
+                    key={s.id}
+                    className="transition-colors border-t border-slate-100 hover:bg-slate-50"
+                  >
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-[11px] bg-indigo-500">
+                          <span>{initials}</span>
+                        </div>
+                        <div>
+                          <Link
+                            to={ROUTES.ADMIN.STUDENT_DETAIL(s.id)}
+                            className="text-sm font-medium transition-colors text-slate-900 hover:text-indigo-500"
+                          >
+                            {s.first_name} {s.last_name}
+                          </Link>
+                          <p className="text-xs text-slate-400 font-mono">
+                            {s.admission_number}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <Link
-                          to={ROUTES.ADMIN.STUDENT_DETAIL(s.id)}
-                          className="text-sm font-medium transition-colors text-slate-900 hover:text-indigo-500"
-                        >
-                          {s.name}
-                        </Link>
-                        <p className="text-xs text-slate-400">{s.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-slate-700">
-                    {s.grade}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${s.status === "Active" ? "bg-indigo-100 text-indigo-800" : "bg-rose-100 text-rose-800"}`}
-                    >
-                      {s.status === "Active" ? (
-                        <CheckCircle size={10} />
-                      ) : (
-                        <XCircle size={10} />
-                      )}
-                      {s.status}
-                    </span>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-700">
+                      {formatClassName(s.class_name)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <CheckCircle size={10} /> Active
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {recentStudents.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="py-8 text-center text-slate-400 text-sm"
+                  >
+                    No students registered yet.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -532,3 +525,9 @@ export function DashboardPage() {
     </div>
   );
 }
+
+/* TODO:
+1. Make the announcement section dynamic and connect it to the announcement APIs.
+2. Make the recent students section dynamic and connect it to the student APIs.
+3. Make the attendance graph section dynamic and connect it to the attendance APIs.
+*/

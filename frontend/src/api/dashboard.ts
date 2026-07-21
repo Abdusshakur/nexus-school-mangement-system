@@ -15,6 +15,14 @@ export interface DashboardSummaryResponse {
   attendance_today: AttendanceTodaySummary;
 }
 
+export interface DailyAttendance {
+  day: string;
+  date: string;
+  present: number;
+  absent: number;
+  late: number;
+}
+
 export const getDashboardSummary =
   async (): Promise<DashboardSummaryResponse> => {
     const response = await fetch(`${API_BASE}/dashboard/summary`, {
@@ -33,3 +41,23 @@ export const getDashboardSummary =
 
     return response.json();
   };
+
+export const fetchAttendanceTrends = async (): Promise<
+  DailyAttendance[]
+> => {
+  const response = await fetch(`${API_BASE}/dashboard/attendance-trends`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.clear();
+      window.location.href = "/login";
+      throw new Error("Session expired. Please sign in again.");
+    }
+    throw new Error("Failed to load attendance trends.");
+  }
+
+  return response.json();
+};

@@ -1,6 +1,6 @@
 import { generateAttendance } from "../data";
 
-// ─── Tab: Attendance ──────────────────────────────────────────────────────────
+// Attendance Tab component for displaying student attendance in a calendar heatmap format, along with summary statistics.
 
 const DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const STATUS_CFG = {
