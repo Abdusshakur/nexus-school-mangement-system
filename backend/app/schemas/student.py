@@ -17,7 +17,8 @@ class UnifiedStudentOnboardingCreate(BaseModel):
     password: str
     first_name: str
     last_name: str
-    gender: str                  # Required!
+    gender: str
+    date_of_birth: datetime                  # Required!
     address: str                 # Required!
     phone_number: Optional[str] = None # Optional!
     class_name: str
@@ -33,4 +34,17 @@ class StudentResponse(BaseModel):
     email: str
     admission_number: str
     class_name: str
+    gender: str
+    date_of_birth: datetime
     created_at: datetime
+
+
+# Add this schema to your file
+class StudentProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    gender: Optional[str] = None
+    date_of_birth: Optional[datetime] = None
+    address: Optional[str] = None
+    phone_number: Optional[str] = None
+    class_name: Optional[str] = None
