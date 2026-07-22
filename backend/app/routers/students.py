@@ -1,7 +1,7 @@
 # backend/app/routers/students.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select, func, or_
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 from uuid import UUID
 from backend.app.db.database import get_session
@@ -144,6 +144,8 @@ def create_student_with_parent_onboarding(
         class_name=student_profile.class_name,
         gender=student_profile.gender,         
         date_of_birth=student_profile.date_of_birth,
+        phone_number=student_profile.phone_number,
+        address=student_profile.address,
         created_at=student_profile.created_at
     )
 
@@ -195,6 +197,8 @@ def list_students(
             last_name=profile.last_name,
             gender=profile.gender,               
             date_of_birth=profile.date_of_birth,
+            phone_number=profile.phone_number,
+            address=profile.address,
             created_at=profile.created_at
         )
         for profile, user in results
@@ -242,6 +246,8 @@ def get_student_by_admission_number(
         last_name=profile.last_name,
         gender=profile.gender,
         date_of_birth=profile.date_of_birth,
+        phone_number=profile.phone_number,
+        address=profile.address,
         created_at=profile.created_at
     )
 
@@ -292,5 +298,7 @@ def update_student_profile(
         last_name=profile.last_name,
         gender=profile.gender,
         date_of_birth=profile.date_of_birth,
+        phone_number=profile.phone_number,
+        address=profile.address,
         created_at=profile.created_at
     )
