@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select, func, or_
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 from backend.app.db.database import get_session
 from backend.app.models import User, UserRole, StudentProfile, ParentProfile, ParentStudentLink
-from backend.app.schemas.student import UnifiedStudentOnboardingCreate, StudentResponse
+from backend.app.schemas.student import UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate
 from backend.app.core.auth_utils import RoleChecker, hash_password
 
 router = APIRouter(
@@ -80,6 +81,7 @@ def create_student_with_parent_onboarding(
             gender=request.gender,
             address=request.address,
             phone_number=request.phone_number,
+            date_of_birth=request.date_of_birth,
             class_name=request.class_name
         )
         session.add(student_profile)
@@ -135,9 +137,13 @@ def create_student_with_parent_onboarding(
     return StudentResponse(
         id=student_profile.id,
         user_id=student_user.id,
+        first_name=student_profile.first_name,
+        last_name=student_profile.last_name,
         email=student_user.email,
         admission_number=student_profile.admission_number,
         class_name=student_profile.class_name,
+        gender=student_profile.gender,         
+        date_of_birth=student_profile.date_of_birth,
         created_at=student_profile.created_at
     )
 
@@ -187,7 +193,104 @@ def list_students(
             class_name=profile.class_name,
             first_name=profile.first_name,
             last_name=profile.last_name,
+            gender=profile.gender,               
+            date_of_birth=profile.date_of_birth,
             created_at=profile.created_at
         )
         for profile, user in results
     ]
+
+from backend.app.schemas.student import StudentProfileUpdate # Import the new schema
+
+# ------------------------------------------------------------------
+# GET: View Single Student by Admission Number
+# ------------------------------------------------------------------
+@router.get(
+    "/{admission_number}", 
+    response_model=StudentResponse, 
+    dependencies=[Depends(allow_staff_only)]
+)
+def get_student_by_admission_number(
+    admission_number: str,
+    session: Session = Depends(get_session)
+):
+    """Fetch a single student's complete profile using their unique admission number."""
+    
+    # Query both StudentProfile and User to get all details (including email)
+    query = (
+        select(StudentProfile, User)
+        .join(User, StudentProfile.user_id == User.id)
+        .where(StudentProfile.admission_number == admission_number)
+    )
+    result = session.exec(query).first()
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Student with admission number '{admission_number}' not found."
+        )
+        
+    profile, user = result
+    
+    return StudentResponse(
+        id=profile.id,
+        user_id=user.id,
+        email=user.email,
+        admission_number=profile.admission_number,
+        class_name=profile.class_name,
+        first_name=profile.first_name,
+        last_name=profile.last_name,
+        gender=profile.gender,
+        date_of_birth=profile.date_of_birth,
+        created_at=profile.created_at
+    )
+
+
+# ------------------------------------------------------------------
+# PATCH: Update Student Details
+# ------------------------------------------------------------------
+@router.patch(
+    "/{student_id}", 
+    response_model=StudentResponse, 
+    dependencies=[Depends(allow_staff_only)]
+)
+def update_student_profile(
+    student_id: UUID,
+    payload: StudentProfileUpdate,
+    session: Session = Depends(get_session)
+):
+    """Update specific fields of a student's profile."""
+    
+    # 1. Fetch the student profile
+    profile = session.get(StudentProfile, student_id)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Student profile not found."
+        )
+        
+    # 2. Apply updates only for fields that were actually provided
+    update_data = payload.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(profile, key, value)
+        
+    # 3. Save changes
+    session.add(profile)
+    session.commit()
+    session.refresh(profile)
+    
+    # 4. Fetch the associated User to complete the StudentResponse payload
+    user = session.get(User, profile.user_id)
+    
+    return StudentResponse(
+        id=profile.id,
+        user_id=user.id,
+        email=user.email,
+        admission_number=profile.admission_number,
+        class_name=profile.class_name,
+        first_name=profile.first_name,
+        last_name=profile.last_name,
+        gender=profile.gender,
+        date_of_birth=profile.date_of_birth,
+        created_at=profile.created_at
+    )
