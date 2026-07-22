@@ -1,27 +1,95 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
-import { ArrowLeft, Calendar, ChevronDown, Users } from "lucide-react";
-import { STUDENT_DB, SESSIONS, type Student } from "./data";
-import { fetchStudentsList, formatClassName } from "../../../api/students";
+import { ArrowLeft, Calendar, ChevronDown, Users, Pencil, X } from "lucide-react";
+import { SESSIONS, type Student } from "./data";
+import { fetchStudentsList, formatClassName, updateStudentProfile } from "../../../api/students";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { ResultsTab } from "./tabs/ResultsTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
 import { CoursesTab } from "./tabs/CoursesTab";
+import { toast } from "sonner";
 
 type ProfileTab = "profile" | "results" | "attendance" | "courses";
 
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [student, setStudent] = useState<Student | null>(
-    id && STUDENT_DB[id]
-      ? { ...STUDENT_DB[id], grade: formatClassName(STUDENT_DB[id].grade) }
-      : null,
-  );
+  const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState<boolean>(!student);
   const [tab, setTab] = useState<ProfileTab>("profile");
   const [session, setSession] = useState(SESSIONS[0]);
   const [sessionOpen, setSessionOpen] = useState(false);
+  const [dbUuid, setDbUuid] = useState<string | null>(null);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    gender: "",
+    address: "",
+    phoneNumber: "",
+    className: "",
+  });
+
+  const handleOpenEdit = () => {
+    if (!student) return;
+    const parts = student.name.split(" ");
+    const first = parts[0] || "";
+    const last = parts.slice(1).join(" ") || "";
+    setEditForm({
+      firstName: first,
+      lastName: last,
+      gender: student.gender,
+      address: student.address,
+      phoneNumber: student.phone,
+      className: student.grade,
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dbUuid) return;
+    try {
+      const updated = await updateStudentProfile(dbUuid, {
+        first_name: editForm.firstName,
+        last_name: editForm.lastName,
+        gender: editForm.gender,
+        address: editForm.address,
+        phone_number: editForm.phoneNumber,
+        class_name: editForm.className,
+      });
+
+      const initials = (
+        (updated.first_name[0] || "") + (updated.last_name[0] || "")
+      ).toUpperCase();
+
+      setStudent({
+        id: updated.admission_number || updated.id,
+        name: `${updated.first_name} ${updated.last_name}`,
+        initials: initials,
+        avatarColor: "bg-indigo-500",
+        grade: formatClassName(updated.class_name),
+        gender: updated.gender,
+        dob: new Date(updated.date_of_birth).toISOString().split("T")[0],
+        phone: updated.phone_number,
+        email: updated.email,
+        address: updated.address,
+        parentName: "Parent / Guardian",
+        parentPhone: "+234 800 000 0001",
+        parentEmail: "parent@nexusacademy.com",
+        status: "Active",
+        joined: student?.joined || "",
+        avatar: initials,
+        avatarBg: "bg-indigo-500",
+      });
+
+      setEditOpen(false);
+      toast.success("Student profile updated successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update profile.");
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +105,7 @@ export function StudentDetailPage() {
         );
 
         if (found) {
+          setDbUuid(found.id);
           const initials = (
             (found.first_name[0] || "") + (found.last_name[0] || "")
           ).toUpperCase();
@@ -47,11 +116,11 @@ export function StudentDetailPage() {
             initials: initials,
             avatarColor: "bg-indigo-500",
             grade: formatClassName(found.class_name),
-            gender: "Student",
-            dob: "2010-01-01",
-            phone: "+234 800 000 0000",
+            gender: found.gender,
+            dob: new Date(found.date_of_birth).toISOString().split("T")[0],
+            phone: found.phone_number,
             email: found.email,
-            address: "Westwood Campus",
+            address: found.address,
             parentName: "Parent / Guardian",
             parentPhone: "+234 800 000 0001",
             parentEmail: "parent@nexusacademy.com",
@@ -62,24 +131,13 @@ export function StudentDetailPage() {
               day: "numeric",
             }),
 
-            nationality: "Nigerian",
             avatar: initials,
             avatarBg: "bg-indigo-500",
           };
           setStudent(mapped);
-        } else if (STUDENT_DB[id]) {
-          setStudent({
-            ...STUDENT_DB[id],
-            grade: formatClassName(STUDENT_DB[id].grade),
-          });
         }
       } catch (err) {
         console.error("Could not fetch student details:", err);
-        if (STUDENT_DB[id] && isLoaded)
-          setStudent({
-            ...STUDENT_DB[id],
-            grade: formatClassName(STUDENT_DB[id].grade),
-          });
       } finally {
         if (isLoaded) setLoading(false);
       }
@@ -145,10 +203,15 @@ export function StudentDetailPage() {
 
         {/* Session selector */}
         <div className="flex gap-2">
-          {/* <button className="flex gap-2 justify-center items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all border-slate-300 text-slate-700 bg-white hover:bg-slate-200">
-            Edit
-            <Pencil size={12} />
-          </button> */}
+          {dbUuid && (
+            <button
+              onClick={handleOpenEdit}
+              className="flex gap-2 justify-center items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all border-slate-300 text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+            >
+              Edit Profile
+              <Pencil size={12} />
+            </button>
+          )}
           <button
             onClick={() => setSessionOpen((v) => !v)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all border-indigo-500 text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
@@ -212,6 +275,116 @@ export function StudentDetailPage() {
         <AttendanceTab studentId={student.id} session={session} />
       )}
       {tab === "courses" && <CoursesTab grade={student.grade} />}
+
+      {/* Edit Modal */}
+      {editOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-lg">Edit Student Profile</h3>
+              <button
+                type="button"
+                onClick={() => setEditOpen(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">First Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Last Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Gender</label>
+                  <select
+                    value={editForm.gender}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, gender: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white h-11"
+                  >
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Class/Grade</label>
+                  <select
+                    value={editForm.className}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, className: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white h-11"
+                  >
+                    <option value="JSS 1">JSS 1</option>
+                    <option value="JSS 2">JSS 2</option>
+                    <option value="JSS 3">JSS 3</option>
+                    <option value="SS 1">SS 1</option>
+                    <option value="SS 2">SS 2</option>
+                    <option value="SS 3">SS 3</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Phone Number</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.phoneNumber}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Address</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={editForm.address}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

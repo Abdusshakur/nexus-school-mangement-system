@@ -1,10 +1,23 @@
 import { apiFetch } from "./client";
 
+export interface ParentOnboardingDetails {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+}
+
 export interface StudentCreatePayload {
   email: string;
   password?: string;
-  admission_number: string;
+  first_name: string;
+  last_name: string;
+  gender: string;
+  date_of_birth: string;
+  address: string;
+  phone_number: string | null;
   class_name: string;
+  parent: ParentOnboardingDetails;
 }
 
 export interface StudentResponse {
@@ -15,13 +28,11 @@ export interface StudentResponse {
   email: string;
   admission_number: string;
   class_name: string;
+  gender: string;
+  date_of_birth: string;
+  address: string;
+  phone_number: string;
   created_at: string;
-  gender?: string;
-  address?: string;
-  phone_number?: string;
-  parent_name?: string;
-  parent_phone?: string;
-  parent_email?: string;
 }
 
 export interface PaginatedStudentsResponse {
@@ -73,3 +84,19 @@ export function formatClassName(name?: string): string {
 
   return clean;
 }
+
+export const getStudentByAdmissionNumber = async (
+  admissionNumber: string,
+): Promise<StudentResponse> => {
+  return apiFetch(`/students/${admissionNumber}`, { method: "GET" });
+};
+
+export const updateStudentProfile = async (
+  studentId: string,
+  payload: Partial<StudentResponse>,
+): Promise<StudentResponse> => {
+  return apiFetch(`/students/${studentId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+};

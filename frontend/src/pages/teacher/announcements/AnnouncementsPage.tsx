@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import type { Announcement } from "./data";
 import { useAnnouncementStore } from "../../../store/announcement.store";
@@ -6,11 +6,15 @@ import { CreateAnnouncement } from "./CreateAnnouncement";
 import { AnnouncementList } from "./AnnouncementList";
 
 export default function TeacherAnnouncements() {
-  const { announcements, postAnnouncement, deleteAnnouncement } = useAnnouncementStore();
+  const { announcements, fetchAnnouncements, postAnnouncement, deleteAnnouncement } = useAnnouncementStore();
   const [isPosting, setIsPosting] = useState(false);
 
+  useEffect(() => {
+    fetchAnnouncements().catch(console.error);
+  }, [fetchAnnouncements]);
+
   const handlePost = (ann: Omit<Announcement, "id">) => {
-    postAnnouncement(ann);
+    postAnnouncement(ann).catch(console.error);
     setIsPosting(false);
   };
 

@@ -11,7 +11,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { API_BASE, getAuthHeaders } from "../../../api/client";
+import { createStudent } from "../../../api/students";
 
 interface CombinedStudentForm {
   email: string;
@@ -182,6 +182,7 @@ export function AddStudent() {
         first_name: form.first_name,
         last_name: form.last_name,
         gender: form.gender,
+        date_of_birth: form.dob || new Date().toISOString().split("T")[0],
         address: form.address,
         phone_number: form.phone || null,
         class_name: form.class_name,
@@ -193,21 +194,7 @@ export function AddStudent() {
         },
       };
 
-      const response = await fetch(`${API_BASE}/students/`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(validFormDetails),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail?.[0]?.msg ||
-            data.detail ||
-            "Failed to provision student profile.",
-        );
-      }
+      const data = await createStudent(validFormDetails);
 
       setSuccessData({
         name: `${form.first_name} ${form.last_name}`,

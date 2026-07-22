@@ -3,7 +3,8 @@ import { UserRole } from '../../types/roles';
 export interface AuthUser {
   id: string;
   role: UserRole;
-  // Extensible for future user fields (name, email, etc.)
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface AuthState {

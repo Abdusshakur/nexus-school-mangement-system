@@ -4,5 +4,7 @@ export interface LoginResponse {
   user: {
     id: string;
     role: string;
+    first_name?: string;
+    last_name?: string;
   };
 }

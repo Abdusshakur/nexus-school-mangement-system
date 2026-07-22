@@ -2,10 +2,11 @@ import { ROUTES } from "../../../config/routes";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
-import { announcements } from "./data";
+import { useAnnouncementStore } from "../../../store/announcement.store";
 
 export function CreateAnnouncement() {
   const navigate = useNavigate();
+  const { postAnnouncement } = useAnnouncementStore();
   const [form, setForm] = useState({
     title: "",
     body: "",
@@ -18,24 +19,20 @@ export function CreateAnnouncement() {
   const set = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      // Simulate adding
-      announcements.unshift({
-        id: "A" + (announcements.length + 1),
+    try {
+      await postAnnouncement({
         title: form.title,
-        body: form.body,
-        date: "Jun 15, 2026",
-        priority: form.priority,
-        audience: form.audience || "All",
-        author: "Sarah Admin",
-        category: form.category || "General",
+        content: form.body,
       });
       navigate(ROUTES.ADMIN.ANNOUNCEMENTS);
-    }, 800);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

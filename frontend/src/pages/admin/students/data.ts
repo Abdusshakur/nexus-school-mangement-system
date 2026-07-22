@@ -14,328 +14,9 @@ export interface Student {
   joined: string;
   initials?: string;
   avatarColor?: string;
-  nationality?: string;
   avatar?: string;
   avatarBg?: string;
 }
-
-export const allStudents: Student[] = [
-  {
-    id: "S001",
-    name: "Amelia Johnson",
-    grade: "SS 1",
-    gender: "Female",
-    dob: "2009-03-15",
-    phone: "+1 555 0101",
-    email: "amelia.j@westwood.edu",
-    address: "42 Maple Ave, Springfield",
-    parentName: "Robert Johnson",
-    parentPhone: "+1 555 0100",
-    status: "Active",
-    joined: "2022-09-01",
-    avatar: "AJ",
-    avatarBg: "bg-indigo-500",
-  },
-  {
-    id: "S002",
-    name: "Marcus Williams",
-    grade: "JSS 2",
-    gender: "Male",
-    dob: "2011-07-22",
-    phone: "+1 555 0102",
-    email: "marcus.w@westwood.edu",
-    address: "88 Oak Street, Springfield",
-    parentName: "Denise Williams",
-    parentPhone: "+1 555 0103",
-    status: "Active",
-    joined: "2023-09-01",
-    avatar: "MW",
-    avatarBg: "bg-indigo-500",
-  },
-  {
-    id: "S003",
-    name: "Sofia Rodriguez",
-    grade: "SS 2",
-    gender: "Female",
-    dob: "2008-11-04",
-    phone: "+1 555 0104",
-    email: "sofia.r@westwood.edu",
-    address: "15 Birch Lane, Springfield",
-    parentName: "Carlos Rodriguez",
-    parentPhone: "+1 555 0105",
-    status: "Active",
-    joined: "2021-09-01",
-    avatar: "SR",
-    avatarBg: "bg-amber-500",
-  },
-  {
-    id: "S004",
-    name: "Ethan Chen",
-    grade: "JSS 3",
-    gender: "Male",
-    dob: "2010-05-30",
-    phone: "+1 555 0106",
-    email: "ethan.c@westwood.edu",
-    address: "7 Pine Road, Springfield",
-    parentName: "Li Chen",
-    parentPhone: "+1 555 0107",
-    status: "Inactive",
-    joined: "2022-09-01",
-    avatar: "EC",
-    avatarBg: "bg-rose-500",
-  },
-  {
-    id: "S005",
-    name: "Priya Patel",
-    grade: "SS 3",
-    gender: "Female",
-    dob: "2007-08-19",
-    phone: "+1 555 0108",
-    email: "priya.p@westwood.edu",
-    address: "99 Cedar Blvd, Springfield",
-    parentName: "Raj Patel",
-    parentPhone: "+1 555 0109",
-    status: "Active",
-    joined: "2020-09-01",
-    avatar: "PP",
-    avatarBg: "bg-purple-500",
-  },
-  {
-    id: "S006",
-    name: "James Thompson",
-    grade: "JSS 1",
-    gender: "Male",
-    dob: "2012-02-11",
-    phone: "+1 555 0110",
-    email: "james.t@westwood.edu",
-    address: "33 Elm Way, Springfield",
-    parentName: "Sarah Thompson",
-    parentPhone: "+1 555 0111",
-    status: "Active",
-    joined: "2024-09-01",
-    avatar: "JT",
-    avatarBg: "bg-pink-500",
-  },
-  {
-    id: "S007",
-    name: "Layla Hassan",
-    grade: "SS 1",
-    gender: "Female",
-    dob: "2009-12-28",
-    phone: "+1 555 0112",
-    email: "layla.h@westwood.edu",
-    address: "21 Willow Dr, Springfield",
-    parentName: "Omar Hassan",
-    parentPhone: "+1 555 0113",
-    status: "Active",
-    joined: "2022-09-01",
-    avatar: "LH",
-    avatarBg: "bg-sky-500",
-  },
-  {
-    id: "S008",
-    name: "Noah Anderson",
-    grade: "JSS 2",
-    gender: "Male",
-    dob: "2011-04-07",
-    phone: "+1 555 0114",
-    email: "noah.a@westwood.edu",
-    address: "55 Aspen Court, Springfield",
-    parentName: "Claire Anderson",
-    parentPhone: "+1 555 0115",
-    status: "Active",
-    joined: "2023-09-01",
-    avatar: "NA",
-    avatarBg: "bg-indigo-500",
-  },
-];
-
-// Database of students for quick lookup by ID
-
-export const STUDENT_DB: Record<string, Student> = {
-  S001: {
-    id: "S001",
-    name: "Amelia Johnson",
-    initials: "AJ",
-    avatarColor: "bg-indigo-500",
-    grade: "SS2",
-    gender: "Female",
-    dob: "2009-03-15",
-    phone: "+1 555 0101",
-    email: "amelia.j@westwood.edu",
-    address: "42 Maple Ave, Springfield",
-    parentName: "Robert Johnson",
-    parentPhone: "+1 555 0100",
-    parentEmail: "r.johnson@email.com",
-    status: "Active",
-    joined: "2022-09-01",
-    nationality: "American",
-  },
-  S002: {
-    id: "S002",
-    name: "Marcus Williams",
-    initials: "MW",
-    avatarColor: "bg-indigo-500",
-    grade: "SS1",
-    gender: "Male",
-    dob: "2011-07-22",
-    phone: "+1 555 0102",
-    email: "marcus.w@westwood.edu",
-    address: "88 Oak Street, Springfield",
-    parentName: "Denise Williams",
-    parentPhone: "+1 555 0103",
-    parentEmail: "d.williams@email.com",
-    status: "Active",
-    joined: "2023-09-01",
-    nationality: "American",
-  },
-  S003: {
-    id: "S003",
-    name: "Sofia Rodriguez",
-    initials: "SR",
-    avatarColor: "bg-amber-500",
-    grade: "SS2",
-    gender: "Female",
-    dob: "2008-11-04",
-    phone: "+1 555 0104",
-    email: "sofia.r@westwood.edu",
-    address: "15 Birch Lane, Springfield",
-    parentName: "Carlos Rodriguez",
-    parentPhone: "+1 555 0105",
-    parentEmail: "c.rodriguez@email.com",
-    status: "Active",
-    joined: "2021-09-01",
-    nationality: "Hispanic",
-  },
-  S004: {
-    id: "S004",
-    name: "Ethan Chen",
-    initials: "EC",
-    avatarColor: "bg-red-500",
-    grade: "SS1",
-    gender: "Male",
-    dob: "2010-05-30",
-    phone: "+1 555 0106",
-    email: "ethan.c@westwood.edu",
-    address: "7 Pine Road, Springfield",
-    parentName: "Li Chen",
-    parentPhone: "+1 555 0107",
-    parentEmail: "li.chen@email.com",
-    status: "Inactive",
-    joined: "2022-09-01",
-    nationality: "Chinese-American",
-  },
-  S005: {
-    id: "S005",
-    name: "Priya Patel",
-    initials: "PP",
-    avatarColor: "bg-violet-500",
-    grade: "SS3",
-    gender: "Female",
-    dob: "2007-08-19",
-    phone: "+1 555 0108",
-    email: "priya.p@westwood.edu",
-    address: "99 Cedar Blvd, Springfield",
-    parentName: "Raj Patel",
-    parentPhone: "+1 555 0109",
-    parentEmail: "raj.patel@email.com",
-    status: "Active",
-    joined: "2020-09-01",
-    nationality: "Indian-American",
-  },
-  S006: {
-    id: "S006",
-    name: "James Thompson",
-    initials: "JT",
-    avatarColor: "bg-pink-500",
-    grade: "JSS3",
-    gender: "Male",
-    dob: "2012-02-11",
-    phone: "+1 555 0110",
-    email: "james.t@westwood.edu",
-    address: "33 Elm Way, Springfield",
-    parentName: "Sarah Thompson",
-    parentPhone: "+1 555 0111",
-    parentEmail: "s.thompson@email.com",
-    status: "Active",
-    joined: "2024-09-01",
-    nationality: "American",
-  },
-  S007: {
-    id: "S007",
-    name: "Layla Hassan",
-    initials: "LH",
-    avatarColor: "bg-sky-500",
-    grade: "SS2",
-    gender: "Female",
-    dob: "2009-12-28",
-    phone: "+1 555 0112",
-    email: "layla.h@westwood.edu",
-    address: "21 Willow Dr, Springfield",
-    parentName: "Omar Hassan",
-    parentPhone: "+1 555 0113",
-    parentEmail: "o.hassan@email.com",
-    status: "Active",
-    joined: "2022-09-01",
-    nationality: "Lebanese-American",
-  },
-  S008: {
-    id: "S008",
-    name: "Noah Anderson",
-    initials: "NA",
-    avatarColor: "bg-indigo-500",
-    grade: "JSS3",
-    gender: "Male",
-    dob: "2011-04-07",
-    phone: "+1 555 0114",
-    email: "noah.a@westwood.edu",
-    address: "55 Aspen Court, Springfield",
-    parentName: "Claire Anderson",
-    parentPhone: "+1 555 0115",
-    parentEmail: "c.anderson@email.com",
-    status: "Active",
-    joined: "2023-09-01",
-    nationality: "American",
-  },
-  S009: {
-    id: "S009",
-    name: "Femi Adeyemi",
-    initials: "FA",
-    avatarColor: "bg-indigo-500",
-    grade: "SS2",
-    gender: "Male",
-    dob: "2009-06-14",
-    phone: "+1 555 0120",
-    email: "femi.a@westwood.edu",
-    address: "11 Cedar Close, Springfield",
-    parentName: "Tunde Adeyemi",
-    parentPhone: "+1 555 0121",
-    parentEmail: "t.adeyemi@email.com",
-    status: "Active",
-    joined: "2022-09-01",
-    nationality: "Nigerian-American",
-  },
-  S010: {
-    id: "S010",
-    name: "Chidi Okafor",
-    initials: "CO",
-    avatarColor: "bg-violet-500",
-    grade: "SS2",
-    gender: "Male",
-    dob: "2009-02-22",
-    phone: "+1 555 0122",
-    email: "chidi.o@westwood.edu",
-    address: "3 Palm Drive, Springfield",
-    parentName: "Ngozi Okafor",
-    parentPhone: "+1 555 0123",
-    parentEmail: "n.okafor@email.com",
-    status: "Active",
-    joined: "2022-09-01",
-    nationality: "Nigerian-American",
-  },
-};
-
-//  sessions
 
 export const SESSIONS = [
   "2025-26 Term 3",
@@ -346,7 +27,10 @@ export const SESSIONS = [
   "2024-25 Term 1",
 ];
 
-//  result data
+export const allStudents: Student[] = [];
+export const STUDENT_DB: Record<string, Student> = {};
+
+// --- MOCK DATA GENERATION FOR TABS ---
 
 export const SUBJECTS_BY_GRADE: Record<string, string[]> = {
   SS3: [
@@ -403,8 +87,9 @@ export function seedRand(
 ): number {
   const str = `${seed}${session}${subject}`;
   let h = 0;
-  for (let i = 0; i < str.length; i++)
+  for (let i = 0; i < str.length; i++) {
     h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
   return Math.abs(h);
 }
 
@@ -413,8 +98,9 @@ export function generateResults(
   grade: string,
   session: string,
 ) {
-  const subjects = SUBJECTS_BY_GRADE[grade] ?? SUBJECTS_BY_GRADE.SS2;
-  const seed = parseInt(studentId.replace("S", ""), 10);
+  const cleanGrade = grade.replace(/[\s-]/g, "").toUpperCase();
+  const subjects = SUBJECTS_BY_GRADE[cleanGrade] ?? SUBJECTS_BY_GRADE.SS2;
+  const seed = parseInt(studentId.replace(/[^\d]/g, ""), 10) || 1;
   return subjects.map((subject) => {
     const r = (col: number) =>
       10 + (seedRand(seed + col, session, subject) % 11); // 10-20
@@ -462,17 +148,16 @@ export function getGradeColor(g: string) {
 }
 
 export function generateAttendance(studentId: string, session: string) {
-  const seed = parseInt(studentId.replace("S", ""), 10);
+  const seed = parseInt(studentId.replace(/[^\d]/g, ""), 10) || 1;
   const days: {
     date: string;
     week: number;
     dow: number;
     status: "P" | "A" | "L" | "H";
   }[] = [];
-  // Simulate 60 school days across ~12 weeks
-  const baseWeek = session.includes("T3")
+  const baseWeek = session.includes("Term 3")
     ? 20
-    : session.includes("T2")
+    : session.includes("Term 2")
       ? 6
       : 32;
   for (let w = 0; w < 12; w++) {

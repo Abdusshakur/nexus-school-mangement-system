@@ -45,8 +45,8 @@ export function ProfileTab({ s }: { s: Student }) {
             { icon: Mail, label: s.email },
             { icon: MapPin, label: s.address },
             { icon: Calendar, label: `DOB: ${s.dob}` },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-start gap-2.5">
+          ].map(({ icon: Icon, label }, idx) => (
+            <div key={idx} className="flex items-start gap-2.5">
               <Icon size={14} className="text-slate-400 mt-0.5" />
               <p className="text-sm leading-snug text-slate-500">{label}</p>
             </div>
@@ -88,7 +88,7 @@ export function ProfileTab({ s }: { s: Student }) {
               className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${s.avatarColor}`}
             >
               <span className="text-white font-semibold text-sm">
-                {s.parentName
+                {(s.parentName || "Parent Guardian")
                   .split(" ")
                   .map((n) => n[0])
                   .join("")}

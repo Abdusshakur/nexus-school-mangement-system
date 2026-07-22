@@ -1,11 +1,21 @@
 import { create } from "zustand";
-import { fetchParentsList, type ParentResponse } from "../api/parents";
+import {
+  fetchParentsList,
+  createParent,
+  linkParentToStudent,
+  type ParentResponse,
+  type ParentCreatePayload,
+  type RelationshipCreatePayload,
+  type RelationshipResponse,
+} from "../api/parents";
 
 interface ParentState {
   parents: ParentResponse[];
   loading: boolean;
   error: string | null;
   fetchParents: (force?: boolean) => Promise<ParentResponse[]>;
+  addParent: (payload: ParentCreatePayload) => Promise<ParentResponse>;
+  linkParent: (payload: RelationshipCreatePayload) => Promise<RelationshipResponse>;
 }
 
 export const useParentStore = create<ParentState>((set, get) => ({
@@ -22,8 +32,40 @@ export const useParentStore = create<ParentState>((set, get) => ({
       const data = await fetchParentsList();
       set({ parents: data, loading: false });
       return data;
-    } catch (err: any) {
-      const msg = err.message || "Failed to fetch parents list.";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to fetch parents list.";
+      set({ error: msg, loading: false });
+      throw err;
+    }
+  },
+
+  addParent: async (payload) => {
+    set({ loading: true, error: null });
+    try {
+      const newParent = await createParent(payload);
+      newParent.children = [];
+      set((state) => ({
+        parents: [newParent, ...state.parents],
+        loading: false,
+      }));
+      return newParent;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to create parent profile.";
+      set({ error: msg, loading: false });
+      throw err;
+    }
+  },
+
+  linkParent: async (payload) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await linkParentToStudent(payload);
+      // Fetch fresh parent-student list to update mapped children arrays in state
+      const data = await fetchParentsList();
+      set({ parents: data, loading: false });
+      return result;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to link parent to student.";
       set({ error: msg, loading: false });
       throw err;
     }

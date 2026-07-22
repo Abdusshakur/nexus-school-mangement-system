@@ -91,30 +91,6 @@ const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
   { day: "Fri", date: "2026-07-18", present: 220, absent: 15, late: 3 },
 ];
 
-const latestAnnouncements = [
-  {
-    id: "A1",
-    title: "Science Fair Registration Open",
-    date: "Jun 14, 2026",
-    dotClass: "bg-rose-500",
-    audience: "All Students",
-  },
-  {
-    id: "A2",
-    title: "Parent-Teacher Meeting — June 20",
-    date: "Jun 13, 2026",
-    dotClass: "bg-amber-500",
-    audience: "All Parents",
-  },
-  {
-    id: "A3",
-    title: "Library Hours Extended for Finals",
-    date: "Jun 12, 2026",
-    dotClass: "bg-indigo-500",
-    audience: "All",
-  },
-];
-
 const quickActions = [
   {
     label: "Mark Today's Attendance",
@@ -146,10 +122,13 @@ const quickActions = [
   },
 ];
 
+import { useAnnouncementStore } from "../../../store/announcement.store";
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashboardSummaryResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const { announcements, fetchAnnouncements } = useAnnouncementStore();
 
   const currentDateString = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -166,21 +145,23 @@ export function DashboardPage() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [data, studentsData, trendsData] = await Promise.all([
-          getDashboardSummary(),
-          fetchStudentsList(),
-          fetchAttendanceTrends().catch(() => []),
+        await Promise.all([
+          getDashboardSummary().then(setMetrics),
+          fetchStudentsList().then((studentsData) => {
+            const sorted = [...studentsData]
+              .sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              )
+              .slice(0, 5);
+            setRecentStudents(sorted);
+          }),
+          fetchAttendanceTrends()
+            .then(setAttendanceTrends)
+            .catch(() => []),
+          fetchAnnouncements(),
         ]);
-        setMetrics(data);
-        if (trendsData) setAttendanceTrends(trendsData);
-        const sorted = [...studentsData]
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime(),
-          )
-          .slice(0, 5);
-        setRecentStudents(sorted);
       } catch (err: unknown) {
         if (err instanceof Error) {
           toast.error(err.message);
@@ -194,7 +175,17 @@ export function DashboardPage() {
       }
     };
     loadDashboardData();
-  }, [navigate]);
+  }, [navigate, fetchAnnouncements]);
+
+  const dashboardAnnouncements = announcements
+    .slice(0, 3)
+    .map((ann) => ({
+      id: ann.id,
+      title: ann.title,
+      date: ann.date,
+      audience: ann.target,
+      dotClass: "bg-indigo-500",
+    }));
 
   if (loading) {
     return (
@@ -495,30 +486,36 @@ export function DashboardPage() {
             </Link>
           </div>
           <div>
-            {latestAnnouncements.map((ann) => (
-              <Link
-                key={ann.id}
-                to="#"
-                className="block px-5 py-4 transition-colors hover:bg-slate-50 border-t border-slate-100 first:border-t-0"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${ann.dotClass}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-snug text-slate-900">
-                      {ann.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock size={11} className="text-slate-400" />
-                      <p className="text-xs text-slate-400">{ann.date}</p>
-                      <span className="text-xs text-slate-400">·</span>
-                      <p className="text-xs text-slate-400">{ann.audience}</p>
+            {dashboardAnnouncements.length === 0 ? (
+              <div className="px-5 py-8 text-center text-slate-400 text-sm">
+                No announcements posted yet.
+              </div>
+            ) : (
+              dashboardAnnouncements.map((ann) => (
+                <Link
+                  key={ann.id}
+                  to={ROUTES.ADMIN.ANNOUNCEMENT_DETAIL(ann.id)}
+                  className="block px-5 py-4 transition-colors hover:bg-slate-50 border-t border-slate-100 first:border-t-0"
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${ann.dotClass}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-snug text-slate-900">
+                        {ann.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock size={11} className="text-slate-400" />
+                        <p className="text-xs text-slate-400">{ann.date}</p>
+                        <span className="text-xs text-slate-400">·</span>
+                        <p className="text-xs text-slate-400">{ann.audience}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </div>
