@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from enum import Enum
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -40,7 +40,7 @@ class StudentProfile(SQLModel, table=True):
     last_name: str = Field(index=True)  # Added index for faster search operations!
     gender: str                         # e.g., "MALE", "FEMALE"
     address: str
-    date_of_birth: datetime
+    date_of_birth: date
     phone_number: Optional[str] = Field(default=None)
     
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
