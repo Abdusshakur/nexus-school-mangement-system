@@ -2,31 +2,23 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
 import { Search, Phone, Mail, MapPin, ChevronRight, Users } from "lucide-react";
-import { fetchParentsList, type ParentResponse } from "../../../api/parents";
+import { useParentStore } from "../../../store/parent.store";
 
 export function ParentList() {
   const [search, setSearch] = useState("");
-  const [dbParents, setDbParents] = useState<ParentResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { parents: dbParents, loading, fetchParents } = useParentStore();
 
   useEffect(() => {
-    let isMounted = true;
-    fetchParentsList()
-      .then((data) => {
-        if (isMounted) setDbParents(data);
-      })
-      .catch((err) => console.error("Failed to load parents:", err))
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchParents().catch(() => {});
+  }, [fetchParents]);
 
   const listToRender = dbParents.map((p) => {
     const username = p.email.split("@")[0];
     const initials = username.substring(0, 2).toUpperCase();
+    const childrenNames = p.children && p.children.length > 0
+      ? p.children.map((c) => `${c.first_name} ${c.last_name}`)
+      : ["Student"];
+
     return {
       id: p.id,
       name: username,
@@ -36,7 +28,7 @@ export function ParentList() {
       address: "Westwood Campus",
       avatarColor: "bg-purple-500",
       avatar: initials,
-      children: ["Student"],
+      children: childrenNames,
     };
   });
 

@@ -1,5 +1,4 @@
-import { API_BASE, getAuthHeaders } from "./client";
-import { useAuthStore } from "../store/auth";
+import { apiFetch } from "./client";
 
 export interface StudentCreatePayload {
   email: string;
@@ -17,6 +16,12 @@ export interface StudentResponse {
   admission_number: string;
   class_name: string;
   created_at: string;
+  gender?: string;
+  address?: string;
+  phone_number?: string;
+  parent_name?: string;
+  parent_phone?: string;
+  parent_email?: string;
 }
 
 export interface PaginatedStudentsResponse {
@@ -28,26 +33,10 @@ export interface PaginatedStudentsResponse {
 export const createStudent = async (
   payload: StudentCreatePayload,
 ): Promise<StudentResponse> => {
-  const response = await fetch(`${API_BASE}/students`, {
+  return apiFetch("/students", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      useAuthStore.getState().logout();
-      throw new Error("Session expired or unauthorized. Please log in again.");
-    }
-    throw new Error(
-      (data as { detail?: string }).detail ??
-      "Failed to provision student profile.",
-    );
-  }
-
-  return data;
 };
 
 // GET: Fetch student profile from the db
@@ -56,26 +45,18 @@ export const fetchStudentsList = async (
   className?: string,
   name?: string,
 ): Promise<StudentResponse[]> => {
-  const url = new URL(`${API_BASE}/students`);
-  if (search) url.searchParams.append("search", search);
-  if (className && className !== "All")
-    url.searchParams.append("class", className);
-  if (name) url.searchParams.append("name", name);
+  let path = "/students";
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (className && className !== "All") params.append("class", className);
+  if (name) params.append("name", name);
 
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      useAuthStore.getState().logout();
-      throw new Error("Session expired or unauthorized. Please log in again.");
-    }
-    throw new Error("Could not find student profile.");
+  const query = params.toString();
+  if (query) {
+    path += `?${query}`;
   }
 
-  return response.json();
+  return apiFetch(path, { method: "GET" });
 };
 
 export function formatClassName(name?: string): string {

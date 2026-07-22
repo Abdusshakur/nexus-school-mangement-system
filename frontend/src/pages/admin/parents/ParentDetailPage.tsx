@@ -1,47 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
 import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
-import { fetchParentsList } from "../../../api/parents";
+import { useParentStore } from "../../../store/parent.store";
 
 export function ParentDetail() {
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [parent, setDbParent] = useState<{
-    id: string;
-    name: string;
-    occupation: string;
-    email: string;
-    phone: string;
-    address: string;
-    avatarColor: string;
-    avatar: string;
-    children: string[];
-  } | null>(null);
+  const { parents: dbParents, loading, fetchParents } = useParentStore();
 
   useEffect(() => {
-    fetchParentsList()
-      .then((data) => {
-        const found = data.find((p) => p.id === id);
-        if (found) {
-          const username = found.email.split("@")[0];
-          const initials = username.substring(0, 2).toUpperCase();
-          setDbParent({
-            id: found.id,
-            name: username,
-            occupation: "Parent / Guardian",
-            email: found.email,
-            phone: found.phone_number,
-            address: "Westwood Campus",
-            avatarColor: "bg-purple-500",
-            avatar: initials,
-            children: ["Student"],
-          });
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
+    fetchParents().catch(() => {});
+  }, [id, fetchParents]);
+
+  const found = dbParents.find((p) => p.id === id);
+
+  const parent = found
+    ? {
+        id: found.id,
+        name: found.email.split("@")[0],
+        occupation: "Parent / Guardian",
+        email: found.email,
+        phone: found.phone_number,
+        address: "Westwood Campus",
+        avatarColor: "bg-purple-500",
+        avatar: found.email.split("@")[0].substring(0, 2).toUpperCase(),
+        children:
+          found.children && found.children.length > 0
+            ? found.children.map((c) => ({
+                id: c.id,
+                name: `${c.first_name} ${c.last_name}`,
+                class_name: c.class_name,
+              }))
+            : [],
+      }
+    : null;
 
   if (loading) {
     return (
@@ -126,19 +118,19 @@ export function ParentDetail() {
                   className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl border border-slate-100"
                 >
                   <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-xs">
-                    {child
+                    {child.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">{child}</p>
+                    <p className="text-sm font-bold text-slate-800">{child.name}</p>
                     <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                      SS 1 · Active Student
+                      {child.class_name} · Active Student
                     </p>
                   </div>
                   <Link
-                    to="/students/S001"
+                    to={ROUTES.ADMIN.STUDENT_DETAIL(child.id)}
                     className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-0.5"
                   >
                     Profile <ChevronRight size={14} />

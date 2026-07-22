@@ -1,5 +1,11 @@
-import { API_BASE, getAuthHeaders } from "./client";
-import { useAuthStore } from "../store/auth";
+import { apiFetch } from "./client";
+
+export interface ParentChild {
+  id: string;
+  first_name: string;
+  last_name: string;
+  class_name: string;
+}
 
 export interface ParentResponse {
   id: string;
@@ -7,21 +13,9 @@ export interface ParentResponse {
   email: string;
   phone_number: string;
   created_at: string;
+  children?: ParentChild[];
 }
 
 export const fetchParentsList = async (): Promise<ParentResponse[]> => {
-  const response = await fetch(`${API_BASE}/parents`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      useAuthStore.getState().logout();
-      throw new Error("Session expired or unauthorized. Please log in again.");
-    }
-    throw new Error("Failed to fetch parents list.");
-  }
-
-  return response.json();
+  return apiFetch("/parents", { method: "GET" });
 };
