@@ -1,28 +1,36 @@
-import { Phone, Mail, MapPin, Calendar, CheckCircle, XCircle, Award } from "lucide-react";
-import { STUDENT_DB } from "../data";
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  CheckCircle,
+  XCircle,
 
-// ─── Tab: Profile ─────────────────────────────────────────────────────────────
+} from "lucide-react";
+import { type Student } from "../data";
 
-export function ProfileTab({ s }: { s: (typeof STUDENT_DB)[string] }) {
+export function ProfileTab({ s }: { s: Student }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       {/* Left: avatar + quick stats */}
       <div className="bg-white rounded-xl p-6 text-center border border-slate-200">
         <div
-          className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${s.avatarColor}`}
+          className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${s.avatarColor || s.avatarBg || "bg-indigo-500"
+            }`}
         >
-          <span className="text-white font-bold text-2xl">{s.initials}</span>
+          <span className="text-white font-bold text-2xl">
+            {s.initials || s.avatar}
+          </span>
         </div>
         <p className="font-bold text-slate-900 text-lg">{s.name}</p>
         <p className="text-sm mt-0.5 text-slate-500">
           {s.grade} · {s.gender}
         </p>
         <span
-          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium mt-2 ${
-            s.status === "Active"
+          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium mt-2 ${s.status === "Active"
               ? "bg-indigo-100 text-indigo-800"
               : "bg-red-100 text-red-800"
-          }`}
+            }`}
         >
           {s.status === "Active" ? (
             <CheckCircle size={12} />
@@ -37,9 +45,8 @@ export function ProfileTab({ s }: { s: (typeof STUDENT_DB)[string] }) {
             { icon: Mail, label: s.email },
             { icon: MapPin, label: s.address },
             { icon: Calendar, label: `DOB: ${s.dob}` },
-            { icon: Award, label: `Blood Group: ${s.bloodGroup}` },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-start gap-2.5">
+          ].map(({ icon: Icon, label }, idx) => (
+            <div key={idx} className="flex items-start gap-2.5">
               <Icon size={14} className="text-slate-400 mt-0.5" />
               <p className="text-sm leading-snug text-slate-500">{label}</p>
             </div>
@@ -58,7 +65,7 @@ export function ProfileTab({ s }: { s: (typeof STUDENT_DB)[string] }) {
             {[
               ["Student ID", s.id],
               ["Class / Grade", s.grade],
-              ["Nationality", s.nationality],
+              // ["Nationality", s.nationality],   "Part of backlog"
               ["Year Enrolled", s.joined],
             ].map(([k, v]) => (
               <div key={k}>
@@ -81,7 +88,7 @@ export function ProfileTab({ s }: { s: (typeof STUDENT_DB)[string] }) {
               className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${s.avatarColor}`}
             >
               <span className="text-white font-semibold text-sm">
-                {s.parentName
+                {(s.parentName || "Parent Guardian")
                   .split(" ")
                   .map((n) => n[0])
                   .join("")}

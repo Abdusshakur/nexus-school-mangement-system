@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Input } from "../../../components/dashboard/Input";
 import { useTeacherStore } from "../../../store/teacher.store";
-import { AddTeacherWizard } from "./AddTeacher";
+import { AddTeacherModal } from "./AddTeacher";
 
 export function TeachersPage() {
   const [search, setSearch] = useState("");
@@ -46,7 +46,7 @@ export function TeachersPage() {
       </header>
 
       <main className="flex-1 py-4 space-y-6 max-w-full w-full ">
-        {/* Filters */}
+        {/* Filters Option */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -131,7 +131,7 @@ export function TeachersPage() {
           ))}
         </div>
       </main>
-      {showAdd && <AddTeacherWizard onClose={() => setShowAdd(false)} />}
+      {showAdd && <AddTeacherModal onClose={() => setShowAdd(false)} />}
     </div>
   );
 }

@@ -192,13 +192,13 @@ export function ClassSelector({ selected, onToggle }: ClassSelectorProps) {
   );
 }
 
-interface AddTeacherWizardProps {
+interface AddTeacherModalProps {
   onClose: () => void;
 }
 
 type AssignStep = "info" | "assign" | "confirm";
 
-export function AddTeacherWizard({ onClose }: AddTeacherWizardProps) {
+export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
   const { addTeacher } = useTeacherStore();
   const [step, setStep] = useState<AssignStep>("info");
   const [created, setCreated] = useState<Teacher | null>(null);
@@ -208,7 +208,7 @@ export function AddTeacherWizard({ onClose }: AddTeacherWizardProps) {
     email: "",
     phone: "",
     gender: "Male",
-    qualification: "B.Sc. + PGDE",
+    qualification: "B.Sc.",
     department: "Sciences",
     address: "",
     classes: [] as string[],

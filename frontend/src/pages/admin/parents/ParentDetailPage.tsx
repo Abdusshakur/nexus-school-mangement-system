@@ -1,11 +1,49 @@
+import { useEffect } from "react";
 import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
 import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
-import { parents } from "./data";
+import { useParentStore } from "../../../store/parent.store";
 
 export function ParentDetail() {
   const { id } = useParams();
-  const parent = parents.find((p) => p.id === id);
+  const { parents: dbParents, loading, fetchParents } = useParentStore();
+
+  useEffect(() => {
+    fetchParents().catch(() => {});
+  }, [id, fetchParents]);
+
+  const found = dbParents.find((p) => p.id === id);
+
+  const parent = found
+    ? {
+        id: found.id,
+        name: found.email.split("@")[0],
+        occupation: "Parent / Guardian",
+        email: found.email,
+        phone: found.phone_number,
+        address: "Westwood Campus",
+        avatarColor: "bg-purple-500",
+        avatar: found.email.split("@")[0].substring(0, 2).toUpperCase(),
+        children:
+          found.children && found.children.length > 0
+            ? found.children.map((c) => ({
+                id: c.id,
+                name: `${c.first_name} ${c.last_name}`,
+                class_name: c.class_name,
+              }))
+            : [],
+      }
+    : null;
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24 text-slate-400">
+        <p className="text-sm font-medium animate-pulse">
+          Loading parent record...
+        </p>
+      </div>
+    );
+  }
 
   if (!parent) {
     return (
@@ -22,8 +60,8 @@ export function ParentDetail() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex items-center gap-4">
+    <div className="flex-1 flex flex-col min-w-0 ">
+      <header className=" border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex items-center gap-4">
         <Link
           to={ROUTES.ADMIN.PARENTS}
           className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
@@ -34,14 +72,12 @@ export function ParentDetail() {
           <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
             {parent.name}
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {parent.id} · {parent.occupation}
-          </p>
+          <p className="text-slate-500 text-sm mt-0.5">{parent.occupation}</p>
         </div>
       </header>
 
-      <main className="flex-1 p-8 max-w-5xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center shadow-sm h-fit">
+      <main className="flex-1 p-8 max-w-5xl w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className=" rounded-2xl bg-white border border-slate-200 p-6 text-center shadow-sm h-fit">
           <div
             className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md"
             style={{ background: parent.avatarColor }}
@@ -82,19 +118,19 @@ export function ParentDetail() {
                   className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl border border-slate-100"
                 >
                   <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-xs">
-                    {child
+                    {child.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">{child}</p>
+                    <p className="text-sm font-bold text-slate-800">{child.name}</p>
                     <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                      Grade 10 · Active Student
+                      {child.class_name} · Active Student
                     </p>
                   </div>
                   <Link
-                    to="/students/S001"
+                    to={ROUTES.ADMIN.STUDENT_DETAIL(child.id)}
                     className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-0.5"
                   >
                     Profile <ChevronRight size={14} />

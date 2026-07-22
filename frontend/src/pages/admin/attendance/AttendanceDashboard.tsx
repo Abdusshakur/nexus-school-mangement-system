@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ROUTES } from "../../../config/routes";
 import { Link } from "react-router-dom";
 import { CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
@@ -10,9 +11,26 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { weeklyData } from "./data";
+import {
+  fetchAttendanceTrends,
+  type DailyAttendance,
+} from "../../../api/dashboard";
+
+const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
+  { day: "Mon", date: "2026-07-14", present: 210, absent: 15, late: 5 },
+  { day: "Tue", date: "2026-07-15", present: 225, absent: 10, late: 2 },
+  { day: "Wed", date: "2026-07-16", present: 205, absent: 20, late: 8 },
+  { day: "Thu", date: "2026-07-17", present: 230, absent: 8, late: 4 },
+  { day: "Fri", date: "2026-07-18", present: 220, absent: 15, late: 3 },
+];
 
 export function AttendanceDashboard() {
+  const [trendsData, setTrendsData] = useState<DailyAttendance[]>([]);
+
+  useEffect(() => {
+    fetchAttendanceTrends().then(setTrendsData).catch(console.error);
+  }, []);
+
   const currentDateString = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     year: "numeric",
@@ -110,12 +128,12 @@ export function AttendanceDashboard() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={weeklyData}
+                data={trendsData.length > 0 ? trendsData : MOCK_ATTENDANCE_TRENDS}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis
-                  dataKey="week"
+                  dataKey="day"
                   tick={{ fill: "#94A3B8", fontSize: 12, fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
@@ -169,12 +187,12 @@ export function AttendanceDashboard() {
           </div>
           <div className="space-y-4">
             {[
-              { grade: "Grade 7", total: 32, present: 29, rate: 91 },
-              { grade: "Grade 8", total: 38, present: 33, rate: 87 },
-              { grade: "Grade 9", total: 41, present: 37, rate: 90 },
-              { grade: "Grade 10", total: 45, present: 40, rate: 89 },
-              { grade: "Grade 11", total: 50, present: 43, rate: 86 },
-              { grade: "Grade 12", total: 44, present: 38, rate: 86 },
+              { grade: "JSS 1", total: 32, present: 29, rate: 91 },
+              { grade: "JSS 2", total: 38, present: 33, rate: 87 },
+              { grade: "JSS 3", total: 41, present: 37, rate: 90 },
+              { grade: "SS 1", total: 45, present: 40, rate: 89 },
+              { grade: "SS 2", total: 50, present: 43, rate: 86 },
+              { grade: "SS 3", total: 44, present: 38, rate: 86 },
             ].map((g) => (
               <div
                 key={g.grade}
@@ -185,13 +203,12 @@ export function AttendanceDashboard() {
                 </div>
                 <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      g.rate >= 90
+                    className={`h-full rounded-full transition-all duration-300 ${g.rate >= 90
                         ? "bg-indigo-500"
                         : g.rate >= 85
                           ? "bg-indigo-500"
                           : "bg-amber-500"
-                    }`}
+                      }`}
                     style={{
                       width: `${g.rate}%`,
                     }}

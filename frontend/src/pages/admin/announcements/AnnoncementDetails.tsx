@@ -1,14 +1,23 @@
 import { ROUTES } from "../../../config/routes";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, Clock, Users, Megaphone } from "lucide-react";
-import { announcements, priorityConfig } from "./data";
+import { priorityConfig } from "./data";
+import { useAnnouncementStore } from "../../../store/announcement.store";
+import { useEffect } from "react";
 
 export function AnnouncementDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const ann = announcements.find((a) => a.id === id);
+  const { announcements, fetchAnnouncements, deleteAnnouncement } =
+    useAnnouncementStore();
 
-  if (!ann) {
+  useEffect(() => {
+    fetchAnnouncements().catch(console.error);
+  }, [fetchAnnouncements]);
+
+  const found = announcements.find((a) => a.id === id);
+
+  if (!found) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 text-slate-400">
         <p className="mb-4 font-semibold text-base">Announcement not found.</p>
@@ -22,11 +31,19 @@ export function AnnouncementDetail() {
     );
   }
 
+  const ann = {
+    id: found.id,
+    title: found.title,
+    body: found.content,
+    date: found.date,
+    priority: "medium",
+    audience: found.target,
+    author: found.author,
+    category: "General",
+  };
+
   const handleDelete = () => {
-    const idx = announcements.findIndex((a) => a.id === id);
-    if (idx > -1) {
-      announcements.splice(idx, 1);
-    }
+    deleteAnnouncement(ann.id);
     navigate(ROUTES.ADMIN.ANNOUNCEMENTS);
   };
 
@@ -35,8 +52,8 @@ export function AnnouncementDetail() {
     priorityConfig.medium;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center gap-4">
+    <div className="flex-1 flex flex-col min-w-0 ">
+      <header className=" border-b border-slate-200 px-8 py-5 flex items-center gap-4">
         <Link
           to={ROUTES.ADMIN.ANNOUNCEMENTS}
           className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
@@ -47,9 +64,7 @@ export function AnnouncementDetail() {
           <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
             Announcement Details
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Viewing bulletin {ann.id}
-          </p>
+          <p className="text-slate-500 text-sm mt-0.5">Viewing bulletin</p>
         </div>
         <button
           onClick={handleDelete}
@@ -60,7 +75,7 @@ export function AnnouncementDetail() {
         </button>
       </header>
 
-      <main className="flex-1 p-8 max-w-3xl w-full mx-auto">
+      <main className="flex-1 p-8 max-w-3xl w-full ">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
             <div
@@ -106,7 +121,7 @@ export function AnnouncementDetail() {
                     {label}
                   </p>
                 </div>
-                <p className="text-sm font-extrabold text-slate-800 mt-1">
+                <p className="text-xs font-semibold text-slate-800 mt-1">
                   {value}
                 </p>
               </div>

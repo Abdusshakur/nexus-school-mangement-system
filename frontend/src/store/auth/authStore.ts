@@ -29,6 +29,8 @@ export const useAuthStore = create<AuthStore>()(
           const authUser: AuthUser = {
             id: data.user.id,
             role: data.user.role as UserRole,
+            first_name: data.user.first_name,
+            last_name: data.user.last_name,
           };
           set({
             user: authUser,

@@ -1,7 +1,7 @@
 import { Download } from "lucide-react";
 import { generateResults, getGradeColor } from "../data";
 
-// ─── Tab: Results ─────────────────────────────────────────────────────────────
+//  Result tab component for displaying student results in a table format with summary statistics.
 
 export function ResultsTab({
   studentId,
@@ -149,7 +149,7 @@ export function ResultsTab({
                 );
               })}
             </tbody>
-            {/* Total row */}
+            {/* Total  */}
             <tfoot>
               <tr className="bg-indigo-50 border-t-2 border-indigo-200">
                 <td className="px-4 py-3 font-bold text-xs uppercase tracking-wide text-slate-900">

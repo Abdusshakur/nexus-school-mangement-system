@@ -2,10 +2,11 @@ import { ROUTES } from "../../../config/routes";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
-import { announcements } from "./data";
+import { useAnnouncementStore } from "../../../store/announcement.store";
 
 export function CreateAnnouncement() {
   const navigate = useNavigate();
+  const { postAnnouncement } = useAnnouncementStore();
   const [form, setForm] = useState({
     title: "",
     body: "",
@@ -18,24 +19,20 @@ export function CreateAnnouncement() {
   const set = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      // Simulate adding
-      announcements.unshift({
-        id: "A" + (announcements.length + 1),
+    try {
+      await postAnnouncement({
         title: form.title,
-        body: form.body,
-        date: "Jun 15, 2026",
-        priority: form.priority,
-        audience: form.audience || "All",
-        author: "Sarah Admin",
-        category: form.category || "General",
+        content: form.body,
       });
       navigate(ROUTES.ADMIN.ANNOUNCEMENTS);
-    }, 800);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -104,12 +101,12 @@ export function CreateAnnouncement() {
                     "All Students",
                     "All Parents",
                     "All Teachers",
-                    "Grade 7",
-                    "Grade 8",
-                    "Grade 9",
-                    "Grade 10",
-                    "Grade 11",
-                    "Grade 12",
+                    "JSS 1",
+                    "JSS 2",
+                    "JSS 3",
+                    "SS 1",
+                    "SS 2",
+                    "SS 3",
                   ].map((a) => (
                     <option key={a} value={a}>
                       {a}

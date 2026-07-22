@@ -65,12 +65,12 @@ export function AttendanceReport() {
             >
               {[
                 "All",
-                "Grade 7",
-                "Grade 8",
-                "Grade 9",
-                "Grade 10",
-                "Grade 11",
-                "Grade 12",
+                "JSS 1",
+                "JSS 2",
+                "JSS 3",
+                "SS 1",
+                "SS 2",
+                "SS 3",
               ].map((g) => (
                 <option key={g} value={g}>
                   {g}

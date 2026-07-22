@@ -1,7 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { SUBJECTS_BY_GRADE, COURSE_TEACHERS } from "../data";
 
-// ─── Tab: Courses ─────────────────────────────────────────────────────────────
+// Courses  Tab component for displaying the list of courses a student is enrolled in, along with their respective teachers.
 
 export function CoursesTab({ grade }: { grade: string }) {
   const subjects = SUBJECTS_BY_GRADE[grade] ?? SUBJECTS_BY_GRADE.SS2;

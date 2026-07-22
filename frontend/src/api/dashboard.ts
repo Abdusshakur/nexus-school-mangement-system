@@ -1,5 +1,4 @@
-// 1. Get whatever string the server environment has set
-import { API_BASE, getAuthHeaders } from "./client";
+import { apiFetch } from "./client";
 
 export interface AttendanceTodaySummary {
   present: number;
@@ -15,21 +14,18 @@ export interface DashboardSummaryResponse {
   attendance_today: AttendanceTodaySummary;
 }
 
-export const getDashboardSummary =
-  async (): Promise<DashboardSummaryResponse> => {
-    const response = await fetch(`${API_BASE}/dashboard/summary`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
+export interface DailyAttendance {
+  day: string;
+  date: string;
+  present: number;
+  absent: number;
+  late: number;
+}
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = "/login";
-        throw new Error("Session expired. Please sign in again.");
-      }
-      throw new Error("Failed to load school dashboard .");
-    }
+export const getDashboardSummary = async (): Promise<DashboardSummaryResponse> => {
+  return apiFetch("/dashboard/summary", { method: "GET" });
+};
 
-    return response.json();
-  };
+export const fetchAttendanceTrends = async (): Promise<DailyAttendance[]> => {
+  return apiFetch("/dashboard/attendance-trends", { method: "GET" });
+};
