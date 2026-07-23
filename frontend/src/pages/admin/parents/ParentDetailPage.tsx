@@ -3,6 +3,8 @@ import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
 import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
+import { formatParentName, formatParentInitials } from "./ParentPage";
+
 
 export function ParentDetail() {
   const { id } = useParams();
@@ -14,21 +16,15 @@ export function ParentDetail() {
 
   const found = dbParents.find((p) => p.id === id);
 
-  const parentName = found
-    ? found.first_name && found.last_name
-      ? `${found.first_name} ${found.last_name}`
-      : found.email.split("@")[0]
-    : "";
-
-  const initials = found
-    ? found.first_name && found.last_name
-      ? `${found.first_name[0] || ""}${found.last_name[0] || ""}`.toUpperCase()
-      : parentName.substring(0, 2).toUpperCase()
-    : "PG";
+  const parentName = found ? formatParentName(found.first_name, found.last_name, found.email) : "";
+  const initials = found ? formatParentInitials(parentName) : "PG";
 
   const childrenList = found
     ? (found.children && found.children.length > 0 ? found.children : found.students || [])
     : [];
+
+  const isInvalidPhone = found && (!found.phone_number || found.phone_number.toLowerCase().startsWith("string") || found.phone_number.toLowerCase() === "null");
+  const phoneDisplay = found ? (isInvalidPhone ? "No phone registered" : found.phone_number) : "";
 
   const parent = found
     ? {
@@ -36,17 +32,22 @@ export function ParentDetail() {
         name: parentName,
         occupation: "Parent / Guardian",
         email: found.email,
-        phone: found.phone_number,
+        phone: phoneDisplay,
         address: "Westwood Campus",
         avatarColor: "bg-purple-500",
         avatar: initials,
-        children: childrenList.map((c) => ({
-          id: c.id,
-          name: `${c.first_name} ${c.last_name}`,
-          class_name: c.class_name,
-        })),
+        children: childrenList.map((c) => {
+          const childName = formatParentName(c.first_name, c.last_name, "");
+          return {
+            id: c.id,
+            admission_number: c.admission_number,
+            name: childName === "Parent / Guardian" ? "Student Profile" : childName,
+            class_name: c.class_name,
+          };
+        }),
       }
     : null;
+
 
 
   if (loading) {
@@ -144,11 +145,12 @@ export function ParentDetail() {
                     </p>
                   </div>
                   <Link
-                    to={ROUTES.ADMIN.STUDENT_DETAIL(child.id)}
+                    to={ROUTES.ADMIN.STUDENT_DETAIL(child.admission_number || child.id)}
                     className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-0.5"
                   >
                     Profile <ChevronRight size={14} />
                   </Link>
+
                 </div>
               ))}
             </div>
