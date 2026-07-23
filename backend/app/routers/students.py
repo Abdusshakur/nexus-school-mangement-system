@@ -158,7 +158,8 @@ def create_student_with_parent_onboarding(
         date_of_birth=student_profile.date_of_birth,
         phone_number=student_profile.phone_number,
         address=student_profile.address,
-        created_at=student_profile.created_at
+        created_at=student_profile.created_at,
+        parents=linked_parents
     )
 
 
@@ -211,30 +212,37 @@ def list_students(
             date_of_birth=profile.date_of_birth,
             phone_number=profile.phone_number,
             address=profile.address,
-            created_at=profile.created_at
+            created_at=profile.created_at,
+            parents=fetch_linked_parents(profile.id, session)
         )
         for profile, user in results
     ]
 
 # ------------------------------------------------------------------
-# GET: View Single Student by Admission Number
+# GET: View Single Student by Admission Number or ID
 # ------------------------------------------------------------------
 @router.get(
     "/{admission_number}", 
-    response_model=StudentResponse, 
+    response_model=StudentDetailResponse, 
     dependencies=[Depends(allow_staff_only)]
 )
 def get_student_by_admission_number(
     admission_number: str,
     session: Session = Depends(get_session)
 ):
-    """Fetch a single student's complete profile using their unique admission number."""
+    """Fetch a single student's complete profile using their unique admission number or UUID."""
     
-    # Query both StudentProfile and User to get all details (including email)
+    # 1. Query both StudentProfile and User (check admission_number or UUID)
+    try:
+        val_uuid = UUID(admission_number)
+        where_clause = or_(StudentProfile.admission_number == admission_number, StudentProfile.id == val_uuid, StudentProfile.user_id == val_uuid)
+    except ValueError:
+        where_clause = (StudentProfile.admission_number == admission_number)
+
     query = (
         select(StudentProfile, User)
         .join(User, StudentProfile.user_id == User.id)
-        .where(StudentProfile.admission_number == admission_number)
+        .where(where_clause)
     )
     result = session.exec(query).first()
     
@@ -286,32 +294,9 @@ def get_student_by_admission_number(
             detail=f"Student with admission number '{admission_number}' not found."
         )
         
-    profile, student_user = student_result
+    profile, student_user = result
+    linked_parents = fetch_linked_parents(profile.id, session)
     
-    # 2. Fetch Linked Parents & Parent's Email & Relationship Type
-    parent_query = (
-        select(ParentProfile, User.email, ParentStudentLink.relationship_type)
-        .join(ParentStudentLink, ParentStudentLink.parent_id == ParentProfile.id)
-        .join(User, User.id == ParentProfile.user_id)
-        .where(ParentStudentLink.student_id == profile.id)
-    )
-    parent_results = session.exec(parent_query).all()
-    
-    # 3. Format the parents list
-    linked_parents = []
-    for parent_profile, parent_email, rel_type in parent_results:
-        linked_parents.append(
-            LinkedParentResponse(
-                id=parent_profile.id,
-                first_name=parent_profile.first_name,
-                last_name=parent_profile.last_name,
-                phone_number=parent_profile.phone_number,
-                email=parent_email,
-                relationship_type=rel_type
-            )
-        )
-    
-    # 4. Return using the Detail schema
     return StudentDetailResponse( 
         id=profile.id,
         user_id=student_user.id,
@@ -363,6 +348,7 @@ def update_student_profile(
     
     # 4. Fetch the associated User to complete the StudentResponse payload
     user = session.get(User, profile.user_id)
+    linked_parents = fetch_linked_parents(profile.id, session)
     
     return StudentResponse(
         id=profile.id,
@@ -376,5 +362,6 @@ def update_student_profile(
         date_of_birth=profile.date_of_birth,
         phone_number=profile.phone_number,
         address=profile.address,
-        created_at=profile.created_at
+        created_at=profile.created_at,
+        parents=linked_parents
     )

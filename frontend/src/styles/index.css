@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@import "./fonts.css";
+
+@theme {
+  --color-dark-bg: #0f1117;
+
+  /* Fonts */
+
+  --font-inter: "Inter", sans-serif;
+}
+
+@utility body {
+  font-family: var(--font-inter);
+}
+
+body {
+  font-family: var(--font-inter);
+}
