@@ -6,7 +6,8 @@ from typing import List, Optional
 from uuid import UUID
 from backend.app.db.database import get_session
 from backend.app.models import User, UserRole, StudentProfile, ParentProfile, ParentStudentLink
-from backend.app.schemas.student import UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate, LinkedParentResponse
+from backend.app.schemas.student import (UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate, 
+                                        LinkedParentResponse, StudentDetailResponse)
 from backend.app.core.auth_utils import RoleChecker, hash_password
 
 router = APIRouter(
@@ -47,35 +48,40 @@ def generate_next_admission_number(session: Session) -> str:
     return f"{prefix}{next_sequence:04d}"
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=StudentResponse, dependencies=[Depends(allow_staff_only)])
+@router.post(
+    "/", 
+    status_code=status.HTTP_201_CREATED, 
+    response_model=StudentResponse, 
+    dependencies=[Depends(allow_staff_only)]
+)
 def create_student_with_parent_onboarding(
     request: UnifiedStudentOnboardingCreate, 
     session: Session = Depends(get_session)
 ):
-    """Transactionally onboarding a student, auto-assigning admission numbers, and processing parents."""
+    """Transactionally onboard a student, auto-assign admission numbers, and process 1 or 2 parents."""
     
     # 1. Ensure student email is unique
-    existing_student_user = session.query(User).filter(User.email == request.email).first()
+    existing_student_user = session.exec(select(User).where(User.email == request.email)).first()
     if existing_student_user:
         raise HTTPException(status_code=400, detail="Student email is already registered")
 
     try:
-        # 2. Safely generate a unique, locked sequential admission number
+        # 2. Safely generate admission number
         generated_admission_num = generate_next_admission_number(session)
 
         # 3. Create Student User Account
         student_user = User(
-            email=request.email,
+            email=str(request.email),
             password_hash=hash_password(request.password),
             role=UserRole.STUDENT
         )
         session.add(student_user)
-        session.flush() # Yields student_user.id UUID
+        session.flush()
 
         # 4. Create Student Profile details
         student_profile = StudentProfile(
             user_id=student_user.id,
-            admission_number=generated_admission_num, # Backend generated!
+            admission_number=generated_admission_num,
             first_name=request.first_name,
             last_name=request.last_name,
             gender=request.gender,
@@ -85,44 +91,50 @@ def create_student_with_parent_onboarding(
             class_name=request.class_name
         )
         session.add(student_profile)
-        session.flush() # Yields student_profile.id UUID
+        session.flush() 
 
-        # 5. Handle Parent Onboarding (Find or Create)
-        parent_user = session.query(User).filter(User.email == request.parent.email).first()
-        
-        if not parent_user:
-            # New parent! Set up credentials & profile
-            parent_user = User(
-                email=request.parent.email,
-                password_hash=hash_password("WelcomeNexus2026!"), # System default password
-                role=UserRole.PARENT
+        # 5. Handle Parents Array (Find or Create)
+        for parent_data in request.parents:
+            parent_user = session.exec(select(User).where(User.email == parent_data.email)).first()
+            
+            if not parent_user:
+                # New parent! Set up credentials & profile
+                parent_user = User(
+                    email=str(parent_data.email),
+                    password_hash=hash_password("WelcomeNexus2026!"), 
+                    role=UserRole.PARENT
+                )
+                session.add(parent_user)
+                session.flush()
+
+                parent_profile = ParentProfile(
+                    user_id=parent_user.id,
+                    first_name=parent_data.first_name,
+                    last_name=parent_data.last_name,
+                    phone_number=parent_data.phone_number
+                )
+                session.add(parent_profile)
+                session.flush()
+            else:
+                # Parent exists. Pull their profile ID (Sibling scenario!)
+                parent_profile = session.exec(select(ParentProfile).where(ParentProfile.user_id == parent_user.id)).first()
+                if not parent_profile:
+                    raise HTTPException(
+                        status_code=500, 
+                        detail=f"Parent credentials found for {parent_data.email}, but profile is corrupted."
+                    )
+
+            # 6. Map the Relationship Link with the new DB columns!
+            relationship = ParentStudentLink(
+                parent_id=parent_profile.id,
+                student_id=student_profile.id,
+                relationship_type=parent_data.relationship_type,
+                is_primary_contact=parent_data.is_primary_contact,
+                is_financial_sponsor=parent_data.is_financial_sponsor
             )
-            session.add(parent_user)
-            session.flush()
+            session.add(relationship)
 
-            parent_profile = ParentProfile(
-                user_id=parent_user.id,
-                first_name=request.parent.first_name,
-                last_name=request.parent.last_name,
-                phone_number=request.parent.phone_number
-            )
-            session.add(parent_profile)
-            session.flush()
-        else:
-            # Parent exists. Let's pull their profile ID
-            parent_profile = session.query(ParentProfile).filter(ParentProfile.user_id == parent_user.id).first()
-            if not parent_profile:
-                raise HTTPException(status_code=404, detail="Parent credentials found, but profile is missing.")
-
-        # 6. Map the Relationship Link instantly
-        relationship = ParentStudentLink(
-            parent_id=parent_profile.id,
-            student_id=student_profile.id,
-            relationship_type="GUARDIAN"
-        )
-        session.add(relationship)
-
-        # Commit everything to PostgreSQL atomically!
+        # 7. Commit everything to PostgreSQL atomically!
         session.commit()
         session.refresh(student_profile)
 
@@ -133,7 +145,7 @@ def create_student_with_parent_onboarding(
             detail=f"Unified Onboarding Failed: {str(err)}"
         )
 
-    # Return clean payload mapped cleanly to StudentResponse schema
+    # 8. Return cleanly
     return StudentResponse(
         id=student_profile.id,
         user_id=student_user.id,
@@ -204,8 +216,6 @@ def list_students(
         for profile, user in results
     ]
 
-from backend.app.schemas.student import StudentProfileUpdate # Import the new schema
-
 # ------------------------------------------------------------------
 # GET: View Single Student by Admission Number
 # ------------------------------------------------------------------
@@ -250,9 +260,6 @@ def get_student_by_admission_number(
         address=profile.address,
         created_at=profile.created_at
     )
-
-from backend.app.schemas.student import StudentDetailResponse # 👈 Import it
-from backend.app.models import ParentProfile, ParentStudentLink
 
 @router.get(
     "/{admission_number}", 
