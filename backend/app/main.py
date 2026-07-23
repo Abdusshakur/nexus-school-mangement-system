@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
 from backend.app.db.database import engine
 # Import your existing routers
-from backend.app.routers import auth, students, parents, relationships, attendance, announcements, dashboard
+from backend.app.routers import auth, students, parents, teachers, relationships, attendance, announcements, dashboard
 
 # Add these imports to backend/app/main.py
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,6 +44,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(students.router, prefix="/api/v1")
 app.include_router(parents.router, prefix="/api/v1")
+app.include_router(teachers.router, prefix="/api/v1")
 app.include_router(relationships.router, prefix="/api/v1")
 app.include_router(attendance.router, prefix="/api/v1") # Mount bulk attendance engine 
 app.include_router(announcements.router, prefix="/api/v1") 
