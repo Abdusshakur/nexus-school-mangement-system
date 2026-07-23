@@ -72,7 +72,6 @@ class StudentResponse(BaseModel):
     address: str                 # Required!
     phone_number: Optional[str] # Optional!
     created_at: datetime
-    parents: List[LinkedParentResponse] = []
 
 
 # Add this schema to your file
