@@ -1,3 +1,5 @@
+import { type LinkedParent } from "../../../api/students";
+
 export interface Student {
   id: string;
   name: string;
@@ -10,6 +12,7 @@ export interface Student {
   parentName: string;
   parentPhone: string;
   parentEmail?: string;
+  parentsList?: LinkedParent[];
   status: "Active" | "Inactive" | string;
   joined: string;
   initials?: string;
@@ -17,6 +20,7 @@ export interface Student {
   avatar?: string;
   avatarBg?: string;
 }
+
 
 export const SESSIONS = [
   "2025-26 Term 3",

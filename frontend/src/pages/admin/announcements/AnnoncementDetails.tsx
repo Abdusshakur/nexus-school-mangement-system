@@ -36,10 +36,10 @@ export function AnnouncementDetail() {
     title: found.title,
     body: found.content,
     date: found.date,
-    priority: "medium",
-    audience: found.target,
+    priority: found.priority,
+    audience: found.audience,
     author: found.author,
-    category: "General",
+    category: found.category,
   };
 
   const handleDelete = () => {
@@ -117,11 +117,9 @@ export function AnnouncementDetail() {
               >
                 <div className="flex items-center gap-1.5 mb-1 text-slate-400">
                   <Icon size={14} />
-                  <p className="text-xs font-bold uppercase tracking-wider">
-                    {label}
-                  </p>
+                  <p className="text-xs tracking-wider">{label}</p>
                 </div>
-                <p className="text-xs font-semibold text-slate-800 mt-1">
+                <p className="text-xs font-medium text-slate-800 mt-1">
                   {value}
                 </p>
               </div>

@@ -13,15 +13,19 @@ export function ParentList() {
   }, [fetchParents]);
 
   const listToRender = dbParents.map((p) => {
-    const username = p.email.split("@")[0];
-    const initials = username.substring(0, 2).toUpperCase();
-    const childrenNames = p.children && p.children.length > 0
-      ? p.children.map((c) => `${c.first_name} ${c.last_name}`)
-      : ["Student"];
+    const displayName = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.email.split("@")[0];
+    const initials = p.first_name && p.last_name
+      ? `${p.first_name[0] || ""}${p.last_name[0] || ""}`.toUpperCase()
+      : displayName.substring(0, 2).toUpperCase();
+
+    const childrenList = p.children && p.children.length > 0 ? p.children : p.students || [];
+    const childrenNames = childrenList.length > 0
+      ? childrenList.map((c) => `${c.first_name} ${c.last_name}`)
+      : ["No children linked"];
 
     return {
       id: p.id,
-      name: username,
+      name: displayName,
       occupation: "Parent / Guardian",
       email: p.email,
       phone: p.phone_number,
@@ -31,6 +35,7 @@ export function ParentList() {
       children: childrenNames,
     };
   });
+
 
   const filtered = listToRender.filter(
     (p) =>
