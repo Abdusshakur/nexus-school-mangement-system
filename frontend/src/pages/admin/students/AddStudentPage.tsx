@@ -220,9 +220,9 @@ export function AddStudent() {
         address: form.address,
         phone_number: form.phone || null,
         class_name: form.class_name,
-        parent: parentsArray[0],
         parents: parentsArray,
       };
+
 
       const data = await createStudent(validFormDetails);
 

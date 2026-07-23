@@ -4,6 +4,42 @@ import { ROUTES } from "../../../config/routes";
 import { Search, Phone, Mail, MapPin, ChevronRight, Users } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
 
+export function formatParentName(firstName?: string, lastName?: string, email?: string): string {
+  const isInvalid = (val?: string) =>
+    !val ||
+    val.trim() === "" ||
+    val.toLowerCase() === "unknown" ||
+    val.toLowerCase().startsWith("string") ||
+    val.toLowerCase() === "null";
+
+  const firstValid = !isInvalid(firstName);
+  const lastValid = !isInvalid(lastName);
+
+  if (firstValid && lastValid) {
+    return `${firstName!.trim()} ${lastName!.trim()}`;
+  }
+  if (firstValid) return firstName!.trim();
+  if (lastValid) return lastName!.trim();
+
+  if (email && email.includes("@")) {
+    const handle = email.split("@")[0].replace(/[._-]/g, " ");
+    return handle
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  return "Parent / Guardian";
+}
+
+export function formatParentInitials(name: string): string {
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
 export function ParentList() {
   const [search, setSearch] = useState("");
   const { parents: dbParents, loading, fetchParents } = useParentStore();
@@ -13,26 +49,33 @@ export function ParentList() {
   }, [fetchParents]);
 
   const listToRender = dbParents.map((p) => {
-    const displayName = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.email.split("@")[0];
-    const initials = p.first_name && p.last_name
-      ? `${p.first_name[0] || ""}${p.last_name[0] || ""}`.toUpperCase()
-      : displayName.substring(0, 2).toUpperCase();
+    const displayName = formatParentName(p.first_name, p.last_name, p.email);
+    const initials = formatParentInitials(displayName);
 
     const childrenList = p.children && p.children.length > 0 ? p.children : p.students || [];
-    const childrenNames = childrenList.length > 0
-      ? childrenList.map((c) => `${c.first_name} ${c.last_name}`)
-      : ["No children linked"];
+    const mappedChildren = childrenList.map((c) => {
+      const childName = formatParentName(c.first_name, c.last_name, "");
+      return {
+        id: c.id,
+        admission_number: c.admission_number,
+        name: childName === "Parent / Guardian" ? "Student" : childName,
+        class_name: c.class_name,
+      };
+    });
+
+    const isInvalidPhone = !p.phone_number || p.phone_number.toLowerCase().startsWith("string") || p.phone_number.toLowerCase() === "null";
+    const phoneDisplay = isInvalidPhone ? "No phone registered" : p.phone_number;
 
     return {
       id: p.id,
       name: displayName,
       occupation: "Parent / Guardian",
       email: p.email,
-      phone: p.phone_number,
+      phone: phoneDisplay,
       address: "Westwood Campus",
       avatarColor: "bg-purple-500",
       avatar: initials,
-      children: childrenNames,
+      children: mappedChildren,
     };
   });
 
@@ -133,21 +176,24 @@ export function ParentList() {
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between">
-                  <div className="flex -space-x-1 min-w-0 flex-1 mr-3 items-center">
-                    {p.children.map((child, i) => (
-                      <div
-                        key={i}
-                        className="w-7 h-7 rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center shadow-sm shrink-0"
-                        title={child}
-                      >
-                        <span className="text-indigo-600 font-extrabold text-[10px]">
-                          {child.split(" ")[0][0]}
-                        </span>
-                      </div>
-                    ))}
-                    <span className="text-xs font-bold text-slate-500 ml-2.5 truncate">
-                      {p.children.join(", ")}
-                    </span>
+                  <div className="flex min-w-0 flex-1 mr-3 items-center flex-wrap gap-1.5">
+                    {p.children.length > 0 ? (
+                      p.children.map((child, i) => (
+                        <Link
+                          key={child.id || i}
+                          to={ROUTES.ADMIN.STUDENT_DETAIL(child.admission_number || child.id)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors text-xs font-semibold"
+                          title={`View ${child.name}'s profile`}
+                        >
+                          <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center font-bold">
+                            {child.name[0]}
+                          </span>
+                          <span>{child.name}</span>
+                        </Link>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">No children linked</span>
+                    )}
                   </div>
                   <Link
                     to={ROUTES.ADMIN.PARENT_DETAIL(p.id)}
@@ -164,3 +210,4 @@ export function ParentList() {
     </div>
   );
 }
+
