@@ -1,8 +1,7 @@
 import { useAuthStore } from "../store/auth";
 import { toast } from "sonner";
 
-// Get whatever string the server environment has set
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL;
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 // Centralized safety wrapper: If missing the API prefix, append it automatically
 export const API_BASE = RAW_BASE.includes("/api/v1")

@@ -47,6 +47,18 @@ class UnifiedStudentOnboardingCreate(BaseModel):
         return value
 
 
+# ------------------------------------------------------------------
+# Parent Link Schema
+# ------------------------------------------------------------------
+class LinkedParentResponse(BaseModel):
+    id: UUID
+    first_name: str
+    last_name: str
+    phone_number: str
+    email: str
+    relationship_type: str  # e.g., "GUARDIAN", "FATHER", "MOTHER"
+
+
 class StudentResponse(BaseModel):
     id: UUID
     user_id: UUID
@@ -60,6 +72,7 @@ class StudentResponse(BaseModel):
     address: str                 # Required!
     phone_number: Optional[str] # Optional!
     created_at: datetime
+    parents: List[LinkedParentResponse] = []
 
 
 # Add this schema to your file
@@ -72,17 +85,6 @@ class StudentProfileUpdate(BaseModel):
     phone_number: Optional[str] = None
     class_name: Optional[str] = None
 
-
-# ------------------------------------------------------------------
-# Parent Link Schema
-# ------------------------------------------------------------------
-class LinkedParentResponse(BaseModel):
-    id: UUID
-    first_name: str
-    last_name: str
-    phone_number: str
-    email: str
-    relationship_type: str  # e.g., "GUARDIAN", "FATHER", "MOTHER"
 
 # ------------------------------------------------------------------
 # Detailed Student Schema (For single student lookups)
