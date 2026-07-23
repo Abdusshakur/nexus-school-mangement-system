@@ -25,8 +25,30 @@ router = APIRouter(
 # Only admins and teachers can manage parent records directly
 allow_staff_only = RoleChecker(["admin", "teacher"])
 
+def fetch_linked_children_for_parent(parent_id: UUID, session: Session) -> List[LinkedStudentResponse]:
+    """Fetch all linked student profiles for a parent."""
+    student_query = (
+        select(StudentProfile, ParentStudentLink.relationship_type)
+        .join(ParentStudentLink, ParentStudentLink.student_id == StudentProfile.id)
+        .where(ParentStudentLink.parent_id == parent_id)
+    )
+    student_results = session.exec(student_query).all()
+    return [
+        LinkedStudentResponse(
+            id=student_profile.id,
+            first_name=student_profile.first_name,
+            last_name=student_profile.last_name,
+            admission_number=student_profile.admission_number,
+            class_name=student_profile.class_name,
+            relationship_type=str(rel_type.value) if hasattr(rel_type, 'value') else str(rel_type)
+        )
+        for student_profile, rel_type in student_results
+    ]
+
+
 # Helper function to map to response schema
-def build_parent_response(profile: ParentProfile, email: str) -> ParentResponse:
+def build_parent_response(profile: ParentProfile, email: str, session: Optional[Session] = None) -> ParentResponse:
+    children = fetch_linked_children_for_parent(profile.id, session) if session else []
     return ParentResponse(
         id=profile.id,
         user_id=profile.user_id,
@@ -34,7 +56,9 @@ def build_parent_response(profile: ParentProfile, email: str) -> ParentResponse:
         last_name=profile.last_name,
         email=email,
         phone_number=profile.phone_number,
-        created_at=profile.created_at
+        created_at=profile.created_at,
+        students=children,
+        children=children
     )
 
 # ------------------------------------------------------------------
@@ -81,7 +105,7 @@ def create_parent(
     session.commit()
     session.refresh(new_profile)
 
-    return build_parent_response(new_profile, new_user.email)
+    return build_parent_response(new_profile, new_user.email, session)
 
 
 # ------------------------------------------------------------------
@@ -120,7 +144,7 @@ def update_parent_profile(
     # 4. Fetch associated user to get the email
     user = session.get(User, profile.user_id)
     
-    return build_parent_response(profile, user.email)
+    return build_parent_response(profile, user.email, session)
 
 
 # ------------------------------------------------------------------
@@ -128,7 +152,7 @@ def update_parent_profile(
 # ------------------------------------------------------------------
 @router.get(
     "/{parent_id}", 
-    response_model=ParentDetailResponse, # 👈 Updated schema here
+    response_model=ParentDetailResponse,
     dependencies=[Depends(allow_staff_only)]
 )
 def get_parent(
@@ -153,30 +177,10 @@ def get_parent(
         
     profile, user = result
 
-    # 2. Fetch Linked Students & Relationship Type
-    # Join StudentProfile -> ParentStudentLink to find children linked to this parent_id
-    student_query = (
-        select(StudentProfile, ParentStudentLink.relationship_type)
-        .join(ParentStudentLink, ParentStudentLink.student_id == StudentProfile.id)
-        .where(ParentStudentLink.parent_id == profile.id)
-    )
-    student_results = session.exec(student_query).all()
+    # 2. Fetch Linked Students
+    linked_students = fetch_linked_children_for_parent(profile.id, session)
 
-    # 3. Format the students list
-    linked_students = []
-    for student_profile, rel_type in student_results:
-        linked_students.append(
-            LinkedStudentResponse(
-                id=student_profile.id,
-                first_name=student_profile.first_name,
-                last_name=student_profile.last_name,
-                admission_number=student_profile.admission_number,
-                class_name=student_profile.class_name,
-                relationship_type=rel_type
-            )
-        )
-
-    # 4. Return using the Detail schema
+    # 3. Return using Detail schema
     return ParentDetailResponse(
         id=profile.id,
         user_id=profile.user_id,
@@ -185,7 +189,8 @@ def get_parent(
         email=user.email,
         phone_number=profile.phone_number,
         created_at=profile.created_at,
-        students=linked_students # 🔑 Inject the list of children here!
+        students=linked_students,
+        children=linked_students
     )
 
 # ------------------------------------------------------------------
@@ -197,7 +202,7 @@ def get_parent(
     dependencies=[Depends(allow_staff_only)]
 )
 def list_parents(
-    search: Optional[str] = Query(None, description="Search by email, first name, last name, or full name"),
+    search: Optional[str] = Query(None, description="Search by email, first name, last name, phone, or full name"),
     session: Session = Depends(get_session)
 ):
     """Fetch a list of all parents in the system, with an optional smart search."""
@@ -215,13 +220,14 @@ def list_parents(
                 ParentProfile.first_name.ilike(search_term),
                 ParentProfile.last_name.ilike(search_term),
                 full_name_concat.ilike(search_term),
-                User.email.ilike(search_term)
+                User.email.ilike(search_term),
+                ParentProfile.phone_number.ilike(search_term)
             )
         )
         
-    # Order by newest first (optional, but good practice)
+    # Order by newest first
     query = query.order_by(ParentProfile.created_at.desc())
     
     results = session.exec(query).all()
     
-    return [build_parent_response(profile, user.email) for profile, user in results]
+    return [build_parent_response(profile, user.email, session) for profile, user in results]

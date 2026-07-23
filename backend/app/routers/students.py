@@ -47,6 +47,28 @@ def generate_next_admission_number(session: Session) -> str:
     return f"{prefix}{next_sequence:04d}"
 
 
+def fetch_linked_parents(student_id: UUID, session: Session) -> List[LinkedParentResponse]:
+    """Helper to fetch all linked parents for a given student profile ID."""
+    parent_query = (
+        select(ParentProfile, User.email, ParentStudentLink.relationship_type)
+        .join(ParentStudentLink, ParentStudentLink.parent_id == ParentProfile.id)
+        .join(User, User.id == ParentProfile.user_id)
+        .where(ParentStudentLink.student_id == student_id)
+    )
+    parent_results = session.exec(parent_query).all()
+    return [
+        LinkedParentResponse(
+            id=parent_profile.id,
+            first_name=parent_profile.first_name,
+            last_name=parent_profile.last_name,
+            phone_number=parent_profile.phone_number,
+            email=parent_email,
+            relationship_type=str(rel_type.value) if hasattr(rel_type, 'value') else str(rel_type)
+        )
+        for parent_profile, parent_email, rel_type in parent_results
+    ]
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=StudentResponse, dependencies=[Depends(allow_staff_only)])
 def create_student_with_parent_onboarding(
     request: UnifiedStudentOnboardingCreate, 
@@ -87,40 +109,50 @@ def create_student_with_parent_onboarding(
         session.add(student_profile)
         session.flush() # Yields student_profile.id UUID
 
-        # 5. Handle Parent Onboarding (Find or Create)
-        parent_user = session.query(User).filter(User.email == request.parent.email).first()
-        
-        if not parent_user:
-            # New parent! Set up credentials & profile
-            parent_user = User(
-                email=request.parent.email,
-                password_hash=hash_password("WelcomeNexus2026!"), # System default password
-                role=UserRole.PARENT
-            )
-            session.add(parent_user)
-            session.flush()
+        # 5. Handle Parent Onboarding (Process Array of Parents)
+        parents_to_process = getattr(request, 'parents', None)
+        if not parents_to_process and hasattr(request, 'parent') and getattr(request, 'parent'):
+            parents_to_process = [request.parent]
 
-            parent_profile = ParentProfile(
-                user_id=parent_user.id,
-                first_name=request.parent.first_name,
-                last_name=request.parent.last_name,
-                phone_number=request.parent.phone_number
-            )
-            session.add(parent_profile)
-            session.flush()
-        else:
-            # Parent exists. Let's pull their profile ID
-            parent_profile = session.query(ParentProfile).filter(ParentProfile.user_id == parent_user.id).first()
-            if not parent_profile:
-                raise HTTPException(status_code=404, detail="Parent credentials found, but profile is missing.")
+        if parents_to_process:
+            for parent_item in parents_to_process:
+                parent_user = session.query(User).filter(User.email == parent_item.email).first()
+                if not parent_user:
+                    # New parent! Set up credentials & profile
+                    parent_user = User(
+                        email=parent_item.email,
+                        password_hash=hash_password("WelcomeNexus2026!"), # System default password
+                        role=UserRole.PARENT
+                    )
+                    session.add(parent_user)
+                    session.flush()
 
-        # 6. Map the Relationship Link instantly
-        relationship = ParentStudentLink(
-            parent_id=parent_profile.id,
-            student_id=student_profile.id,
-            relationship_type="GUARDIAN"
-        )
-        session.add(relationship)
+                    parent_profile = ParentProfile(
+                        user_id=parent_user.id,
+                        first_name=parent_item.first_name,
+                        last_name=parent_item.last_name,
+                        phone_number=parent_item.phone_number
+                    )
+                    session.add(parent_profile)
+                    session.flush()
+                else:
+                    # Parent exists. Pull profile ID
+                    parent_profile = session.query(ParentProfile).filter(ParentProfile.user_id == parent_user.id).first()
+                    if not parent_profile:
+                        raise HTTPException(status_code=404, detail=f"Parent profile for {parent_item.email} missing.")
+
+                rel_type = getattr(parent_item, 'relationship_type', 'GUARDIAN')
+                is_primary = getattr(parent_item, 'is_primary_contact', False)
+                is_sponsor = getattr(parent_item, 'is_financial_sponsor', False)
+
+                relationship = ParentStudentLink(
+                    parent_id=parent_profile.id,
+                    student_id=student_profile.id,
+                    relationship_type=rel_type,
+                    is_primary_contact=is_primary,
+                    is_financial_sponsor=is_sponsor
+                )
+                session.add(relationship)
 
         # Commit everything to PostgreSQL atomically!
         session.commit()
@@ -132,6 +164,8 @@ def create_student_with_parent_onboarding(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail=f"Unified Onboarding Failed: {str(err)}"
         )
+
+    linked_parents = fetch_linked_parents(student_profile.id, session)
 
     # Return clean payload mapped cleanly to StudentResponse schema
     return StudentResponse(
@@ -146,7 +180,8 @@ def create_student_with_parent_onboarding(
         date_of_birth=student_profile.date_of_birth,
         phone_number=student_profile.phone_number,
         address=student_profile.address,
-        created_at=student_profile.created_at
+        created_at=student_profile.created_at,
+        parents=linked_parents
     )
 
 
@@ -199,112 +234,51 @@ def list_students(
             date_of_birth=profile.date_of_birth,
             phone_number=profile.phone_number,
             address=profile.address,
-            created_at=profile.created_at
+            created_at=profile.created_at,
+            parents=fetch_linked_parents(profile.id, session)
         )
         for profile, user in results
     ]
 
-from backend.app.schemas.student import StudentProfileUpdate # Import the new schema
+from backend.app.schemas.student import StudentProfileUpdate, StudentDetailResponse # Import schemas
 
 # ------------------------------------------------------------------
-# GET: View Single Student by Admission Number
+# GET: View Single Student by Admission Number or ID
 # ------------------------------------------------------------------
 @router.get(
     "/{admission_number}", 
-    response_model=StudentResponse, 
+    response_model=StudentDetailResponse, 
     dependencies=[Depends(allow_staff_only)]
 )
 def get_student_by_admission_number(
     admission_number: str,
     session: Session = Depends(get_session)
 ):
-    """Fetch a single student's complete profile using their unique admission number."""
+    """Fetch a single student's complete profile using their unique admission number or UUID."""
     
-    # Query both StudentProfile and User to get all details (including email)
+    # 1. Query both StudentProfile and User (check admission_number or UUID)
+    try:
+        val_uuid = UUID(admission_number)
+        where_clause = or_(StudentProfile.admission_number == admission_number, StudentProfile.id == val_uuid, StudentProfile.user_id == val_uuid)
+    except ValueError:
+        where_clause = (StudentProfile.admission_number == admission_number)
+
     query = (
         select(StudentProfile, User)
         .join(User, StudentProfile.user_id == User.id)
-        .where(StudentProfile.admission_number == admission_number)
+        .where(where_clause)
     )
     result = session.exec(query).first()
     
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Student with admission number '{admission_number}' not found."
+            detail=f"Student with admission number or ID '{admission_number}' not found."
         )
         
-    profile, user = result
+    profile, student_user = result
+    linked_parents = fetch_linked_parents(profile.id, session)
     
-    return StudentResponse(
-        id=profile.id,
-        user_id=user.id,
-        email=user.email,
-        admission_number=profile.admission_number,
-        class_name=profile.class_name,
-        first_name=profile.first_name,
-        last_name=profile.last_name,
-        gender=profile.gender,
-        date_of_birth=profile.date_of_birth,
-        phone_number=profile.phone_number,
-        address=profile.address,
-        created_at=profile.created_at
-    )
-
-from backend.app.schemas.student import StudentDetailResponse # 👈 Import it
-from backend.app.models import ParentProfile, ParentStudentLink
-
-@router.get(
-    "/{admission_number}", 
-    response_model=StudentDetailResponse, # 👈 Updated schema here
-    dependencies=[Depends(allow_staff_only)]
-)
-def get_student_by_admission_number(
-    admission_number: str,
-    session: Session = Depends(get_session)
-):
-    """Fetch a single student's complete profile, including linked parents."""
-    
-    # 1. Fetch Student & Student's Email
-    student_query = (
-        select(StudentProfile, User)
-        .join(User, StudentProfile.user_id == User.id)
-        .where(StudentProfile.admission_number == admission_number)
-    )
-    student_result = session.exec(student_query).first()
-    
-    if not student_result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Student with admission number '{admission_number}' not found."
-        )
-        
-    profile, student_user = student_result
-    
-    # 2. Fetch Linked Parents & Parent's Email & Relationship Type
-    parent_query = (
-        select(ParentProfile, User.email, ParentStudentLink.relationship_type)
-        .join(ParentStudentLink, ParentStudentLink.parent_id == ParentProfile.id)
-        .join(User, User.id == ParentProfile.user_id)
-        .where(ParentStudentLink.student_id == profile.id)
-    )
-    parent_results = session.exec(parent_query).all()
-    
-    # 3. Format the parents list
-    linked_parents = []
-    for parent_profile, parent_email, rel_type in parent_results:
-        linked_parents.append(
-            LinkedParentResponse(
-                id=parent_profile.id,
-                first_name=parent_profile.first_name,
-                last_name=parent_profile.last_name,
-                phone_number=parent_profile.phone_number,
-                email=parent_email,
-                relationship_type=rel_type
-            )
-        )
-    
-    # 4. Return using the Detail schema
     return StudentDetailResponse( 
         id=profile.id,
         user_id=student_user.id,
@@ -356,6 +330,7 @@ def update_student_profile(
     
     # 4. Fetch the associated User to complete the StudentResponse payload
     user = session.get(User, profile.user_id)
+    linked_parents = fetch_linked_parents(profile.id, session)
     
     return StudentResponse(
         id=profile.id,
@@ -369,5 +344,6 @@ def update_student_profile(
         date_of_birth=profile.date_of_birth,
         phone_number=profile.phone_number,
         address=profile.address,
-        created_at=profile.created_at
+        created_at=profile.created_at,
+        parents=linked_parents
     )

@@ -38,6 +38,18 @@ class ParentProfileUpdate(BaseModel):
 
 
 # ------------------------------------------------------------------
+# Student Link Schema
+# ------------------------------------------------------------------
+class LinkedStudentResponse(BaseModel):
+    id: UUID
+    first_name: str
+    last_name: str
+    admission_number: str
+    class_name: str
+    relationship_type: str # e.g., "MOTHER", "FATHER" (How this parent is related to this specific student)
+
+
+# ------------------------------------------------------------------
 # 3. Parent Responses
 # ------------------------------------------------------------------
 class ParentResponse(BaseModel):
@@ -49,17 +61,9 @@ class ParentResponse(BaseModel):
     email: EmailStr
     phone_number: str
     created_at: datetime
+    students: List[LinkedStudentResponse] = []
+    children: List[LinkedStudentResponse] = []
 
-# ------------------------------------------------------------------
-# Student Link Schema
-# ------------------------------------------------------------------
-class LinkedStudentResponse(BaseModel):
-    id: UUID
-    first_name: str
-    last_name: str
-    admission_number: str
-    class_name: str
-    relationship_type: str # e.g., "MOTHER", "FATHER" (How this parent is related to this specific student)
 
 # ------------------------------------------------------------------
 # Detailed Parent Schema (For single parent lookups)
@@ -75,3 +79,4 @@ class ParentDetailResponse(BaseModel):
     
     # Nested relationship
     students: List[LinkedStudentResponse] = []
+    children: List[LinkedStudentResponse] = []
