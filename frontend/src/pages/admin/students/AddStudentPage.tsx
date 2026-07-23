@@ -172,9 +172,43 @@ export function AddStudent() {
     }
 
     try {
-      const parentEmail =
+      const p1RoleMap: Record<string, string> = {
+        Father: "FATHER",
+        Mother: "MOTHER",
+        Guardian: "GUARDIAN",
+      };
+
+      const parent1Email =
         form.p1_email ||
-        `${form.first_name.toLowerCase()}.${form.last_name.toLowerCase()}.parent@nexusacademy.com`;
+        `${form.first_name.toLowerCase()}.${form.last_name.toLowerCase()}.parent1@nexusacademy.com`;
+
+      const parentsArray = [
+        {
+          first_name: form.p1_first_name,
+          last_name: form.p1_last_name,
+          email: parent1Email,
+          phone_number: form.p1_phone,
+          relationship_type: p1RoleMap[form.p1_role] || "GUARDIAN",
+          is_primary_contact: true,
+          is_financial_sponsor: true,
+        },
+      ];
+
+      if (form.p2_first_name && form.p2_last_name && form.p2_phone) {
+        const parent2Email =
+          form.p2_email ||
+          `${form.first_name.toLowerCase()}.${form.last_name.toLowerCase()}.parent2@nexusacademy.com`;
+
+        parentsArray.push({
+          first_name: form.p2_first_name,
+          last_name: form.p2_last_name,
+          email: parent2Email,
+          phone_number: form.p2_phone,
+          relationship_type: p1RoleMap[form.p2_role] || "GUARDIAN",
+          is_primary_contact: false,
+          is_financial_sponsor: false,
+        });
+      }
 
       const validFormDetails = {
         email: form.email,
@@ -186,15 +220,12 @@ export function AddStudent() {
         address: form.address,
         phone_number: form.phone || null,
         class_name: form.class_name,
-        parent: {
-          first_name: form.p1_first_name,
-          last_name: form.p1_last_name,
-          email: parentEmail,
-          phone_number: form.p1_phone,
-        },
+        parent: parentsArray[0],
+        parents: parentsArray,
       };
 
       const data = await createStudent(validFormDetails);
+
 
       setSuccessData({
         name: `${form.first_name} ${form.last_name}`,

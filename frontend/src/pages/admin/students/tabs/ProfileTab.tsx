@@ -81,27 +81,54 @@ export function ProfileTab({ s }: { s: Student }) {
         {/* Parent / Guardian */}
         <div className="bg-white rounded-xl p-5 border border-slate-200">
           <h3 className="font-semibold mb-4 text-slate-900 text-[15px]">
-            Parent / Guardian
+            Parents & Guardians
           </h3>
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-            <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${s.avatarColor}`}
-            >
-              <span className="text-white font-semibold text-sm">
-                {(s.parentName || "Parent Guardian")
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </span>
+          {s.parentsList && s.parentsList.length > 0 ? (
+            <div className="space-y-3">
+              {s.parentsList.map((p, idx) => {
+                const parentInitials = `${p.first_name[0] || ""}${p.last_name[0] || ""}`.toUpperCase();
+                return (
+                  <div key={p.id || idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-purple-500 text-white font-semibold text-sm">
+                      {parentInitials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {p.first_name} {p.last_name}
+                        </p>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
+                          {p.relationship_type || `Parent ${idx + 1}`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{p.phone_number}</p>
+                      <p className="text-xs text-slate-500">{p.email}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-900">
-                {s.parentName}
-              </p>
-              <p className="text-xs text-slate-500">{s.parentPhone}</p>
-              <p className="text-xs text-slate-500">{s.parentEmail}</p>
+          ) : (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${s.avatarColor || "bg-indigo-500"}`}
+              >
+                <span className="text-white font-semibold text-sm">
+                  {(s.parentName || "PG")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-slate-900">
+                  {s.parentName}
+                </p>
+                <p className="text-xs text-slate-500">{s.parentPhone}</p>
+                <p className="text-xs text-slate-500">{s.parentEmail}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Emergency */}
@@ -112,7 +139,7 @@ export function ProfileTab({ s }: { s: Student }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
-                Name
+                Primary Contact
               </p>
               <p className="text-sm text-slate-700">{s.parentName}</p>
             </div>
@@ -120,7 +147,7 @@ export function ProfileTab({ s }: { s: Student }) {
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
                 Relation
               </p>
-              <p className="text-sm text-slate-700">Parent</p>
+              <p className="text-sm text-slate-700">Parent / Guardian</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
@@ -130,12 +157,15 @@ export function ProfileTab({ s }: { s: Student }) {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
-                Alt. Phone
+                Alt. Parent Phone
               </p>
-              <p className="text-sm text-slate-700">+1 555 9999</p>
+              <p className="text-sm text-slate-700">
+                {s.parentsList && s.parentsList.length > 1 ? s.parentsList[1].phone_number : "N/A"}
+              </p>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

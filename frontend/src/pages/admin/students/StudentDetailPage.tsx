@@ -110,6 +110,8 @@ export function StudentDetailPage() {
             (found.first_name[0] || "") + (found.last_name[0] || "")
           ).toUpperCase();
 
+          const firstParent = found.parents && found.parents.length > 0 ? found.parents[0] : null;
+
           const mapped: Student = {
             id: found.admission_number || found.id,
             name: `${found.first_name} ${found.last_name}`,
@@ -121,9 +123,10 @@ export function StudentDetailPage() {
             phone: found.phone_number,
             email: found.email,
             address: found.address,
-            parentName: "Parent / Guardian",
-            parentPhone: "+234 800 000 0001",
-            parentEmail: "parent@nexusacademy.com",
+            parentName: firstParent ? `${firstParent.first_name} ${firstParent.last_name}` : "Parent / Guardian",
+            parentPhone: firstParent ? firstParent.phone_number : "N/A",
+            parentEmail: firstParent ? firstParent.email : "N/A",
+            parentsList: found.parents || [],
             status: "Active",
             joined: new Date(found.created_at).toLocaleDateString("en-US", {
               year: "numeric",
@@ -134,6 +137,7 @@ export function StudentDetailPage() {
             avatar: initials,
             avatarBg: "bg-indigo-500",
           };
+
           setStudent(mapped);
         }
       } catch (err) {

@@ -26,6 +26,9 @@ export function CreateAnnouncement() {
       await postAnnouncement({
         title: form.title,
         content: form.body,
+        priority: form.priority,
+        category: form.category,
+        audience: form.audience,
       });
       navigate(ROUTES.ADMIN.ANNOUNCEMENTS);
     } catch (err) {

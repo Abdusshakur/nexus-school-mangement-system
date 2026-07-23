@@ -5,6 +5,18 @@ export interface ParentOnboardingDetails {
   last_name: string;
   email: string;
   phone_number: string;
+  relationship_type?: string;
+  is_primary_contact?: boolean;
+  is_financial_sponsor?: boolean;
+}
+
+export interface LinkedParent {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  email: string;
+  relationship_type: string;
 }
 
 export interface StudentCreatePayload {
@@ -17,7 +29,8 @@ export interface StudentCreatePayload {
   address: string;
   phone_number: string | null;
   class_name: string;
-  parent: ParentOnboardingDetails;
+  parent?: ParentOnboardingDetails;
+  parents?: ParentOnboardingDetails[];
 }
 
 export interface StudentResponse {
@@ -33,7 +46,9 @@ export interface StudentResponse {
   address: string;
   phone_number: string;
   created_at: string;
+  parents?: LinkedParent[];
 }
+
 
 export interface PaginatedStudentsResponse {
   items: StudentResponse[];

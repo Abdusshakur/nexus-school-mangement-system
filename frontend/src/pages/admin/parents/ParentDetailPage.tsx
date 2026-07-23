@@ -14,26 +14,40 @@ export function ParentDetail() {
 
   const found = dbParents.find((p) => p.id === id);
 
+  const parentName = found
+    ? found.first_name && found.last_name
+      ? `${found.first_name} ${found.last_name}`
+      : found.email.split("@")[0]
+    : "";
+
+  const initials = found
+    ? found.first_name && found.last_name
+      ? `${found.first_name[0] || ""}${found.last_name[0] || ""}`.toUpperCase()
+      : parentName.substring(0, 2).toUpperCase()
+    : "PG";
+
+  const childrenList = found
+    ? (found.children && found.children.length > 0 ? found.children : found.students || [])
+    : [];
+
   const parent = found
     ? {
         id: found.id,
-        name: found.email.split("@")[0],
+        name: parentName,
         occupation: "Parent / Guardian",
         email: found.email,
         phone: found.phone_number,
         address: "Westwood Campus",
         avatarColor: "bg-purple-500",
-        avatar: found.email.split("@")[0].substring(0, 2).toUpperCase(),
-        children:
-          found.children && found.children.length > 0
-            ? found.children.map((c) => ({
-                id: c.id,
-                name: `${c.first_name} ${c.last_name}`,
-                class_name: c.class_name,
-              }))
-            : [],
+        avatar: initials,
+        children: childrenList.map((c) => ({
+          id: c.id,
+          name: `${c.first_name} ${c.last_name}`,
+          class_name: c.class_name,
+        })),
       }
     : null;
+
 
   if (loading) {
     return (
@@ -108,9 +122,7 @@ export function ParentDetail() {
 
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="font-extrabold text-slate-900 text-lg mb-4">
-              Associated Children
-            </h3>
+            <h3 className="font-bold text-slate-900 text-lg mb-4">Children</h3>
             <div className="space-y-3">
               {parent.children.map((child, i) => (
                 <div
@@ -124,7 +136,9 @@ export function ParentDetail() {
                       .join("")}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">{child.name}</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      {child.name}
+                    </p>
                     <p className="text-xs font-semibold text-slate-400 mt-0.5">
                       {child.class_name} · Active Student
                     </p>

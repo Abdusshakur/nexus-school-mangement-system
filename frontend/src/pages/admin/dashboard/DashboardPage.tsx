@@ -411,12 +411,12 @@ export function DashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50">
-                {["Student", "Grade", "Status"].map((students) => (
+                {["Student", "Grade", "Parents / Guardians", "Status"].map((header) => (
                   <th
-                    key={students}
+                    key={header}
                     className="text-left px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
                   >
-                    {students}
+                    {header}
                   </th>
                 ))}
               </tr>
@@ -452,6 +452,22 @@ export function DashboardPage() {
                     <td className="px-5 py-3 text-sm text-slate-700">
                       {formatClassName(s.class_name)}
                     </td>
+                    <td className="px-5 py-3 text-xs text-slate-600">
+                      {s.parents && s.parents.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {s.parents.map((p, idx) => (
+                            <span key={p.id || idx} className="font-medium text-slate-800 flex items-center gap-1.5">
+                              <span>{p.first_name} {p.last_name}</span>
+                              <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wide bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
+                                {p.relationship_type || `P${idx + 1}`}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic">No parent linked</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                         <CheckCircle size={10} /> Active
@@ -463,13 +479,14 @@ export function DashboardPage() {
               {recentStudents.length === 0 && (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     className="py-8 text-center text-slate-400 text-sm"
                   >
                     No students registered yet.
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>

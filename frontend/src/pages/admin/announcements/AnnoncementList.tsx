@@ -18,9 +18,10 @@ export function AnnouncementList() {
     title: a.title,
     body: a.content,
     date: a.date,
-    priority: "medium",
-    audience: a.target,
-    category: "General",
+    priority: a.priority,
+    audience: a.audience,
+    category: a.category,
+    author: a.author,
   }));
 
   const filtered =
@@ -69,12 +70,14 @@ export function AnnouncementList() {
         {loading ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
             <p className="text-slate-500 text-sm animate-pulse font-medium">
-              Loading notices from board...
+              Loading announcements...
             </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500 text-sm">No announcements published yet.</p>
+            <p className="text-slate-500 text-sm">
+              No announcements published yet.
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -95,7 +98,7 @@ export function AnnouncementList() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-3">
-                        <h3 className="font-extrabold text-slate-900 flex-1 text-base">
+                        <h3 className="font-semibold text-slate-900 flex-1 text-base">
                           {ann.title}
                         </h3>
                         <span
@@ -108,15 +111,16 @@ export function AnnouncementList() {
                         {ann.body}
                       </p>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-slate-100">
-                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                        <span className="flex items-center gap-1.5 text-xs text-slate-400">
                           <Clock size={12} /> {ann.date}
                         </span>
-                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                        <span className="flex items-center gap-1.5 text-xs text-slate-400">
                           <Users size={12} /> {ann.audience}
                         </span>
-                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                        <span className="flex items-center gap-1.5 text-xs text-slate-400">
                           <Megaphone size={12} /> {ann.category}
                         </span>
+
                         <Link
                           to={ROUTES.ADMIN.ANNOUNCEMENT_DETAIL(ann.id)}
                           className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-bold transition-colors flex items-center gap-1"
