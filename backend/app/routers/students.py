@@ -6,7 +6,7 @@ from typing import List, Optional
 from uuid import UUID
 from backend.app.db.database import get_session
 from backend.app.models import User, UserRole, StudentProfile, ParentProfile, ParentStudentLink
-from backend.app.schemas.student import UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate
+from backend.app.schemas.student import UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate, LinkedParentResponse
 from backend.app.core.auth_utils import RoleChecker, hash_password
 
 router = APIRouter(
@@ -251,6 +251,75 @@ def get_student_by_admission_number(
         created_at=profile.created_at
     )
 
+from backend.app.schemas.student import StudentDetailResponse # 👈 Import it
+from backend.app.models import ParentProfile, ParentStudentLink
+
+@router.get(
+    "/{admission_number}", 
+    response_model=StudentDetailResponse, # 👈 Updated schema here
+    dependencies=[Depends(allow_staff_only)]
+)
+def get_student_by_admission_number(
+    admission_number: str,
+    session: Session = Depends(get_session)
+):
+    """Fetch a single student's complete profile, including linked parents."""
+    
+    # 1. Fetch Student & Student's Email
+    student_query = (
+        select(StudentProfile, User)
+        .join(User, StudentProfile.user_id == User.id)
+        .where(StudentProfile.admission_number == admission_number)
+    )
+    student_result = session.exec(student_query).first()
+    
+    if not student_result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Student with admission number '{admission_number}' not found."
+        )
+        
+    profile, student_user = student_result
+    
+    # 2. Fetch Linked Parents & Parent's Email & Relationship Type
+    parent_query = (
+        select(ParentProfile, User.email, ParentStudentLink.relationship_type)
+        .join(ParentStudentLink, ParentStudentLink.parent_id == ParentProfile.id)
+        .join(User, User.id == ParentProfile.user_id)
+        .where(ParentStudentLink.student_id == profile.id)
+    )
+    parent_results = session.exec(parent_query).all()
+    
+    # 3. Format the parents list
+    linked_parents = []
+    for parent_profile, parent_email, rel_type in parent_results:
+        linked_parents.append(
+            LinkedParentResponse(
+                id=parent_profile.id,
+                first_name=parent_profile.first_name,
+                last_name=parent_profile.last_name,
+                phone_number=parent_profile.phone_number,
+                email=parent_email,
+                relationship_type=rel_type
+            )
+        )
+    
+    # 4. Return using the Detail schema
+    return StudentDetailResponse( 
+        id=profile.id,
+        user_id=student_user.id,
+        email=student_user.email,
+        admission_number=profile.admission_number,
+        class_name=profile.class_name,
+        first_name=profile.first_name,
+        last_name=profile.last_name,
+        gender=profile.gender,
+        date_of_birth=profile.date_of_birth,
+        phone_number=profile.phone_number,
+        address=profile.address,
+        created_at=profile.created_at,
+        parents=linked_parents
+    )
 
 # ------------------------------------------------------------------
 # PATCH: Update Student Details

@@ -1,15 +1,12 @@
 
 # backend/app/schemas/students.py
-from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+from pydantic import BaseModel, EmailStr, field_validator, Field
+from typing import Optional, List
 from datetime import datetime, date
 from uuid import UUID
+from backend.app.models import RelationshipType
+from backend.app.schemas.parent import ParentOnboardingDetails 
 
-class ParentOnboardingDetails(BaseModel):
-    first_name: str
-    last_name: str
-    email: EmailStr
-    phone_number: str
 
 class UnifiedStudentOnboardingCreate(BaseModel):
     # Student Account Credentials & Info
@@ -23,8 +20,9 @@ class UnifiedStudentOnboardingCreate(BaseModel):
     phone_number: Optional[str] = None # Optional!
     class_name: str
     
-    # Nested Parent Details (All Required)
-    parent: ParentOnboardingDetails
+ 
+    # This now uses the imported schema!
+    parents: List[ParentOnboardingDetails] = Field(min_length=1, max_length=2)
 
     # 🛠️ Pydantic Validator to parse frontend strings cleanly
     @field_validator("date_of_birth", mode="before")
@@ -73,3 +71,34 @@ class StudentProfileUpdate(BaseModel):
     address: Optional[str] = None
     phone_number: Optional[str] = None
     class_name: Optional[str] = None
+
+
+# ------------------------------------------------------------------
+# Parent Link Schema
+# ------------------------------------------------------------------
+class LinkedParentResponse(BaseModel):
+    id: UUID
+    first_name: str
+    last_name: str
+    phone_number: str
+    email: str
+    relationship_type: str  # e.g., "GUARDIAN", "FATHER", "MOTHER"
+
+# ------------------------------------------------------------------
+# Detailed Student Schema (For single student lookups)
+# ------------------------------------------------------------------
+class StudentDetailResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: str
+    admission_number: str
+    class_name: str
+    gender: str
+    date_of_birth: date
+    phone_number: Optional[str] = None
+    address: str
+    created_at: datetime
+    # Nested relationship
+    parents: List[LinkedParentResponse] = []

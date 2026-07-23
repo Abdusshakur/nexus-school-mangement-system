@@ -24,10 +24,23 @@ class User(SQLModel, table=True):
         sa_relationship_kwargs={"uselist": False}  # Enforces a strict 1-to-1 mapping!
     )
 
+class RelationshipType(str, Enum):
+    MOTHER = "MOTHER"
+    FATHER = "FATHER"
+    GUARDIAN = "GUARDIAN"
+    STEP_MOTHER = "STEP_MOTHER"
+    STEP_FATHER = "STEP_FATHER"
+    RELATIVE = "RELATIVE"
+    OTHER = "OTHER"
+
 class ParentStudentLink(SQLModel, table=True):
     parent_id: UUID = Field(foreign_key="parentprofile.id", primary_key=True)
     student_id: UUID = Field(foreign_key="studentprofile.id", primary_key=True)
-    relationship_type: str
+    
+    relationship_type: RelationshipType
+    is_primary_contact: bool = Field(default=False)
+    is_financial_sponsor: bool = Field(default=False)
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
