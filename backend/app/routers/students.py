@@ -17,6 +17,29 @@ router = APIRouter(
 
 allow_staff_only = RoleChecker(["admin", "teacher"])
 
+def fetch_linked_parents(student_id: UUID, session: Session) -> List[LinkedParentResponse]:
+    """Helper function to fetch all parents attached to a specific student."""
+    query = (
+        select(ParentProfile, User, ParentStudentLink.relationship_type)
+        .join(ParentStudentLink, ParentStudentLink.parent_id == ParentProfile.id)
+        .join(User, ParentProfile.user_id == User.id)
+        .where(ParentStudentLink.student_id == student_id)
+    )
+    results = session.exec(query).all()
+    
+    return [
+        LinkedParentResponse(
+            id=parent_profile.id,
+            first_name=parent_profile.first_name,
+            last_name=parent_profile.last_name,
+            phone_number=parent_profile.phone_number,
+            email=parent_user.email,
+            relationship_type=relationship_type
+        )
+        for parent_profile, parent_user, relationship_type in results
+    ]
+
+
 def generate_next_admission_number(session: Session) -> str:
     """Safely calculates the next sequential admission number for the current year."""
     current_year = datetime.now().year
@@ -158,8 +181,7 @@ def create_student_with_parent_onboarding(
         date_of_birth=student_profile.date_of_birth,
         phone_number=student_profile.phone_number,
         address=student_profile.address,
-        created_at=student_profile.created_at,
-        parents=linked_parents
+        created_at=student_profile.created_at
     )
 
 
@@ -212,8 +234,7 @@ def list_students(
             date_of_birth=profile.date_of_birth,
             phone_number=profile.phone_number,
             address=profile.address,
-            created_at=profile.created_at,
-            parents=fetch_linked_parents(profile.id, session)
+            created_at=profile.created_at
         )
         for profile, user in results
     ]
@@ -221,54 +242,6 @@ def list_students(
 # ------------------------------------------------------------------
 # GET: View Single Student by Admission Number or ID
 # ------------------------------------------------------------------
-@router.get(
-    "/{admission_number}", 
-    response_model=StudentDetailResponse, 
-    dependencies=[Depends(allow_staff_only)]
-)
-def get_student_by_admission_number(
-    admission_number: str,
-    session: Session = Depends(get_session)
-):
-    """Fetch a single student's complete profile using their unique admission number or UUID."""
-    
-    # 1. Query both StudentProfile and User (check admission_number or UUID)
-    try:
-        val_uuid = UUID(admission_number)
-        where_clause = or_(StudentProfile.admission_number == admission_number, StudentProfile.id == val_uuid, StudentProfile.user_id == val_uuid)
-    except ValueError:
-        where_clause = (StudentProfile.admission_number == admission_number)
-
-    query = (
-        select(StudentProfile, User)
-        .join(User, StudentProfile.user_id == User.id)
-        .where(where_clause)
-    )
-    result = session.exec(query).first()
-    
-    if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Student with admission number '{admission_number}' not found."
-        )
-        
-    profile, user = result
-    
-    return StudentResponse(
-        id=profile.id,
-        user_id=user.id,
-        email=user.email,
-        admission_number=profile.admission_number,
-        class_name=profile.class_name,
-        first_name=profile.first_name,
-        last_name=profile.last_name,
-        gender=profile.gender,
-        date_of_birth=profile.date_of_birth,
-        phone_number=profile.phone_number,
-        address=profile.address,
-        created_at=profile.created_at
-    )
-
 @router.get(
     "/{admission_number}", 
     response_model=StudentDetailResponse, # 👈 Updated schema here
@@ -294,7 +267,7 @@ def get_student_by_admission_number(
             detail=f"Student with admission number '{admission_number}' not found."
         )
         
-    profile, student_user = result
+    profile, student_user = student_result
     linked_parents = fetch_linked_parents(profile.id, session)
     
     return StudentDetailResponse( 
@@ -345,11 +318,10 @@ def update_student_profile(
     session.add(profile)
     session.commit()
     session.refresh(profile)
-    
-    # 4. Fetch the associated User to complete the StudentResponse payload
+
+    # 4. 🛠️ FIXED: Fetch the User account so we can return the email!
     user = session.get(User, profile.user_id)
-    linked_parents = fetch_linked_parents(profile.id, session)
-    
+
     return StudentResponse(
         id=profile.id,
         user_id=user.id,
@@ -362,6 +334,5 @@ def update_student_profile(
         date_of_birth=profile.date_of_birth,
         phone_number=profile.phone_number,
         address=profile.address,
-        created_at=profile.created_at,
-        parents=linked_parents
+        created_at=profile.created_at
     )
