@@ -141,26 +141,40 @@ export function ProfileTab({ s }: { s: Student }) {
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
                 Primary Contact
               </p>
-              <p className="text-sm text-slate-700">{s.parentName}</p>
+              <p className="text-sm text-slate-700">
+                {s.parentsList && s.parentsList.length > 0 
+                  ? `${s.parentsList[0].first_name} ${s.parentsList[0].last_name}` 
+                  : s.parentName}
+              </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
                 Relation
               </p>
-              <p className="text-sm text-slate-700">Parent / Guardian</p>
+              <p className="text-sm text-slate-700">
+                {s.parentsList && s.parentsList.length > 0 
+                  ? s.parentsList[0].relationship_type || "Parent / Guardian" 
+                  : "Parent / Guardian"}
+              </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
                 Phone
               </p>
-              <p className="text-sm text-slate-700">{s.parentPhone}</p>
+              <p className="text-sm text-slate-700">
+                {s.parentsList && s.parentsList.length > 0 
+                  ? s.parentsList[0].phone_number 
+                  : s.parentPhone}
+              </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
                 Alt. Parent Phone
               </p>
               <p className="text-sm text-slate-700">
-                {s.parentsList && s.parentsList.length > 1 ? s.parentsList[1].phone_number : "N/A"}
+                {s.parentsList && s.parentsList.length > 1 
+                  ? s.parentsList[1].phone_number 
+                  : "N/A"}
               </p>
             </div>
           </div>

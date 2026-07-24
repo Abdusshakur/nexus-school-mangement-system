@@ -77,7 +77,7 @@ export function CreateAnnouncement({ onPost, onCancel }: Props) {
 
       <div>
         <label className="block text-slate-700 text-xs font-bold mb-1.5 uppercase tracking-wider">
-          Bulletin Content
+          Announcement Content
         </label>
         <textarea
           value={content}

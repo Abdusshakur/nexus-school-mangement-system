@@ -46,6 +46,11 @@ const ADMIN_NAV_ITEMS = [
     icon: Megaphone,
   },
   {
+    label: "Academics",
+    href: ROUTES.ADMIN.ACADEMICS,
+    icon: BookOpen,
+  },
+  {
     label: "Settings",
     href: ROUTES.ADMIN.SETTINGS,
     icon: Settings,

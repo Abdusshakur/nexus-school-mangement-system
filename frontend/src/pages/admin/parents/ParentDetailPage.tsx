@@ -3,7 +3,7 @@ import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
 import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
-import { formatParentName, formatParentInitials } from "./ParentPage";
+import { formatParentName, formatParentInitials } from "../../../utils/formatters";
 
 
 export function ParentDetail() {
@@ -33,7 +33,7 @@ export function ParentDetail() {
         occupation: "Parent / Guardian",
         email: found.email,
         phone: phoneDisplay,
-        address: "Westwood Campus",
+        address: "Address not provided",
         avatarColor: "bg-purple-500",
         avatar: initials,
         children: childrenList.map((c) => {

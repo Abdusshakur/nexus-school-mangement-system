@@ -2,7 +2,6 @@ import { Route } from "react-router-dom";
 import { RoleRoute } from "./RoleRoute";
 import { UserRole } from "../types/roles";
 
-// Placeholder for future Parent Dashboard implementation
 const ParentDashboardPlaceholder = () => (
   <div className="p-8">
     <h1 className="text-2xl font-bold">Parent Dashboard </h1>

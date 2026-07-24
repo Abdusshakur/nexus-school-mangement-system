@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
 import {
@@ -18,7 +18,11 @@ export function TeachersPage() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
-  const { teachers } = useTeacherStore();
+  const { teachers, fetchTeachers } = useTeacherStore();
+
+  useEffect(() => {
+    fetchTeachers().catch(() => {});
+  }, [fetchTeachers]);
 
   const filtered = teachers.filter((t) => {
     const matchesSearch =

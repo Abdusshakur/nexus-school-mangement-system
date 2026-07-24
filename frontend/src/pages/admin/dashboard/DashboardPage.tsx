@@ -93,8 +93,8 @@ const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
 
 const quickActions = [
   {
-    label: "Mark Today's Attendance",
-    to: ROUTES.ADMIN.ATTENDANCE_MARK,
+    label: "Class Attendance",
+    to: ROUTES.ADMIN.ATTENDANCE_CLASSES,
     icon: CalendarCheck,
     colorClass: "text-indigo-500",
     bgClass: "bg-indigo-50",
@@ -114,8 +114,8 @@ const quickActions = [
     bgClass: "bg-amber-100",
   },
   {
-    label: "Generate Report",
-    to: ROUTES.ADMIN.ATTENDANCE_REPORT,
+    label: "Teacher Assignment",
+    to: ROUTES.ADMIN.ATTENDANCE_TEACHERS,
     icon: TrendingUp,
     colorClass: "text-purple-500",
     bgClass: "bg-purple-50",

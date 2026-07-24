@@ -18,7 +18,10 @@ import {
   quickActions,
 } from "./data";
 
+import { useAuthStore } from "../../../store/auth";
+
 export default function TeacherDashboard() {
+  const { user } = useAuthStore();
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
@@ -30,13 +33,15 @@ export default function TeacherDashboard() {
     day: "numeric",
   });
 
+  const firstName = user?.first_name || "";
+
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
       <div className="rounded-2xl p-6 flex items-center justify-between bg-indigo-700">
         <div>
           <p className="font-bold text-white text-[22px]">
-            {greeting}, Mr. Ade 👋
+            {greeting}, {firstName} 👋
           </p>
           <p className="mt-1 text-sm text-indigo-200">{today}</p>
           <p className="mt-3 text-sm text-indigo-100">
