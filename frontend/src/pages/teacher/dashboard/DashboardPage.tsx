@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   ClipboardList,
   ArrowRight,
-  TrendingUp,
   Award,
 } from "lucide-react";
 
