@@ -171,3 +171,17 @@ class Subject(SQLModel, table=True):
         link_model=TeacherSubjectLink
     )
 
+class AdminProfile(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="user.id", unique=True)
+    first_name: str
+    last_name: str
+    phone_number: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ClassSubjectAssignment(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    teacher_id: UUID = Field(foreign_key="teacherprofile.id")
+    class_id: UUID = Field(foreign_key="class.id")
+    subject_id: UUID = Field(foreign_key="subject.id")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
