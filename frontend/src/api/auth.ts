@@ -46,3 +46,8 @@ export async function login(
 
   return data;
 }
+
+export async function getCurrentUser(): Promise<any> {
+  const { apiFetch } = await import('./client');
+  return apiFetch('/auth/me', { method: 'GET' });
+}

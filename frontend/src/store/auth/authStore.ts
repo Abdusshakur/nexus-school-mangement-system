@@ -8,7 +8,7 @@ import type { AuthUser, AuthStore } from "./types";
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -54,6 +54,25 @@ export const useAuthStore = create<AuthStore>()(
         }),
 
       setStatus: (status: AuthStore["status"]) => set({ status }),
+
+      refreshUser: async () => {
+        const token = get().token;
+        if (!token) return;
+        try {
+          const { getCurrentUser } = await import("../../api/auth");
+          const data = await getCurrentUser();
+          set({
+            user: {
+              id: data.id,
+              role: data.role,
+              first_name: data.first_name,
+              last_name: data.last_name,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to refresh user:", error);
+        }
+      },
     }),
     {
       name: "nexus-auth-storage",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
 import {
@@ -12,13 +12,18 @@ import {
 } from "lucide-react";
 import { Input } from "../../../components/dashboard/Input";
 import { useTeacherStore } from "../../../store/teacher.store";
+import { formatPhoneNumber } from "../../../utils/formatters";
 import { AddTeacherModal } from "./AddTeacher";
 
 export function TeachersPage() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
-  const { teachers } = useTeacherStore();
+  const { teachers, fetchTeachers } = useTeacherStore();
+
+  useEffect(() => {
+    fetchTeachers().catch(() => {});
+  }, [fetchTeachers]);
 
   const filtered = teachers.filter((t) => {
     const matchesSearch =
@@ -106,7 +111,7 @@ export function TeachersPage() {
                       <Mail size={13} /> <span>{t.email}</span>
                     </div>
                     <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold">
-                      <Phone size={13} /> <span>{t.phone}</span>
+                      <Phone size={13} /> <span>{formatPhoneNumber(t.phone)}</span>
                     </div>
                   </div>
                 </div>

@@ -114,7 +114,7 @@ export function AttendanceTab({
       {/* Calendar heatmap */}
       <div className="bg-white rounded-xl p-5 border border-slate-200">
         <h3 className="font-semibold mb-4 text-slate-900">
-          Term Calendar — {session}
+          Term Calendar for {session}
         </h3>
         {/* Day headers */}
         <div

@@ -1,5 +1,5 @@
 1. add attendance route to the students page which shows the students attendance for thr time being.
-2. work on teachers, attendance, parents announcement ans settings pages.
+2. work on attendance, announcement and settings pages. (Note: Teachers and Parents pages are mostly complete).
 3. Add forgot password page
 4. introduce {auth.service.ts} later when Logout
    Refresh token, Get current user, Password reset, Token expiration handling, Remember-me, behavior has been added.
@@ -14,3 +14,7 @@
      * Update `ParentPage.tsx` and `ParentDetailPage.tsx` to render real parent names and their linked children.
      * Update `DashboardPage.tsx` Recent Students table to show connected Parent 1 & Parent 2 for each student.
 
+6. [CRITICAL] Teacher Management API Missing Endpoints (Backend):
+   - **`GET /api/v1/classes/`**: Needed to fetch the real database UUIDs of classes (e.g. "JSS 1") so the frontend can successfully assign them to teachers (`PUT /teachers/{id}/classes`).
+   - **`GET /api/v1/subjects/`**: Needed to fetch the real database UUIDs of subjects (e.g. "Mathematics") so the frontend can successfully assign them to teachers (`PUT /teachers/{id}/subjects`).
+   - *(Note: Alternatively, the backend developer can just provide a static text file containing the exact seeded UUIDs for classes and subjects so they can be hardcoded in the frontend).*

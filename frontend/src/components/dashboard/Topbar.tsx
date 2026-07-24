@@ -14,24 +14,25 @@ export function Topbar() {
 
   const role = user?.role || "admin";
   const NAV_ITEMS = getNavItems(role);
-  const isTeacher = role === "teacher";
 
   const theme = {
     accent: "text-indigo-600",
     focusRing: "focus:ring-indigo-600/15 focus:border-indigo-600",
   };
 
-  const profile = isTeacher
-    ? {
-        initials: "AO",
-        name: "Mr. Ade Okafor",
-        role: "Biology Teacher",
-      }
-    : {
-        initials: "SA",
-        name: "Sarah Admin",
-        role: "Administrator",
-      };
+  const firstName = user?.first_name || "";
+  const lastName = user?.last_name || "";
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  const initials = fullName
+    ? fullName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+    : "";
+
+  const profile = {
+    initials,
+    name: fullName,
+    role: user?.role === "teacher" ? "Teacher" : "Administrator",
+  };
 
   const currentLabel =
     NAV_ITEMS.find((n) => {

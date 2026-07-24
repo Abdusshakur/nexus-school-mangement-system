@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
 import { ArrowLeft, Calendar, ChevronDown, Users, Pencil, X } from "lucide-react";
 import { SESSIONS, type Student } from "./data";
-import { fetchStudentsList, formatClassName, updateStudentProfile } from "../../../api/students";
+import { fetchStudentById, fetchStudentsList, formatClassName, updateStudentProfile } from "../../../api/students";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { ResultsTab } from "./tabs/ResultsTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
@@ -100,9 +100,16 @@ export function StudentDetailPage() {
         const apiStudents = await fetchStudentsList();
         if (!isLoaded) return;
 
-        const found = apiStudents.find(
+        const foundListStudent = apiStudents.find(
           (s) => s.id === id || s.admission_number === id || s.user_id === id,
         );
+
+        if (!foundListStudent) {
+          setLoading(false);
+          return;
+        }
+
+        const found = await fetchStudentById(foundListStudent.admission_number);
 
         if (found) {
           setDbUuid(found.id);

@@ -5,9 +5,9 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
-
 } from "lucide-react";
 import { type Student } from "../data";
+import { formatPhoneNumber } from "../../../../utils/formatters";
 
 export function ProfileTab({ s }: { s: Student }) {
   return (
@@ -15,8 +15,9 @@ export function ProfileTab({ s }: { s: Student }) {
       {/* Left: avatar + quick stats */}
       <div className="bg-white rounded-xl p-6 text-center border border-slate-200">
         <div
-          className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${s.avatarColor || s.avatarBg || "bg-indigo-500"
-            }`}
+          className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
+            s.avatarColor || s.avatarBg || "bg-indigo-500"
+          }`}
         >
           <span className="text-white font-bold text-2xl">
             {s.initials || s.avatar}
@@ -27,10 +28,11 @@ export function ProfileTab({ s }: { s: Student }) {
           {s.grade} · {s.gender}
         </p>
         <span
-          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium mt-2 ${s.status === "Active"
+          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium mt-2 ${
+            s.status === "Active"
               ? "bg-indigo-100 text-indigo-800"
               : "bg-red-100 text-red-800"
-            }`}
+          }`}
         >
           {s.status === "Active" ? (
             <CheckCircle size={12} />
@@ -41,7 +43,7 @@ export function ProfileTab({ s }: { s: Student }) {
         </span>
         <div className="mt-4 space-y-2 text-left">
           {[
-            { icon: Phone, label: s.phone },
+            { icon: Phone, label: formatPhoneNumber(s.phone) },
             { icon: Mail, label: s.email },
             { icon: MapPin, label: s.address },
             { icon: Calendar, label: `DOB: ${s.dob}` },
@@ -86,9 +88,13 @@ export function ProfileTab({ s }: { s: Student }) {
           {s.parentsList && s.parentsList.length > 0 ? (
             <div className="space-y-3">
               {s.parentsList.map((p, idx) => {
-                const parentInitials = `${p.first_name[0] || ""}${p.last_name[0] || ""}`.toUpperCase();
+                const parentInitials =
+                  `${p.first_name[0] || ""}${p.last_name[0] || ""}`.toUpperCase();
                 return (
-                  <div key={p.id || idx} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div
+                    key={p.id || idx}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                  >
                     <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-purple-500 text-white font-semibold text-sm">
                       {parentInitials}
                     </div>
@@ -101,7 +107,9 @@ export function ProfileTab({ s }: { s: Student }) {
                           {p.relationship_type || `Parent ${idx + 1}`}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">{p.phone_number}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {formatPhoneNumber(p.phone_number)}
+                      </p>
                       <p className="text-xs text-slate-500">{p.email}</p>
                     </div>
                   </div>
@@ -124,48 +132,104 @@ export function ProfileTab({ s }: { s: Student }) {
                 <p className="text-sm font-semibold text-slate-900">
                   {s.parentName}
                 </p>
-                <p className="text-xs text-slate-500">{s.parentPhone}</p>
+                <p className="text-xs text-slate-500">
+                  {formatPhoneNumber(s.parentPhone)}
+                </p>
                 <p className="text-xs text-slate-500">{s.parentEmail}</p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Emergency */}
-        <div className="bg-white rounded-xl p-5 border border-slate-200">
+        {/* Guardian Information */}
+        <div className="bg-white rounded-xl p-5 border border-slate-200 mt-5">
           <h3 className="font-semibold mb-3 text-slate-900 text-[15px]">
-            Emergency Contact
+            Guardian Information
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Guardian 1 */}
             <div>
-              <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
-                Primary Contact
-              </p>
-              <p className="text-sm text-slate-700">{s.parentName}</p>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-3 border-b border-slate-100 pb-2">
+                Guardian 1
+              </h4>
+              {s.parentsList && s.parentsList.length > 0 ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold mb-0.5 text-slate-400">
+                      Name
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {s.parentsList[0].first_name} {s.parentsList[0].last_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold mb-0.5 text-slate-400">
+                      Relationship
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {s.parentsList[0].relationship_type ||
+                        "Parent / Guardian"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold mb-0.5 text-slate-400">
+                      Phone
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {formatPhoneNumber(s.parentsList[0].phone_number)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">
+                  No Guardian 1 details found.
+                </p>
+              )}
             </div>
+
+            {/* Guardian 2 */}
             <div>
-              <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
-                Relation
-              </p>
-              <p className="text-sm text-slate-700">Parent / Guardian</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
-                Phone
-              </p>
-              <p className="text-sm text-slate-700">{s.parentPhone}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide font-medium mb-1 text-slate-400">
-                Alt. Parent Phone
-              </p>
-              <p className="text-sm text-slate-700">
-                {s.parentsList && s.parentsList.length > 1 ? s.parentsList[1].phone_number : "N/A"}
-              </p>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-2">
+                Guardian 2
+              </h4>
+              {s.parentsList && s.parentsList.length > 1 ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold mb-0.5 text-slate-400">
+                      Name
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {s.parentsList[1].first_name} {s.parentsList[1].last_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold mb-0.5 text-slate-400">
+                      Relationship
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {s.parentsList[1].relationship_type ||
+                        "Parent / Guardian"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold mb-0.5 text-slate-400">
+                      Phone
+                    </p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {formatPhoneNumber(s.parentsList[1].phone_number)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">
+                  {" "}
+                  Guardian 2 details not provided.
+                </p>
+              )}
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
