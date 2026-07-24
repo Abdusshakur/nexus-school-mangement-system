@@ -1,3 +1,4 @@
+
 from uuid import UUID
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,9 +13,10 @@ from backend.app.core.auth_utils import (
     get_current_token_payload,
 )
 from backend.app.db.database import get_session
-from backend.app.models import ParentProfile, StudentProfile, User, UserRole
+from backend.app.models import ParentProfile, StudentProfile, User, UserRole, TeacherProfile, AdminProfile
 from backend.app.schemas_events import BaseEvent
 from backend.app.services.publisher import publish_event
+
 
 router = APIRouter(
     prefix="/auth",
@@ -52,9 +54,21 @@ class LoginResponse(BaseModel):
 # --- ENDPOINTS ---
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRegisterResponse)
-def register_user(request: UserRegisterRequest, session: Session = Depends(get_session)):
-    """Registers a central user identity and conditionally spins up their profile."""
-    # 1. Prevent duplicate registrations
+def register_user(
+    request: UserRegisterRequest, 
+    session: Session = Depends(get_session)
+):
+    """Registers a central user identity. Strictly limited to System Admins."""
+    
+    # 1. Enforce Architectural Boundaries! 
+    # Force the frontend to use the dedicated onboarding endpoints for these roles.
+    if request.role in [UserRole.STUDENT, UserRole.PARENT, UserRole.TEACHER]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot register {request.role}s here. Please use the dedicated /api/v1/{request.role.value.lower()}s/ onboarding endpoints."
+        )
+
+    # 2. Prevent duplicate registrations
     existing_user = session.query(User).filter(User.email == request.email).first()
     if existing_user:
         raise HTTPException(
@@ -62,7 +76,7 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
             detail="Email is already registered",
         )
 
-    # 2. Scramble password securely using native bcrypt
+    # 3. Scramble password securely
     hashed_pwd = hash_password(request.password)
 
     new_user = User(
@@ -75,40 +89,27 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
 
     profile_id = None
 
-    # 3. Handle data structure branches according to chosen system role
-    if request.role == UserRole.STUDENT:
-        if not request.admission_number or not request.class_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Students require an admission number and class name.",
-            )
-        student_prof = StudentProfile(
+    # 4. Handle Admin Profile Creation
+    if request.role == UserRole.ADMIN:
+        # Assuming your UserRegisterRequest schema has these, or you can hardcode fallbacks
+        first_name = getattr(request, 'first_name', 'System')
+        last_name = getattr(request, 'last_name', 'Admin')
+        phone = getattr(request, 'phone_number', None)
+        
+        admin_prof = AdminProfile(
             user_id=new_user.id,
-            admission_number=request.admission_number,
-            class_name=request.class_name,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone
         )
-        session.add(student_prof)
+        session.add(admin_prof)
         session.flush()
-        profile_id = student_prof.id
-
-    elif request.role == UserRole.PARENT:
-        if not request.phone_number:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Parents require a contact phone number.",
-            )
-        parent_prof = ParentProfile(
-            user_id=new_user.id,
-            phone_number=request.phone_number,
-        )
-        session.add(parent_prof)
-        session.flush()
-        profile_id = parent_prof.id
+        profile_id = admin_prof.id
 
     # Commit ensures all steps succeeded, otherwise rolls back completely
     session.commit()
 
-    # 4. Broadcast the event outward to background services
+    # 5. Broadcast the event outward to background services
     event = BaseEvent(
         event_type="user_registered",
         payload={
@@ -127,6 +128,7 @@ def register_user(request: UserRegisterRequest, session: Session = Depends(get_s
         profile_id=profile_id,
     )
 
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=LoginResponse)
 def login_for_access_token(
@@ -159,25 +161,24 @@ def login_for_access_token(
     # 3. Handle relational lookups dynamically based on system role types
     if user.role == UserRole.STUDENT:
         profile = session.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
-        if profile:
-            first_name = getattr(profile, "first_name", "Student")
-            last_name = getattr(profile, "last_name", "")
-            
     elif user.role == UserRole.PARENT:
         profile = session.query(ParentProfile).filter(ParentProfile.user_id == user.id).first()
-        if profile:
-            first_name = getattr(profile, "first_name", "Parent")
-            last_name = getattr(profile, "last_name", "")
-            
-    elif user.role == UserRole.TEACHER or user.role == UserRole.ADMIN:
-        # Optional: In case you want a specialized fallback identifier label for staff users
-        first_name = "Staff"
-        last_name = "Member"
+    elif user.role == UserRole.TEACHER:
+        profile = session.query(TeacherProfile).filter(TeacherProfile.user_id == user.id).first()
+    elif user.role == UserRole.ADMIN:
+        profile = session.query(AdminProfile).filter(AdminProfile.user_id == user.id).first()
+    else:
+        profile = None
 
-    # 4. Return the complete aggregated payload back to the client interface in a single execution shot
+    # Safely extract names if a profile was found
+    if profile:
+        first_name = getattr(profile, "first_name", first_name)
+        last_name = getattr(profile, "last_name", last_name)
+
+    # 4. Return the complete aggregated payload back to the client interface
     return LoginResponse(
         access_token=access_token,
-        token_type="bearer",  # Ensures OAuth2 schema compliance
+        token_type="bearer",
         user=UserSummary(
             id=user.id, 
             role=user.role,
@@ -185,6 +186,7 @@ def login_for_access_token(
             last_name=last_name
         )
     )
+
 
 @router.get("/me")
 def get_current_user_profile(
@@ -198,10 +200,31 @@ def get_current_user_profile(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found")
         
+    first_name = "Campus"
+    last_name = "User"
+
+    # Fetch names here too so page refreshes don't break the frontend UI
+    if user.role == UserRole.STUDENT:
+        profile = session.query(StudentProfile).filter(StudentProfile.user_id == user.id).first()
+    elif user.role == UserRole.PARENT:
+        profile = session.query(ParentProfile).filter(ParentProfile.user_id == user.id).first()
+    elif user.role == UserRole.TEACHER:
+        profile = session.query(TeacherProfile).filter(TeacherProfile.user_id == user.id).first()
+    elif user.role == UserRole.ADMIN:
+        profile = session.query(AdminProfile).filter(AdminProfile.user_id == user.id).first()
+    else:
+        profile = None
+
+    if profile:
+        first_name = getattr(profile, "first_name", first_name)
+        last_name = getattr(profile, "last_name", last_name)
+
     return {
         "id": user.id,
         "email": user.email,
         "role": user.role,
+        "first_name": first_name,
+        "last_name": last_name,
         "is_active": user.is_active,
         "created_at": user.created_at
     }
