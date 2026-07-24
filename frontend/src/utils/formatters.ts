@@ -33,3 +33,8 @@ export function formatParentInitials(name: string): string {
   }
   return name.substring(0, 2).toUpperCase();
 }
+
+export function formatPhoneNumber(phone?: string): string {
+  if (!phone) return "N/A";
+  return phone.split(/x/i)[0].trim();
+}

@@ -3,7 +3,7 @@ import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
 import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
-import { formatParentName, formatParentInitials } from "../../../utils/formatters";
+import { formatParentName, formatParentInitials, formatPhoneNumber } from "../../../utils/formatters";
 
 
 export function ParentDetail() {
@@ -107,7 +107,7 @@ export function ParentDetail() {
           </p>
           <div className="mt-6 space-y-3.5 text-left pt-6 border-t border-slate-100">
             {[
-              { icon: Phone, label: parent.phone },
+              { icon: Phone, label: formatPhoneNumber(parent.phone) },
               { icon: Mail, label: parent.email },
               { icon: MapPin, label: parent.address },
             ].map(({ icon: Icon, label }, i) => (

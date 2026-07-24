@@ -76,9 +76,7 @@ export default function ClassDetail() {
               <h3 className="font-bold text-lg mb-4 text-slate-800">
                 Enrolled Students ({classData.count})
               </h3>
-              <p className="text-slate-500 text-sm">
-                Searchable table coming soon...
-              </p>
+              <p className="text-slate-500 text-sm">Is Coming...</p>
             </div>
           )}
 
@@ -87,9 +85,7 @@ export default function ClassDetail() {
               <h3 className="font-bold text-lg mb-4 text-slate-800">
                 Mark Attendance
               </h3>
-              <p className="text-slate-500 text-sm">
-                Per-student P/L/A toggle coming soon...
-              </p>
+              <p className="text-slate-500 text-sm">Is Coming...</p>
             </div>
           )}
 
@@ -98,9 +94,7 @@ export default function ClassDetail() {
               <h3 className="font-bold text-lg mb-4 text-slate-800">
                 Class Assignments
               </h3>
-              <p className="text-slate-500 text-sm">
-                Create link and progress bars coming soon...
-              </p>
+              <p className="text-slate-500 text-sm">Is Coming...</p>
             </div>
           )}
 

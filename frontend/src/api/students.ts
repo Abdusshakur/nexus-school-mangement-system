@@ -85,6 +85,13 @@ export const fetchStudentsList = async (
   return apiFetch(path, { method: "GET" });
 };
 
+// GET: Fetch a single student's complete profile
+export const fetchStudentById = async (
+  id: string,
+): Promise<StudentResponse> => {
+  return apiFetch(`/students/${id}`, { method: "GET" });
+};
+
 export function formatClassName(name?: string): string {
   if (!name) return "SS 1";
   const clean = name.trim();

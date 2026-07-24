@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Users, Plus, Trash2, Loader2, AlertCircle } from "lucide-react";
+import {
+  BookOpen,
+  Users,
+  Plus,
+  Trash2,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { toast } from "sonner";
@@ -53,8 +60,13 @@ export function AcademicsSetup() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
-    
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this item? This action cannot be undone.",
+      )
+    )
+      return;
+
     try {
       if (activeTab === "classes") {
         await removeClass(id);
@@ -72,17 +84,19 @@ export function AcademicsSetup() {
   const isLoading = activeTab === "classes" ? classesLoading : subjectsLoading;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Academic Setup</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Academic Management
+          </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Manage your school's classes and subjects.
+            Manage your classes and subjects.
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-150">
         {/* Sidebar Tabs */}
         <div className="w-full md:w-64 bg-slate-50 border-r border-slate-200 p-4 shrink-0">
           <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto">
@@ -138,14 +152,21 @@ export function AcademicsSetup() {
               disabled={!newItemName.trim() || isSubmitting}
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm cursor-pointer"
             >
-              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              {isSubmitting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Plus size={16} />
+              )}
               Add
             </button>
           </form>
 
           {isLoading && currentItems.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-              <Loader2 size={32} className="animate-spin mb-4 text-indigo-500" />
+              <Loader2
+                size={32}
+                className="animate-spin mb-4 text-indigo-500"
+              />
               <p>Loading {activeTab}...</p>
             </div>
           ) : currentItems.length > 0 ? (
@@ -155,7 +176,9 @@ export function AcademicsSetup() {
                   key={item.id}
                   className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group"
                 >
-                  <span className="font-semibold text-slate-700">{item.name}</span>
+                  <span className="font-semibold text-slate-700">
+                    {item.name}
+                  </span>
                   <button
                     onClick={() => handleDelete(item.id)}
                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
@@ -171,7 +194,8 @@ export function AcademicsSetup() {
               <AlertCircle size={48} className="mb-4 text-slate-300" />
               <p className="font-medium text-slate-600">No {activeTab} found</p>
               <p className="text-sm mt-1 text-center max-w-xs">
-                You haven't added any {activeTab} yet. Use the input above to create one.
+                You haven't added any {activeTab} yet. Use the input above to
+                create one.
               </p>
             </div>
           )}

@@ -7,6 +7,7 @@ import { useParentStore } from "../../../store/parent.store";
 import {
   formatParentName,
   formatParentInitials,
+  formatPhoneNumber,
 } from "../../../utils/formatters";
 
 export function ParentList() {
@@ -39,7 +40,7 @@ export function ParentList() {
       p.phone_number.toLowerCase() === "null";
     const phoneDisplay = isInvalidPhone
       ? "No phone registered"
-      : p.phone_number;
+      : formatPhoneNumber(p.phone_number);
 
     const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
     const colorIndex = p.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;

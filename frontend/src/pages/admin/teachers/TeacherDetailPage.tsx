@@ -13,8 +13,15 @@ import {
 import { toast } from "sonner";
 import { ROUTES } from "../../../config/routes";
 import { useTeacherStore, type Teacher } from "../../../store/teacher.store";
-import { fetchTeacherById, assignTeacherClasses, assignTeacherSubjects } from "../../../api/teachers";
-import { formatParentInitials } from "../../../utils/formatters";
+import {
+  fetchTeacherById,
+  assignTeacherClasses,
+  assignTeacherSubjects,
+} from "../../../api/teachers";
+import {
+  formatPhoneNumber,
+  formatParentInitials,
+} from "../../../utils/formatters";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { DEPARTMENTS } from "./data";
@@ -47,7 +54,7 @@ export function TeacherDetailPage() {
           staffId: data.id.substring(0, 8).toUpperCase(),
           name: `${data.first_name} ${data.last_name}`,
           email: data.email,
-          phone: data.phone_number,
+          phone: formatPhoneNumber(data.phone_number),
           gender: data.gender,
           qualification: data.qualification,
           dept: data.department,
@@ -116,7 +123,7 @@ export function TeacherDetailPage() {
       updateTeacher(editForm);
       setTeacher(editForm);
       setEditing(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update profile.");
     }
   };
@@ -127,7 +134,7 @@ export function TeacherDetailPage() {
       await assignTeacherClasses(id, teacher.classes);
       toast.success("Classes assigned successfully");
       setShowEditClasses(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to assign classes");
     }
   };
@@ -184,10 +191,11 @@ export function TeacherDetailPage() {
               {teacher.title}
             </p>
             <span
-              className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold ${teacher.status === "Active"
-                ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                : "bg-slate-100 text-slate-600 border border-slate-200"
-                }`}
+              className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold ${
+                teacher.status === "Active"
+                  ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                  : "bg-slate-100 text-slate-600 border border-slate-200"
+              }`}
             >
               {teacher.status}
             </span>
@@ -233,7 +241,8 @@ export function TeacherDetailPage() {
                 Account Security
               </span>
               <p className="text-xs font-semibold text-slate-500">
-                Password is securely hashed and hidden.
+                Reset the teacher's password by sending a reset link to their
+                registered email address.
               </p>
             </div>
             <button
