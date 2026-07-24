@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   ClipboardList,
   ArrowRight,
-  TrendingUp,
   Award,
 } from "lucide-react";
 
@@ -91,14 +90,6 @@ export default function TeacherDashboard() {
           iconBg="bg-amber-50"
           sub="Assignments to grade"
         />
-        {/* Reserved future slots */}
-        <div className="bg-white rounded-xl p-5 flex items-center justify-center border-2 border-dashed border-slate-200">
-          <div className="text-center">
-            <TrendingUp size={22} className="text-slate-300 mx-auto mb-1" />
-            <p className="text-xs text-slate-300">Performance</p>
-            <p className="text-xs text-slate-300">Coming soon</p>
-          </div>
-        </div>
       </div>
 
       {/* Row 2: Schedule + Quick actions */}

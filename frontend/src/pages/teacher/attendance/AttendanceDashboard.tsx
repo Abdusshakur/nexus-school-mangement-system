@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useTeacherAttendanceStore } from "../../../store/teacherAttendance.store";
 import { NIGERIAN_CLASSES, generateStudents } from "./teacherData";
@@ -113,7 +114,9 @@ export default function TeacherAttendance() {
       });
       setSubmitting(false);
       setSubmitted(true);
-      setShowConfirm(false);
+      toast.success("Attendance Submitted Successfully", {
+        description: "Pending admin approval",
+      });
       setSubmissionTime(time);
     }, 900);
   };
@@ -128,7 +131,6 @@ export default function TeacherAttendance() {
     const absentCount = subData
       ? subData.entries.filter((e) => e.status === "A").length
       : counts.absent;
-    const rate = Math.round((presentCount / students.length) * 100);
     const displayTime =
       submissionTime ||
       (subData
@@ -141,44 +143,19 @@ export default function TeacherAttendance() {
     return (
       <div className="flex-1 flex bg-slate-50 min-h-0 overflow-y-auto">
         <main className="flex-1 p-8 w-full space-y-5">
-          <div className="bg-white rounded-2xl p-6 border-2 border-emerald-300">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-emerald-100">
-                <CheckCircle size={24} className="text-emerald-500" />
-              </div>
-              <div>
-                <h2 className="font-bold text-lg text-emerald-800">
-                  Attendance Submitted Successfully
-                </h2>
-                <p className="text-sm mt-0.5 text-emerald-800/80">
-                  Pending admin approval · Submitted at {displayTime}
-                </p>
-              </div>
+          <header className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
+                Attendance Register
+              </h1>
+              <p className="text-slate-500 text-sm mt-0.5">
+                {cls.name} · {TODAY}
+              </p>
             </div>
-            <div className="grid grid-cols-3 gap-4 mt-5">
-              {[
-                { label: "Class", value: cls.name, color: "text-indigo-500" },
-                {
-                  label: "Submission Time",
-                  value: displayTime,
-                  color: "text-teal-600",
-                },
-                {
-                  label: "Attendance Rate",
-                  value: `${rate}%`,
-                  color: rate >= 90 ? "text-emerald-500" : "text-amber-500",
-                },
-              ].map(({ label, value, color }) => (
-                <div
-                  key={label}
-                  className="text-center p-3 rounded-xl bg-slate-50"
-                >
-                  <p className="text-xs mb-1 text-slate-400">{label}</p>
-                  <p className={`font-bold text-sm ${color}`}>{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+              Submitted
+            </span>
+          </header>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-xl p-4 text-center border border-slate-200">
@@ -202,7 +179,7 @@ export default function TeacherAttendance() {
           <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
             <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Submitted Register — {TODAY}
+                Submitted Attendance : {displayTime}
               </p>
             </div>
             <div className="divide-y divide-slate-100">
@@ -391,7 +368,7 @@ export default function TeacherAttendance() {
           <button
             onClick={() => setShowConfirm(true)}
             disabled={!allMarked}
-            className={`w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all ${allMarked ? "bg-teal-600 hover:bg-teal-700 shadow-md shadow-teal-600/20" : "bg-slate-300 cursor-not-allowed"}`}
+            className={`w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all ${allMarked ? "bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-teal-600/20" : "bg-slate-300 cursor-not-allowed"}`}
           >
             Submit Attendance
           </button>
@@ -426,7 +403,7 @@ export default function TeacherAttendance() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors"
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
                 >
                   {submitting ? "Submitting…" : "Yes, Submit"}
                 </button>

@@ -18,7 +18,7 @@ export default function Benefits() {
       pillBg: "bg-purple-50 text-purple-700",
       title: "Improve Communication",
       description:
-        "Replace scattered WhatsApp groups with structured announcements. Every parent stays informed — always.",
+        "Replace scattered WhatsApp groups with structured announcements. Every parent stays informed always.",
     },
     {
       id: "ben-3",

@@ -375,7 +375,7 @@ export default function TeacherGrades() {
                     >
                       <div>
                         <p className="text-sm font-medium text-slate-900">
-                          {r.className} — {r.subject}
+                          {r.className} {r.subject}
                         </p>
                         <p className="text-xs text-slate-500">
                           {r.term} · {r.session} ·{" "}
@@ -478,7 +478,7 @@ export default function TeacherGrades() {
                           onChange={(e) =>
                             updateGrade(student.id, e.target.value)
                           }
-                          placeholder="—"
+                          placeholder=" "
                           className="w-20 text-center px-2 py-1.5 rounded-lg text-sm font-bold border-2 border-slate-200 outline-none text-slate-900 focus:border-indigo-600 focus:ring-0 transition-colors"
                         />
                       </td>
@@ -490,7 +490,7 @@ export default function TeacherGrades() {
                             {pct}%
                           </span>
                         ) : (
-                          <span className="text-slate-300">—</span>
+                          <span className="text-slate-300"> </span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-center">
@@ -501,14 +501,14 @@ export default function TeacherGrades() {
                             {gs.l}
                           </span>
                         ) : (
-                          <span className="text-slate-300">—</span>
+                          <span className="text-slate-300"> </span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-center">
                         <span
                           className={`text-xs font-semibold ${pct !== null ? (pct >= 50 ? "text-emerald-500" : "text-red-500") : "text-slate-300"}`}
                         >
-                          {pct !== null ? (pct >= 50 ? "Pass" : "Fail") : "—"}
+                          {pct !== null ? (pct >= 50 ? "Pass" : "Fail") : ""}
                         </span>
                       </td>
                     </tr>

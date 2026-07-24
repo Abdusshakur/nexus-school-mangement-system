@@ -438,10 +438,10 @@ export function ClassAttendanceView() {
                       {s.total}
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-emerald-500">
-                      {s.submitted ? s.present : "—"}
+                      {s.submitted ? s.present : " "}
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-red-500">
-                      {s.submitted ? s.absent : "—"}
+                      {s.submitted ? s.absent : " "}
                     </td>
                     <td className="px-4 py-3">
                       {s.submitted ? (
@@ -458,7 +458,7 @@ export function ClassAttendanceView() {
                       {s.submitted ? (
                         <span className="flex items-center gap-1 text-xs font-medium text-emerald-500">
                           <CheckCircle size={12} />{" "}
-                          {SUBMISSION_TIMES[cls.id] ?? "—"}
+                          {SUBMISSION_TIMES[cls.id] ?? " "}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
@@ -498,7 +498,7 @@ export function ClassAttendanceView() {
             </button>
             <div className="flex-1">
               <h2 className="font-bold text-lg text-slate-900">
-                {selectedCls.name} — Attendance Sheet
+                {selectedCls.name} Attendance Sheet
               </h2>
               <p className="text-sm text-slate-500">
                 Class Teacher: {getTeacherName(selectedClass)} · Submitted{" "}
@@ -589,7 +589,7 @@ export function ClassAttendanceView() {
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-sm text-slate-400">
-                        {rec?.time ?? "—"}
+                        {rec?.time ?? " "}
                       </td>
                     </tr>
                   );

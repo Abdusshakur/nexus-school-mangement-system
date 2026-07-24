@@ -72,7 +72,7 @@ export function ResultsTab({
       <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-900">
-            Subject Results — {session}
+            Subject Results {session}
           </h3>
           <button className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
             <Download size={14} /> Export

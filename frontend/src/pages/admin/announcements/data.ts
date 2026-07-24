@@ -13,7 +13,7 @@ export const announcements = [
   },
   {
     id: "A2",
-    title: "Parent-Teacher Meeting — June 20",
+    title: "Parent-Teacher Meeting  June 20",
     body: "The quarterly Parent-Teacher Meeting is scheduled for June 20, 2026 from 9:00 AM to 1:00 PM. All parents and guardians are strongly encouraged to attend. Individual appointment slots are available for 15-minute sessions with each teacher. Please book your appointments through the parent portal by June 17.",
     date: "Jun 13, 2026",
     priority: "medium",
@@ -33,7 +33,7 @@ export const announcements = [
   },
   {
     id: "A4",
-    title: "Sports Day — July 5, 2026",
+    title: "Sports Day  July 5, 2026",
     body: "Westwood Academy's annual Sports Day will be held on July 5, 2026 at the school athletics ground. All students are required to participate in at least one event. Sign-up sheets are available with your form teachers. Please bring your sports kit and a packed lunch.",
     date: "Jun 10, 2026",
     priority: "medium",
@@ -44,7 +44,19 @@ export const announcements = [
 ];
 
 export const priorityConfig = {
-  high: { label: "High", className: "text-red-500 bg-red-100", icon: AlertCircle },
-  medium: { label: "Medium", className: "text-amber-500 bg-amber-100", icon: Info },
-  low: { label: "Low", className: "text-indigo-500 bg-indigo-100", icon: CheckCircle },
+  high: {
+    label: "High",
+    className: "text-red-500 bg-red-100",
+    icon: AlertCircle,
+  },
+  medium: {
+    label: "Medium",
+    className: "text-amber-500 bg-amber-100",
+    icon: Info,
+  },
+  low: {
+    label: "Low",
+    className: "text-indigo-500 bg-indigo-100",
+    icon: CheckCircle,
+  },
 };
