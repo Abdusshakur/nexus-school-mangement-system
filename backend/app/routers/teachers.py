@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlmodel import Session, select, String
+from typing import List, Optional
 from uuid import UUID
+
 
 from backend.app.db.database import get_session
 from backend.app.models import (
@@ -305,3 +306,67 @@ def get_teacher_detail(
 
     user = session.get(User, teacher.user_id)
     return build_teacher_detail_response(teacher, user.email)
+
+# ------------------------------------------------------------------
+# GET: List All Teachers
+# ------------------------------------------------------------------
+@router.get("/", response_model=List[TeacherCreateResponse], dependencies=[Depends(allow_admin_only)])
+def list_teachers(
+    search: Optional[str] = Query(None, description="Search by Department or ID"),
+    name: Optional[str] = Query(None, description="Search by first name, last name, or full name"), 
+    session: Session = Depends(get_session)
+):
+    """Lists teacher profiles with optional query filters for department, ID, or name."""
+    
+    # Start the query joining TeacherProfile and User
+    query = session.query(TeacherProfile, User).join(User, TeacherProfile.user_id == User.id)
+        
+    # 1. Department or ID filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                TeacherProfile.department.ilike(search_term),
+                # Cast the UUID to a string so we can safely search it
+                func.cast(TeacherProfile.id, String).ilike(search_term)
+            )
+        )
+        
+    # 2. 🧠 Smart Name filter (Checks First, Last, and Combined Full Name)
+    if name:
+        search_term = f"%{name}%"
+        
+        # Stitch the fields together in memory: "Firstname Lastname"
+        full_name_concat = func.concat(TeacherProfile.first_name, ' ', TeacherProfile.last_name)
+        
+        query = query.filter(
+            or_(
+                TeacherProfile.first_name.ilike(search_term),
+                TeacherProfile.last_name.ilike(search_term),
+                full_name_concat.ilike(search_term)
+            )
+        )
+    
+    # Optional: order by newest first
+    query = query.order_by(TeacherProfile.created_at.desc())
+    
+    results = query.all()
+
+    # 3. Return using your helper function or mapping directly to your schema
+    # (Assuming build_teacher_detail_response is available in this file like in the previous code)
+    return [
+        TeacherCreateResponse(
+            id=profile.id,
+            user_id=user.id,
+            first_name=profile.first_name,
+            last_name=profile.last_name,
+            email=user.email,
+            phone_number=profile.phone_number,
+            gender=profile.gender,
+            department=profile.department,
+            qualification=profile.qualification,
+            address=profile.address,
+            created_at=profile.created_at
+            )
+            for profile, user in results
+            ]
