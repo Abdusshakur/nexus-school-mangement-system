@@ -42,6 +42,12 @@ export function Input({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          {...(type === "email"
+            ? {
+                pattern: "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}",
+                title: "Please enter a valid email address with a domain (e.g., user@example.com)",
+              }
+            : {})}
           className={`w-full border rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white ${
             icon ? "pl-11" : ""
           } ${

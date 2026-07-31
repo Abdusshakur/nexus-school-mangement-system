@@ -25,12 +25,19 @@ export const useClassStore = create<ClassState>()(
       error: null,
 
       assignClassTeacher: (classId, teacherId) =>
-        set((state) => ({
-          classTeacherAssignments: {
-            ...state.classTeacherAssignments,
-            [classId]: teacherId,
-          },
-        })),
+        set((state) => {
+          const newAssignments = { ...state.classTeacherAssignments };
+          
+          for (const [cId, tId] of Object.entries(newAssignments)) {
+            if (tId === teacherId) {
+              delete newAssignments[cId];
+            }
+          }
+          
+          newAssignments[classId] = teacherId;
+          
+          return { classTeacherAssignments: newAssignments };
+        }),
 
       removeClassTeacher: (classId) =>
         set((state) => {

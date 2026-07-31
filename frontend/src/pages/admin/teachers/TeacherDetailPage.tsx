@@ -145,7 +145,7 @@ export function TeacherDetailPage() {
       await assignTeacherSubjects(id, teacher.subjects);
       toast.success("Subjects assigned successfully");
       setShowEditSubjects(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to assign subjects");
     }
   };

@@ -43,17 +43,53 @@ export const apiFetch = async (
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      if (response.status === 401) {
-        useAuthStore.getState().logout();
-        toast.error("Session expired or unauthorized. Please log in again.");
-        window.location.href = "/login";
-        throw new Error("Session expired or unauthorized.");
+      let errorMsg = "An error occurred";
+      const backendMessage = data.detail || data.message;
+
+      switch (response.status) {
+        case 400:
+          errorMsg = typeof backendMessage === "string" ? backendMessage : "The information provided is invalid. Please check your inputs and try again.";
+          break;
+        case 401:
+          useAuthStore.getState().logout();
+          errorMsg = "Your session has expired. Please log in again.";
+          toast.error(errorMsg);
+          window.location.href = "/login";
+          throw new Error(errorMsg);
+        case 403:
+          errorMsg = "You do not have permission to perform this action.";
+          break;
+        case 404:
+          errorMsg = "The requested record could not be found. It may have been deleted.";
+          break;
+        case 409:
+          errorMsg = typeof backendMessage === "string" ? backendMessage : "This record already exists in the system.";
+          break;
+        case 422:
+          if (Array.isArray(data.detail)) {
+            const firstErr = data.detail[0];
+            const field = firstErr.loc?.length > 1 ? firstErr.loc[1] : "Input";
+            if (firstErr.msg.includes("valid email address")) {
+              errorMsg = "Invalid email address.";
+            } else {
+              errorMsg = `Invalid format provided for ${field}.`;
+            }
+          } else {
+            errorMsg = "The submitted data is invalid.";
+          }
+          break;
+        case 500:
+          errorMsg = "Internal server error. Please try again later.";
+          break;
+        case 502:
+        case 503:
+        case 504:
+          errorMsg = "The system is currently undergoing maintenance. Please try again in a few minutes.";
+          break;
+        default:
+          errorMsg = typeof backendMessage === "string" ? backendMessage : `Request failed with status ${response.status}`;
       }
 
-      const errorMsg =
-        data.detail?.[0]?.msg ||
-        data.detail ||
-        `Request failed with status ${response.status}`;
       toast.error(errorMsg);
       throw new Error(errorMsg);
     }

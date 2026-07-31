@@ -22,7 +22,7 @@ export function TeachersPage() {
   const { teachers, fetchTeachers } = useTeacherStore();
 
   useEffect(() => {
-    fetchTeachers().catch(() => {});
+    fetchTeachers().catch(() => { });
   }, [fetchTeachers]);
 
   const filtered = teachers.filter((t) => {
