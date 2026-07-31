@@ -152,7 +152,6 @@ export function TeacherDetailPage() {
 
   return (
     <div className="max-w-4xl space-y-6 font-inter">
-      {/* Header Navigation */}
       <div className="flex items-center gap-3">
         <Link
           to={ROUTES.ADMIN.TEACHERS}
@@ -162,10 +161,7 @@ export function TeacherDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-slate-900 text-2xl font-bold">{teacher.name}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {teacher.dept} ·{" "}
-            <span className="font-mono">{teacher.staffId}</span>
-          </p>
+          <p className="text-slate-500 text-sm mt-0.5">{teacher.dept}</p>
         </div>
         <button
           onClick={handleOpenEdit}
