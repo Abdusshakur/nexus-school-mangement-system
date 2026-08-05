@@ -6,10 +6,39 @@ import {
   Trash2,
   Loader2,
   AlertCircle,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { toast } from "sonner";
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <h2 className="font-bold text-[17px] text-slate-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export function AcademicsSetup() {
   const [activeTab, setActiveTab] = useState<"classes" | "subjects">("classes");
@@ -31,7 +60,13 @@ export function AcademicsSetup() {
   } = useSubjectStore();
 
   const [newItemName, setNewItemName] = useState("");
+  const [arm, setArm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadClasses();
@@ -45,13 +80,17 @@ export function AcademicsSetup() {
     setIsSubmitting(true);
     try {
       if (activeTab === "classes") {
-        await addClass(newItemName.trim());
+        const finalName = arm
+          ? `${newItemName.trim()} ${arm}`
+          : newItemName.trim();
+        await addClass(finalName);
         toast.success("Class added successfully");
       } else {
         await addSubject(newItemName.trim());
         toast.success("Subject added successfully");
       }
       setNewItemName("");
+      setArm("");
     } catch (error: any) {
       toast.error(error.message || "Failed to add item");
     } finally {
@@ -59,24 +98,26 @@ export function AcademicsSetup() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this item? This action cannot be undone.",
-      )
-    )
-      return;
+  const handleDelete = (id: string, name: string) => {
+    setDeleteConfirm({ id, name });
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setIsDeleting(true);
     try {
       if (activeTab === "classes") {
-        await removeClass(id);
+        await removeClass(deleteConfirm.id);
         toast.success("Class deleted successfully");
       } else {
-        await removeSubject(id);
+        await removeSubject(deleteConfirm.id);
         toast.success("Subject deleted successfully");
       }
+      setDeleteConfirm(null);
     } catch (error: any) {
       toast.error(error.message || "Failed to delete item");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -147,6 +188,23 @@ export function AcademicsSetup() {
               className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50"
               disabled={isSubmitting}
             />
+            {activeTab === "classes" && (
+              <select
+                value={arm}
+                onChange={(e) => setArm(e.target.value)}
+                className="w-32 md:w-40 px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 cursor-pointer"
+                disabled={isSubmitting}
+              >
+                <option value="">No Arm</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="Science">Science</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Arts">Arts</option>
+              </select>
+            )}
             <button
               type="submit"
               disabled={!newItemName.trim() || isSubmitting}
@@ -180,7 +238,7 @@ export function AcademicsSetup() {
                     {item.name}
                   </span>
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => handleDelete(item.id, item.name)}
                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
                     title={`Delete ${item.name}`}
                   >
@@ -201,6 +259,45 @@ export function AcademicsSetup() {
           )}
         </div>
       </div>
+
+      {deleteConfirm && (
+        <Modal
+          title={`Delete ${activeTab === "classes" ? "Class" : "Subject"}`}
+          onClose={() => setDeleteConfirm(null)}
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-red-50 text-red-800 rounded-xl">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+              <p className="text-sm">
+                Are you sure you want to delete{" "}
+                <strong>{deleteConfirm.name}</strong>? This action cannot be
+                undone.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

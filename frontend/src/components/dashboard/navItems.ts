@@ -51,6 +51,11 @@ const ADMIN_NAV_ITEMS = [
     icon: BookOpen,
   },
   {
+    label: "Timetable",
+    href: ROUTES.ADMIN.TIMETABLE,
+    icon: CalendarCheck,
+  },
+  {
     label: "Settings",
     href: ROUTES.ADMIN.SETTINGS,
     icon: Settings,
@@ -67,6 +72,11 @@ const TEACHER_NAV_ITEMS = [
     label: "My Classes",
     href: ROUTES.TEACHER.CLASSES,
     icon: BookOpen,
+  },
+  {
+    label: "Timetable",
+    href: ROUTES.TEACHER.TIMETABLE,
+    icon: CalendarCheck,
   },
   {
     label: "Attendance",

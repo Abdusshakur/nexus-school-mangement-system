@@ -20,6 +20,7 @@ import { CreateAnnouncement } from "../pages/admin/announcements/createAnnouncem
 import { AnnouncementDetail } from "../pages/admin/announcements/AnnoncementDetails";
 import { Settings } from "../pages/admin/settings/Settings";
 import { AcademicsSetup } from "../pages/admin/academics/AcademicsSetup";
+import { AdminTimetable } from "../pages/admin/timetable/AdminTimetable";
 
 export const adminRoutes = (
   <Route path="/admin" element={<RoleRoute allowedRoles={[UserRole.ADMIN]} />}>
@@ -39,6 +40,7 @@ export const adminRoutes = (
     <Route path="announcements/create" element={<CreateAnnouncement />} />
     <Route path="announcements/:id" element={<AnnouncementDetail />} />
     <Route path="academics" element={<AcademicsSetup />} />
+    <Route path="timetable" element={<AdminTimetable />} />
     <Route path="settings" element={<Settings />} />
   </Route>
 );

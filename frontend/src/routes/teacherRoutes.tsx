@@ -13,6 +13,7 @@ import TeacherStudents from "../pages/teacher/students/StudentsPage";
 
 import TeacherProfile from "../pages/teacher/profile/ProfilePage";
 import TeacherSettingsPage from "../pages/teacher/settings/SettingsPage";
+import TeacherTimetable from "../pages/teacher/timetable/TeacherTimetable";
 
 export const teacherRoutes = (
   <Route
@@ -28,6 +29,7 @@ export const teacherRoutes = (
     <Route path="announcements" element={<TeacherAnnouncements />} />
     <Route path="grades" element={<TeacherGrades />} />
     <Route path="students" element={<TeacherStudents />} />
+    <Route path="timetable" element={<TeacherTimetable />} />
 
     <Route path="profile" element={<TeacherProfile />} />
     <Route path="settings" element={<TeacherSettingsPage />} />

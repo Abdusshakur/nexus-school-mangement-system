@@ -22,6 +22,7 @@ export const ROUTES = {
     ANNOUNCEMENT_CREATE: '/admin/announcements/create',
     ANNOUNCEMENT_DETAIL: (id: string) => `/admin/announcements/${id}`,
     ACADEMICS: '/admin/academics',
+    TIMETABLE: '/admin/timetable',
     SETTINGS: '/admin/settings',
   },
   TEACHER: {
@@ -34,6 +35,7 @@ export const ROUTES = {
     GRADES: '/teacher/grades',
     STUDENTS: '/teacher/students',
     MESSAGES: '/teacher/messages',
+    TIMETABLE: '/teacher/timetable',
     PROFILE: '/teacher/profile',
     SETTINGS: '/teacher/settings',
   },
