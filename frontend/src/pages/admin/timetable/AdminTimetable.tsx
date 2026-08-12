@@ -52,7 +52,6 @@ export function AdminTimetable() {
 
   const [term, setTerm] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedClass, setSelectedClass] = useState<{ id: string, name: string } | null>(null);
 
   // Edit Modal State
   const [editCell, setEditCell] = useState<{ day: number, period: number, cellKey: TimetableKey } | null>(null);
@@ -68,44 +67,30 @@ export function AdminTimetable() {
     loadSubjects();
   }, [fetchTerms, loadClasses, fetchTeachers, loadSubjects]);
 
-  useEffect(() => {
-    if (classes.length > 0 && !selectedClassId) {
-      setSelectedClassId(classes[0].id);
-    }
-  }, [classes, selectedClassId]);
+  const activeClassId = selectedClassId || (classes.length > 0 ? classes[0].id : "");
+  const activeClass = classes.find(c => c.id === activeClassId) || null;
+  const activeTerm = term || (terms.length > 0 ? terms[0] : "");
 
   useEffect(() => {
-    if (classes.length > 0 && selectedClassId) {
-      setSelectedClass(classes.find(c => c.id === selectedClassId) || null);
+    if (activeTerm) {
+      fetchTimetable(activeTerm);
     }
-  }, [selectedClassId, classes]);
-
-  useEffect(() => {
-    if (terms.length > 0 && !term) {
-      setTerm(terms[0]);
-    }
-  }, [terms, term]);
-
-  useEffect(() => {
-    if (term) {
-      fetchTimetable(term);
-    }
-  }, [term, fetchTimetable]);
+  }, [activeTerm, fetchTimetable]);
 
   const schoolGrid: Record<string, TimetableCell | undefined> = {};
   Object.entries(timetableGrid).forEach(([key, cell]) => {
     if (!cell) return;
     const [classId, day, period] = key.split("-");
     const dpKey = `${day}-${period}`;
-    if (classId === selectedClassId) {
+    if (classId === activeClassId) {
       schoolGrid[dpKey] = cell;
     }
   });
 
   const handleCellClick = (d: number, p: number) => {
-    if (!term || !selectedClassId) return;
+    if (!activeTerm || !activeClassId) return;
 
-    const cellKey = `${selectedClassId}-${d}-${p}`;
+    const cellKey = `${activeClassId}-${d}-${p}`;
     const existing = timetableGrid[cellKey];
 
     setEditCell({ day: d, period: p, cellKey });
@@ -124,11 +109,11 @@ export function AdminTimetable() {
         subject: editSubject,
         teacherId: editTeacher,
         teacherName: teacher?.name || "",
-        className: selectedClass?.name || "",
+        className: activeClass?.name || "",
         room: editRoom || undefined,
       };
 
-      await saveTimetableCell(term, editCell.cellKey, cell);
+      await saveTimetableCell(activeTerm, editCell.cellKey, cell);
       toast.success("Lesson assigned successfully");
       setEditCell(null);
     } catch (error: any) {
@@ -142,7 +127,7 @@ export function AdminTimetable() {
     if (!editCell) return;
     setIsSaving(true);
     try {
-      await saveTimetableCell(term, editCell.cellKey, undefined);
+      await saveTimetableCell(activeTerm, editCell.cellKey, undefined);
       toast.success("Lesson cleared");
       setEditCell(null);
     } catch (error: any) {
@@ -166,7 +151,7 @@ export function AdminTimetable() {
           <div className="flex gap-3">
             {classes.length > 0 && (
               <div className="relative">
-                <select value={selectedClassId} onChange={(e) => setSelectedClassId(e.target.value)}
+                <select value={activeClassId} onChange={(e) => setSelectedClassId(e.target.value)}
                   className="pl-3 pr-8 py-2.5 rounded-lg text-sm bg-white appearance-none font-medium shadow-sm transition-colors cursor-pointer focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 text-slate-700 outline-none">
                   {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -174,7 +159,7 @@ export function AdminTimetable() {
               </div>
             )}
             <div className="relative">
-              <select value={term} onChange={(e) => setTerm(e.target.value)}
+              <select value={activeTerm} onChange={(e) => setTerm(e.target.value)}
                 className="pl-3 pr-8 py-2.5 rounded-lg text-sm bg-white appearance-none font-medium shadow-sm transition-colors cursor-pointer focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 text-slate-700 outline-none">
                 {terms.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -188,7 +173,7 @@ export function AdminTimetable() {
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
         <div className="flex items-center border-b border-slate-100">
           <div className="px-6 py-4 text-sm font-semibold flex items-center gap-2 text-slate-900">
-            {selectedClass?.name || "Select a class"} Timetable
+            {activeClass?.name || "Select a class"} Timetable
           </div>
           <div className="ml-auto px-4">
             <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600">

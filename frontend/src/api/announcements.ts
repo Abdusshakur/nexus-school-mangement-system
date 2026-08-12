@@ -18,13 +18,13 @@ export interface AnnouncementResponse {
 }
 
 export const fetchAnnouncements = async (
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" = "PUBLISHED"
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" = "PUBLISHED",
 ): Promise<AnnouncementResponse[]> => {
-  return apiFetch(`/announcements?status=${status}`, { method: "GET" });
+  return apiFetch(`/announcements/?status=${status}`, { method: "GET" });
 };
 
 export const createAnnouncement = async (
-  payload: AnnouncementCreatePayload
+  payload: AnnouncementCreatePayload,
 ): Promise<AnnouncementResponse> => {
   return apiFetch("/announcements", {
     method: "POST",

@@ -133,6 +133,7 @@ export function TeacherDetailPage() {
     try {
       await assignTeacherClasses(id, teacher.classes);
       toast.success("Classes assigned successfully");
+      updateTeacher(teacher);
       setShowEditClasses(false);
     } catch {
       toast.error("Failed to assign classes");
@@ -144,6 +145,7 @@ export function TeacherDetailPage() {
     try {
       await assignTeacherSubjects(id, teacher.subjects);
       toast.success("Subjects assigned successfully");
+      updateTeacher(teacher);
       setShowEditSubjects(false);
     } catch {
       toast.error("Failed to assign subjects");
@@ -416,7 +418,7 @@ export function TeacherDetailPage() {
             <ClassSelector
               selected={teacher.classes}
               onToggle={(classId) =>
-                updateTeacher({
+                setTeacher({
                   ...teacher,
                   classes: toggleTag(teacher.classes, classId),
                 })
@@ -445,7 +447,7 @@ export function TeacherDetailPage() {
               options={availSubjects}
               selected={teacher.subjects}
               onToggle={(sName) =>
-                updateTeacher({
+                setTeacher({
                   ...teacher,
                   subjects: toggleTag(teacher.subjects, sName),
                 })

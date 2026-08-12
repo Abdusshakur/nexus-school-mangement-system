@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { submitBulkAttendance, type BulkAttendanceCreatePayload } from "../api/attendance";
 
 export interface AttendanceSubmission {
   id: string;
@@ -19,7 +20,7 @@ export interface AttendanceSubmission {
 interface TeacherAttendanceState {
   attendanceSubmissions: AttendanceSubmission[];
   getTeacherClass: (teacherId: string) => string | null;
-  submitAttendance: (data: Omit<AttendanceSubmission, "id" | "submittedAt">) => void;
+  submitAttendance: (data: Omit<AttendanceSubmission, "id" | "submittedAt">) => Promise<void>;
 }
 
 export const useTeacherAttendanceStore = create<TeacherAttendanceState>((set) => ({
@@ -29,7 +30,23 @@ export const useTeacherAttendanceStore = create<TeacherAttendanceState>((set) =>
     if (teacherId === "T001") return "SS2SCI";
     return null;
   },
-  submitAttendance: (data) =>
+  submitAttendance: async (data) => {
+    const payload: BulkAttendanceCreatePayload = {
+      attendance_date: new Date().toISOString().split("T")[0],
+      class_name: data.className,
+      records: data.entries.map((e) => ({
+        student_id: e.studentId,
+        status: e.status === "P" ? "PRESENT" : e.status === "A" ? "ABSENT" : "LATE",
+      })),
+    };
+
+    try {
+      await submitBulkAttendance(payload);
+    } catch (error) {
+      console.error("Failed to submit attendance to backend:", error);
+      throw error;
+    }
+
     set((state) => ({
       attendanceSubmissions: [
         ...state.attendanceSubmissions,
@@ -39,5 +56,6 @@ export const useTeacherAttendanceStore = create<TeacherAttendanceState>((set) =>
           submittedAt: new Date().toISOString(),
         },
       ],
-    })),
+    }));
+  },
 }));

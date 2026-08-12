@@ -75,7 +75,11 @@ export function MarkAttendance() {
       class_name: dbClass,
       records: roster.map((r) => ({
         student_id: r.id,
-        status: r.status,
+        status: (r.status === "Present"
+          ? "PRESENT"
+          : r.status === "Absent"
+            ? "ABSENT"
+            : "LATE") as "PRESENT" | "ABSENT" | "LATE",
       })),
     };
 

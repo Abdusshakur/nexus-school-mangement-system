@@ -9,8 +9,8 @@ import {
   BookOpen,
   ClipboardList,
   Star,
-  MessageSquare,
-  UserCircle
+  // MessageSquare,
+  UserCircle,
 } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
@@ -103,11 +103,11 @@ const TEACHER_NAV_ITEMS = [
     href: ROUTES.TEACHER.ANNOUNCEMENTS,
     icon: Megaphone,
   },
-  {
-    label: "Messages",
-    href: ROUTES.TEACHER.MESSAGES,
-    icon: MessageSquare,
-  },
+  // {
+  //   label: "Messages",
+  //   href: ROUTES.TEACHER.MESSAGES,
+  //   icon: MessageSquare,
+  // },
   {
     label: "Profile",
     href: ROUTES.TEACHER.PROFILE,

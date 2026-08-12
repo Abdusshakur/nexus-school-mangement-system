@@ -7,7 +7,10 @@ import {
   MessageSquare,
   Users,
   BookOpen,
+  Settings,
 } from "lucide-react";
+
+import { ROUTES } from "../../../config/routes";
 
 export const todaySchedule = [
   {
@@ -136,7 +139,7 @@ export const notifications = [
 export const quickActions = [
   {
     label: "Take Attendance",
-    to: "/teacher/attendance",
+    to: ROUTES.TEACHER.ATTENDANCE,
     icon: CalendarCheck,
     colorText: "text-indigo-600",
     colorBg: "bg-indigo-600/10",
@@ -144,7 +147,7 @@ export const quickActions = [
   },
   {
     label: "Upload Assignment",
-    to: "/teacher/assignments",
+    to: ROUTES.TEACHER.ASSIGNMENTS,
     icon: Upload,
     colorText: "text-indigo-500",
     colorBg: "bg-indigo-500/10",
@@ -152,7 +155,7 @@ export const quickActions = [
   },
   {
     label: "Enter Grades",
-    to: "/teacher/grades",
+    to: ROUTES.TEACHER.GRADES,
     icon: Star,
     colorText: "text-amber-500",
     colorBg: "bg-amber-500/10",
@@ -160,7 +163,7 @@ export const quickActions = [
   },
   {
     label: "View Students",
-    to: "/teacher/students",
+    to: ROUTES.TEACHER.STUDENTS,
     icon: Users,
     colorText: "text-violet-500",
     colorBg: "bg-violet-500/10",
@@ -168,18 +171,18 @@ export const quickActions = [
   },
   {
     label: "My Classes",
-    to: "/teacher/classes",
+    to: ROUTES.TEACHER.CLASSES,
     icon: BookOpen,
     colorText: "text-indigo-500",
     colorBg: "bg-indigo-500/10",
     hoverBg: "bg-indigo-50",
   },
   {
-    label: "Messages",
-    to: "/teacher/messages",
-    icon: MessageSquare,
-    colorText: "text-pink-500",
-    colorBg: "bg-pink-500/10",
-    hoverBg: "bg-pink-50",
+    label: "Settings",
+    to: ROUTES.TEACHER.SETTINGS,
+    icon: Settings,
+    colorText: "text-slate-500",
+    colorBg: "bg-slate-500/10",
+    hoverBg: "bg-slate-50",
   },
 ];

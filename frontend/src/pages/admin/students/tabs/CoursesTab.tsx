@@ -1,13 +1,17 @@
 import { BookOpen } from "lucide-react";
-import { SUBJECTS_BY_GRADE, COURSE_TEACHERS } from "../data";
+import { COURSE_TEACHERS } from "../data";
+import { useSubjectStore } from "../../../../store/subject.store";
+import type { AcademicSubject } from "../../../../api/academics";
 
 // Courses  Tab component for displaying the list of courses a student is enrolled in, along with their respective teachers.
 
-export function CoursesTab({ grade }: { grade: string }) {
-  const subjects = SUBJECTS_BY_GRADE[grade] ?? SUBJECTS_BY_GRADE.SS2;
+export function CoursesTab({ grade: _grade }: { grade: string }) {
+  const { subjects } = useSubjectStore();
+
   return (
     <div className="space-y-3">
-      {subjects.map((subject) => {
+      {subjects.map((sub: AcademicSubject) => {
+        const subject = sub.name;
         const teacher = COURSE_TEACHERS[subject] ?? {
           name: "TBA",
           email: "",
