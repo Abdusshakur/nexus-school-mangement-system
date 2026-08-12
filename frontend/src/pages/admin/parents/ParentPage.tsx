@@ -15,7 +15,7 @@ export function ParentList() {
   const { parents: dbParents, loading, fetchParents } = useParentStore();
 
   useEffect(() => {
-    fetchParents().catch(() => {});
+    fetchParents().catch(() => { });
   }, [fetchParents]);
 
   const listToRender = dbParents.map((p) => {

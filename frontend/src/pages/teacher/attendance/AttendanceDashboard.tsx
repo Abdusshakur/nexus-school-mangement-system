@@ -3,7 +3,9 @@ import { CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useTeacherAttendanceStore } from "../../../store/teacherAttendance.store";
-import { NIGERIAN_CLASSES, generateStudents } from "./teacherData";
+import { generateStudents } from "./teacherData";
+import { useClassStore } from "../../../store/class.store";
+import { useAuthStore } from "../../../store/auth/authStore";
 
 type MarkStatus = "P" | "A" | "";
 
@@ -28,7 +30,7 @@ function NotClassTeacher() {
         </p>
         <button
           onClick={() => navigate("/teacher")}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white mx-auto bg-teal-600 hover:bg-teal-700 transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white mx-auto bg-indigo-600 hover:bg-indigo-700 transition-colors"
         >
           <ArrowLeft size={15} /> Return to Dashboard
         </button>
@@ -46,14 +48,17 @@ const TODAY = new Date().toLocaleDateString("en-NG", {
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 
 export default function TeacherAttendance() {
-  const { getTeacherClass, submitAttendance, attendanceSubmissions } =
+  const { submitAttendance, attendanceSubmissions } =
     useTeacherAttendanceStore();
+  const { classTeacherAssignments, classes } = useClassStore();
+  const { user } = useAuthStore();
 
-  // Current teacher is T001 (mocked)
-  const myClassId = getTeacherClass("T001");
-  const cls = myClassId
-    ? NIGERIAN_CLASSES.find((c) => c.id === myClassId)
-    : null;
+  const myClassId = Object.keys(classTeacherAssignments).find(
+    (classId) => classTeacherAssignments[classId] === user?.id,
+  );
+
+  const realClass = classes.find((c) => c.id === myClassId);
+  const cls = realClass ? { id: realClass.id, name: realClass.name } : null;
   const students = myClassId ? generateStudents(myClassId) : [];
 
   const [marks, setMarks] = useState<Record<string, MarkStatus>>({});
@@ -64,7 +69,9 @@ export default function TeacherAttendance() {
 
   const alreadySubmitted = attendanceSubmissions.find(
     (s) =>
-      s.teacherId === "T001" && s.date === TODAY_ISO && s.classId === myClassId,
+      s.teacherId === user?.id &&
+      s.date === TODAY_ISO &&
+      s.classId === myClassId,
   );
 
   const setMark = (id: string, status: MarkStatus) => {
@@ -92,16 +99,19 @@ export default function TeacherAttendance() {
       : 0;
   const allMarked = counts.remaining === 0 && students.length > 0;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSubmitting(true);
     const time = new Date().toLocaleTimeString("en-NG", {
       hour: "2-digit",
       minute: "2-digit",
     });
-    setTimeout(() => {
-      submitAttendance({
-        teacherId: "T001",
-        teacherName: "Mr. Ade Okafor",
+    
+    try {
+      await submitAttendance({
+        teacherId: user?.id || "",
+        teacherName: user
+          ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+          : "",
         classId: myClassId!,
         className: cls!.name,
         subject: "Mark Attendance",
@@ -118,7 +128,12 @@ export default function TeacherAttendance() {
         description: "Pending admin approval",
       });
       setSubmissionTime(time);
-    }, 900);
+    } catch (error: any) {
+      setSubmitting(false);
+      toast.error("Failed to submit attendance", {
+        description: error.message || "Please try again later.",
+      });
+    }
   };
 
   if (!myClassId || !cls) return <NotClassTeacher />;
@@ -405,7 +420,7 @@ export default function TeacherAttendance() {
                   disabled={submitting}
                   className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
                 >
-                  {submitting ? "Submitting…" : "Yes, Submit"}
+                  {submitting ? "Submitting…" : "Submit"}
                 </button>
                 <button
                   onClick={() => setShowConfirm(false)}

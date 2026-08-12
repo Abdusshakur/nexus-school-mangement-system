@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Menu, X, Search, Bell } from "lucide-react";
+import { Menu, Search, Bell, ChevronLeft } from "lucide-react";
 import { getNavItems } from "./navItems";
 import { useUIStore } from "../../store/ui";
 import { useAuthStore } from "../../store/auth";
@@ -25,7 +25,12 @@ export function Topbar() {
   const fullName = `${firstName} ${lastName}`.trim();
 
   const initials = fullName
-    ? fullName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+    ? fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
     : "";
 
   const profile = {
@@ -55,7 +60,7 @@ export function Topbar() {
         onClick={toggleSidebar}
         className="p-1.5 rounded-lg text-slate-500 transition-colors cursor-pointer hover:bg-slate-100 bg-transparent"
       >
-        {collapsed ? <Menu size={20} /> : <X size={20} />}
+        {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
       </button>
 
       {/* School name + current page */}
@@ -93,9 +98,7 @@ export function Topbar() {
         {/* Bell */}
         <button className="relative p-2 rounded-lg text-slate-500 transition-colors cursor-pointer hover:bg-slate-100">
           <Bell size={20} />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-600"
-          />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-600" />
         </button>
 
         <div className="h-8 w-px bg-slate-200" />
@@ -111,9 +114,7 @@ export function Topbar() {
             <p className="text-sm font-bold text-slate-900 leading-tight">
               {profile.name}
             </p>
-            <p className="text-xs text-slate-500 font-medium">
-              {profile.role}
-            </p>
+            <p className="text-xs text-slate-500 font-medium">{profile.role}</p>
           </div>
         </div>
       </div>

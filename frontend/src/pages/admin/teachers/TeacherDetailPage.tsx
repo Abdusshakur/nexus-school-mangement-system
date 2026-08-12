@@ -133,6 +133,7 @@ export function TeacherDetailPage() {
     try {
       await assignTeacherClasses(id, teacher.classes);
       toast.success("Classes assigned successfully");
+      updateTeacher(teacher);
       setShowEditClasses(false);
     } catch {
       toast.error("Failed to assign classes");
@@ -144,15 +145,15 @@ export function TeacherDetailPage() {
     try {
       await assignTeacherSubjects(id, teacher.subjects);
       toast.success("Subjects assigned successfully");
+      updateTeacher(teacher);
       setShowEditSubjects(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to assign subjects");
     }
   };
 
   return (
     <div className="max-w-4xl space-y-6 font-inter">
-      {/* Header Navigation */}
       <div className="flex items-center gap-3">
         <Link
           to={ROUTES.ADMIN.TEACHERS}
@@ -162,10 +163,7 @@ export function TeacherDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-slate-900 text-2xl font-bold">{teacher.name}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {teacher.dept} ·{" "}
-            <span className="font-mono">{teacher.staffId}</span>
-          </p>
+          <p className="text-slate-500 text-sm mt-0.5">{teacher.dept}</p>
         </div>
         <button
           onClick={handleOpenEdit}
@@ -420,7 +418,7 @@ export function TeacherDetailPage() {
             <ClassSelector
               selected={teacher.classes}
               onToggle={(classId) =>
-                updateTeacher({
+                setTeacher({
                   ...teacher,
                   classes: toggleTag(teacher.classes, classId),
                 })
@@ -449,7 +447,7 @@ export function TeacherDetailPage() {
               options={availSubjects}
               selected={teacher.subjects}
               onToggle={(sName) =>
-                updateTeacher({
+                setTeacher({
                   ...teacher,
                   subjects: toggleTag(teacher.subjects, sName),
                 })

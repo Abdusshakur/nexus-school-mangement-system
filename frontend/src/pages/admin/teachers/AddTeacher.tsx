@@ -13,10 +13,7 @@ import { type Teacher } from "../../../store/teacher.store";
 import { createTeacher } from "../../../api/teachers";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
-import {
-  DEPARTMENTS,
-  QUALIFICATIONS,
-} from "./data";
+import { DEPARTMENTS, QUALIFICATIONS } from "./data";
 
 interface ModalProps {
   title: string;
@@ -281,7 +278,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
       setCreated(newTeacher);
       setStep("confirm");
       toast.success("Teacher profile created successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to create teacher profile.");
     }
   };

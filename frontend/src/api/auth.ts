@@ -7,23 +7,7 @@ export async function login(
   username: string,
   password: string,
 ): Promise<LoginResponse> {
-  // Mock login for teacher
-  if (username === "teacher@nexus.com" && password === "12345") {
-    return new Promise((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            access_token: "mock-teacher-token",
-            token_type: "bearer",
-            user: {
-              id: "mock-teacher-id",
-              role: "teacher",
-            },
-          }),
-        500,
-      ),
-    );
-  }
+
   const formData = new URLSearchParams();
   formData.append("username", username);
   formData.append("password", password);

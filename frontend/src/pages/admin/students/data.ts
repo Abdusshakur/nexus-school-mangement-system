@@ -99,11 +99,9 @@ export function seedRand(
 
 export function generateResults(
   studentId: string,
-  grade: string,
+  subjects: string[],
   session: string,
 ) {
-  const cleanGrade = grade.replace(/[\s-]/g, "").toUpperCase();
-  const subjects = SUBJECTS_BY_GRADE[cleanGrade] ?? SUBJECTS_BY_GRADE.SS2;
   const seed = parseInt(studentId.replace(/[^\d]/g, ""), 10) || 1;
   return subjects.map((subject) => {
     const r = (col: number) =>

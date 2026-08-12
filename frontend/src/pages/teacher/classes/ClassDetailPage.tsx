@@ -8,16 +8,21 @@ import {
   Star,
 } from "lucide-react";
 import { CLASSES_DATA } from "./data";
+import { useClassStore } from "../../../store/class.store";
+import { useAuthStore } from "../../../store/auth/authStore";
 
 export default function ClassDetail() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("students");
+  const { classTeacherAssignments } = useClassStore();
+  const { user } = useAuthStore();
+  const isClassTeacher = classTeacherAssignments[id!] === user?.id;
 
   const classData = CLASSES_DATA.find((c) => c.id === id) || CLASSES_DATA[0];
 
   const tabs = [
     { id: "students", label: "Students", icon: Users },
-    { id: "attendance", label: "Attendance", icon: CalendarCheck },
+    ...(isClassTeacher ? [{ id: "attendance", label: "Attendance", icon: CalendarCheck }] : []),
     { id: "assignments", label: "Assignments", icon: ClipboardList },
     { id: "grades", label: "Grades", icon: Star },
   ];

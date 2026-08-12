@@ -1,20 +1,24 @@
 import { Download } from "lucide-react";
 import { generateResults, getGradeColor } from "../data";
+import { useSubjectStore } from "../../../../store/subject.store";
+import type { AcademicSubject } from "../../../../api/academics";
 
 //  Result tab component for displaying student results in a table format with summary statistics.
 
 export function ResultsTab({
   studentId,
-  grade,
+  grade: _grade,
   session,
 }: {
   studentId: string;
   grade: string;
   session: string;
 }) {
-  const results = generateResults(studentId, grade, session);
+  const { subjects } = useSubjectStore();
+  const subjectNames = subjects.map((s: AcademicSubject) => s.name);
+  const results = generateResults(studentId, subjectNames, session);
   const avg = Math.round(
-    results.reduce((a, r) => a + r.total, 0) / results.length,
+    results.reduce((a, r) => a + r.total, 0) / (results.length || 1),
   );
   const totalSubjects = results.length;
   const distinctions = results.filter((r) => r.total >= 165).length;

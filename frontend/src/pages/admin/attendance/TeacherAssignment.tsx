@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, AlertTriangle, UserCheck, Trash2, X } from "lucide-react";
 import { useClassStore } from "../../../store/class.store";
 import { useTeacherStore } from "../../../store/teacher.store";
@@ -36,8 +36,14 @@ export function TeacherAssignment() {
     classTeacherAssignments,
     assignClassTeacher,
     removeClassTeacher,
+    loadClasses,
   } = useClassStore();
-  const { teachers } = useTeacherStore();
+  const { teachers, fetchTeachers } = useTeacherStore();
+
+  useEffect(() => {
+    fetchTeachers().catch(() => { });
+    loadClasses().catch(() => { });
+  }, [fetchTeachers, loadClasses]);
 
   const [assignModal, setAssignModal] = useState<{
     classId: string;
@@ -250,7 +256,7 @@ export function TeacherAssignment() {
                 <option value=""> Select Teacher </option>
                 {activeTeachers.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name} " " {t.dept}
+                    {t.name} - {t.dept}
                   </option>
                 ))}
               </select>
@@ -264,6 +270,24 @@ export function TeacherAssignment() {
                 </p>
               </div>
             )}
+            {(() => {
+              const alreadyAssignedClassId = Object.entries(classTeacherAssignments).find(
+                ([cid, tid]) => tid === selectedTeacher && cid !== assignModal?.classId
+              )?.[0];
+              
+              if (alreadyAssignedClassId) {
+                const alreadyAssignedClassName = classes.find((c) => c.id === alreadyAssignedClassId)?.name;
+                return (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50">
+                    <AlertTriangle size={13} className="text-amber-800 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-800">
+                      This teacher is already assigned to <strong>{alreadyAssignedClassName}</strong>. Assigning them here will remove them from that class.
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
             <div className="flex gap-3 pt-1">
               <button
                 onClick={handleAssign}
