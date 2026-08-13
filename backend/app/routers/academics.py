@@ -1,29 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from backend.app.db.database import get_session
-from backend.app.models import Class, Subject
+from backend.app.models import Class, Subject, TeacherProfile
 from backend.app.core.auth_utils import RoleChecker
+from backend.app.schemas.academic import ( AcademicEntityCreate, AcademicEntityResponse, 
+                                            AcademicEntityUpdate,FormTeacherAssignRequest )
+
+
 
 router = APIRouter(prefix="/academics", tags=["Academic Setup"])
 allow_admin_only = RoleChecker(["admin"])
-# Create a new dependency at the top of the file
-allow_staff = RoleChecker(["admin", "teacher"])
-
-
-# --- Schemas ---
-class AcademicEntityCreate(BaseModel):
-    name: str
-
-class AcademicEntityUpdate(BaseModel):
-    name: str
-
-class AcademicEntityResponse(BaseModel):
-    id: UUID
-    name: str
 
 
 # ==========================================
@@ -45,13 +35,62 @@ def create_class(payload: AcademicEntityCreate, session: Session = Depends(get_s
     return new_class
 
 
-@router.get("/classes", response_model=List[AcademicEntityResponse], dependencies=[Depends(allow_staff)])
+@router.get("/classes", response_model=List[AcademicEntityResponse], dependencies=[Depends(allow_admin_only)])
 def list_classes(session: Session = Depends(get_session)):
     """Fetch all available classes."""
     classes = session.exec(select(Class).order_by(Class.name)).all()
     return classes
 
 
+@router.patch("/classes/{class_id}/form-teacher", dependencies=[Depends(allow_admin_only)])
+def assign_form_teacher(
+    class_id: UUID,
+    request: FormTeacherAssignRequest,
+    session: Session = Depends(get_session)
+):
+    """Assigns or unassigns a Form Teacher for a specific class."""
+    
+    # 1. Verify the class exists
+    db_class = session.get(Class, class_id)
+    if not db_class:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Class not found."
+        )
+
+    # 2. If assigning a teacher, verify they exist and are valid
+    if request.teacher_id:
+        teacher = session.get(TeacherProfile, request.teacher_id)
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Teacher profile not found."
+            )
+            
+        # Optional Business Rule: Prevent a teacher from being Form Teacher of two classes
+        existing_assignment = session.exec(
+            select(Class).where(Class.form_teacher_id == request.teacher_id)
+        ).first()
+        
+        if existing_assignment and existing_assignment.id != class_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Teacher is already the Form Teacher for {existing_assignment.name}."
+            )
+
+    # 3. Apply the update
+    db_class.form_teacher_id = request.teacher_id
+    session.add(db_class)
+    session.commit()
+    session.refresh(db_class)
+
+    # 4. Return a clean response
+    return {
+        "message": "Form teacher successfully updated",
+        "class_id": db_class.id,
+        "class_name": db_class.name,
+        "form_teacher_id": db_class.form_teacher_id
+    }
 
 
 @router.delete("/classes/{class_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(allow_admin_only)])
