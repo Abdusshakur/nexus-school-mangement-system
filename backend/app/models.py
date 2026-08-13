@@ -2,7 +2,7 @@ from datetime import datetime, timezone, date
 from enum import Enum
 from typing import List, Optional
 from uuid import UUID, uuid4
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 class UserRole(str, Enum):
     ADMIN = "admin"
@@ -81,23 +81,76 @@ class AttendanceStatus(str, Enum):
     ABSENT = "ABSENT"
     LATE = "LATE"
 
-class Attendance(SQLModel, table=True):
+class SessionStatus(str, Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+
+
+class AttendanceSession(SQLModel, table=True):
+    """The master record for a class on a specific day."""
+    __table_args__ = (
+        UniqueConstraint("class_id", "attendance_date", name="unique_class_date_session"),
+    )
+    
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
-    class_name: str  # Matches the student's class name string for simplified MVP grouping
-    status: AttendanceStatus
-    attendance_date: datetime = Field(index=True)
-    recorded_by: UUID = Field(foreign_key="user.id") # Tracks which teacher/admin took attendance
+    class_id: UUID = Field(foreign_key="class.id")
+    attendance_date: date = Field(default_factory=lambda: datetime.now(timezone.utc).date())
+    
+    status: SessionStatus = Field(default=SessionStatus.SUBMITTED)
+    
+    # Audit trail
+    recorded_by_id: UUID = Field(foreign_key="user.id") # Who actually took it
+    approved_by_id: UUID | None = Field(default=None, foreign_key="user.id")
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AttendanceRecord(SQLModel, table=True):
+    """The individual present/absent status for a single student."""
+    __table_args__ = (
+        UniqueConstraint("session_id", "student_id", name="unique_student_per_session"),
+    )
+    
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    session_id: UUID = Field(foreign_key="attendancesession.id", ondelete="CASCADE")
+    student_id: UUID = Field(foreign_key="studentprofile.id")
+    
+    status: AttendanceStatus
+    remarks: str | None = Field(default=None) # E.g., "Arrived at 9:30 AM due to traffic"
+
+from enum import Enum
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
+from sqlmodel import SQLModel, Field
+
+class PriorityEnum(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+class AnnouncementStatus(str, Enum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 class Announcement(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     title: str
     content: str
-    status: str = Field(default="DRAFT") # DRAFT, PUBLISHED, ARCHIVED
+    
+    # New flexible fields for the UI mapping
+    category: str 
+    audience: str 
+    
+    # Enums for strict control
+    priority: PriorityEnum = Field(default=PriorityEnum.MEDIUM)
+    status: AnnouncementStatus = Field(default=AnnouncementStatus.DRAFT)
+    
     author_id: UUID = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 
 class ActivityLog(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -157,6 +210,10 @@ class Class(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     name: str = Field(unique=True, index=True) # e.g., "Grade 10-A"
     
+    # The single Form Teacher who takes morning attendance
+    form_teacher_id: UUID | None = Field(default=None, foreign_key="teacherprofile.id") 
+    
+    # All the teachers who teach various subjects in this class
     teachers: List["TeacherProfile"] = Relationship(
         back_populates="classes",
         link_model=TeacherClassLink
@@ -185,3 +242,4 @@ class ClassSubjectAssignment(SQLModel, table=True):
     class_id: UUID = Field(foreign_key="class.id")
     subject_id: UUID = Field(foreign_key="subject.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+

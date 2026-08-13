@@ -1,18 +1,34 @@
 # backend/app/schemas/announcement.py
 from pydantic import BaseModel
-from uuid import UUID
-from datetime import datetime
 from typing import Optional
+from datetime import datetime
+from uuid import UUID
+from backend.app.models import PriorityEnum, AnnouncementStatus
 
 class AnnouncementCreate(BaseModel):
     title: str
     content: str
-    status: Optional[str] = "DRAFT"  # DRAFT, PUBLISHED, ARCHIVED
+    category: str
+    audience: str
+    priority: PriorityEnum = PriorityEnum.MEDIUM
+    status: AnnouncementStatus = AnnouncementStatus.DRAFT
 
 class AnnouncementResponse(BaseModel):
     id: UUID
     title: str
     content: str
-    status: str
+    category: str
+    audience: str
+    priority: PriorityEnum
+    status: AnnouncementStatus
     author_id: UUID
     created_at: datetime
+
+
+class AnnouncementUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    audience: Optional[str] = None
+    priority: Optional[PriorityEnum] = None
+    status: Optional[AnnouncementStatus] = None
