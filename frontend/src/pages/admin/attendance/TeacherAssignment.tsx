@@ -56,29 +56,36 @@ export function TeacherAssignment() {
 
   const activeTeachers = teachers.filter((t) => t.status === "Active");
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!assignModal || !selectedTeacher) return;
     setConfirming(true);
-    setTimeout(() => {
-      assignClassTeacher(assignModal.classId, selectedTeacher);
+    try {
+      await assignClassTeacher(assignModal.classId, selectedTeacher);
       setAssignModal(null);
       setSelectedTeacher("");
-      setConfirming(false);
       const cls = classes.find((c) => c.id === assignModal.classId);
       const teacher = teachers.find((t) => t.id === selectedTeacher);
       setSuccessMsg(
         `${teacher?.name} assigned as Class Teacher for ${cls?.name}.`,
       );
       setTimeout(() => setSuccessMsg(""), 4000);
-    }, 600);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirming(false);
+    }
   };
 
-  const handleRemove = (classId: string) => {
-    removeClassTeacher(classId);
-    setConfirmRemove(null);
-    const cls = classes.find((c) => c.id === classId);
-    setSuccessMsg(`Class teacher removed from ${cls?.name}.`);
-    setTimeout(() => setSuccessMsg(""), 3000);
+  const handleRemove = async (classId: string) => {
+    try {
+      await removeClassTeacher(classId);
+      setConfirmRemove(null);
+      const cls = classes.find((c) => c.id === classId);
+      setSuccessMsg(`Class teacher removed from ${cls?.name}.`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const assigned = classes.filter((c) => classTeacherAssignments[c.id]);

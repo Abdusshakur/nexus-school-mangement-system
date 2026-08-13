@@ -15,13 +15,14 @@ export function TeachersPage() {
     fetchTeachers().catch(() => {});
   }, [fetchTeachers]);
 
-  const departments = ["All", ...new Set(teachers.map((t) => t.dept))].filter(Boolean);
+  const departments = ["All", ...new Set(teachers.map((t) => t.dept))].filter(
+    Boolean,
+  );
 
   const filtered = teachers.filter((t) => {
     const q = search.toLowerCase();
     const matchSearch =
-      t.name.toLowerCase().includes(q) ||
-      t.email.toLowerCase().includes(q);
+      t.name.toLowerCase().includes(q) || t.email.toLowerCase().includes(q);
     const matchDept = deptFilter === "All" || t.dept === deptFilter;
     return matchSearch && matchDept;
   });
@@ -75,16 +76,21 @@ export function TeachersPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {["Teacher", "Department", "Classes", "Subjects", "Status", ""].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    {h}
-                  </th>
-                ),
-              )}
+              {[
+                "Teacher",
+                "Department",
+                "Classes",
+                "Subjects",
+                "Status",
+                "",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -96,7 +102,7 @@ export function TeachersPage() {
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${t.avatarColor}`}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${t.avatarColor}`}
                     >
                       <span className="text-white font-semibold text-xs">
                         {t.avatar}

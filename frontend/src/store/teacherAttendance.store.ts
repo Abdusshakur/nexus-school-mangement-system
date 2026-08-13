@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { submitBulkAttendance, type BulkAttendanceCreatePayload } from "../api/attendance";
+import { submitClassAttendance, type AttendanceSubmitRequest } from "../api/attendance";
 
 export interface AttendanceSubmission {
   id: string;
@@ -31,9 +31,9 @@ export const useTeacherAttendanceStore = create<TeacherAttendanceState>((set) =>
     return null;
   },
   submitAttendance: async (data) => {
-    const payload: BulkAttendanceCreatePayload = {
+    const payload: AttendanceSubmitRequest = {
       attendance_date: new Date().toISOString().split("T")[0],
-      class_name: data.className,
+      class_id: data.classId,
       records: data.entries.map((e) => ({
         student_id: e.studentId,
         status: e.status === "P" ? "PRESENT" : e.status === "A" ? "ABSENT" : "LATE",
@@ -41,7 +41,7 @@ export const useTeacherAttendanceStore = create<TeacherAttendanceState>((set) =>
     };
 
     try {
-      await submitBulkAttendance(payload);
+      await submitClassAttendance(payload);
     } catch (error) {
       console.error("Failed to submit attendance to backend:", error);
       throw error;

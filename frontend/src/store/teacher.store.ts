@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { fetchTeachersList } from "../api/teachers";
+import { fetchTeachersList, fetchTeacherById } from "../api/teachers";
 import { formatParentInitials } from "../utils/formatters";
 
 export interface Teacher {
@@ -43,7 +43,11 @@ export const useTeacherStore = create<TeacherState>((set) => ({
     try {
       const data = await fetchTeachersList();
       
-      const mappedTeachers: Teacher[] = data.map((d) => {
+      const detailsPromises = data.map((t) => fetchTeacherById(t.id).catch(() => null));
+      const details = await Promise.all(detailsPromises);
+
+      const mappedTeachers: Teacher[] = data.map((d, index) => {
+        const detail = details[index];
         const name = `${d.first_name} ${d.last_name}`;
         const initials = formatParentInitials(name);
         const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
@@ -61,8 +65,8 @@ export const useTeacherStore = create<TeacherState>((set) => ({
           dept: d.department,
           title: `${d.qualification || "Teacher"}`,
           address: d.address,
-          classes: [], // Detailed assigned classes aren't in the list view
-          subjects: [], // Detailed assigned subjects aren't in the list view
+          classes: detail ? detail.assigned_classes.map(c => c.name) : [],
+          subjects: detail ? detail.assigned_subjects.map(s => s.name) : [],
           status: "Active",
           avatar: initials,
           avatarColor,

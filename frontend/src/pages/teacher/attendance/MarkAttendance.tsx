@@ -4,7 +4,8 @@ import type { StudentAttendance } from "./data";
 import { DEFAULT_ROSTER } from "./data";
 import { useAttendanceStore } from "../../../store/attendance.store";
 import { fetchStudentsList } from "../../../api/students";
-import { submitBulkAttendance } from "../../../api/attendance";
+import { submitClassAttendance } from "../../../api/attendance";
+import { useClassStore } from "../../../store/class.store";
 import { toast } from "sonner";
 
 const CLASS_MAPPING: Record<string, string> = {
@@ -25,6 +26,7 @@ export function MarkAttendance() {
   const [isSaved, setIsSaved] = useState(false);
 
   const { saveHistory } = useAttendanceStore();
+  const { classes } = useClassStore();
 
   useEffect(() => {
     let isMounted = true;
@@ -69,10 +71,16 @@ export function MarkAttendance() {
   const handleSave = async () => {
     setIsSaved(false);
     const dbClass = CLASS_MAPPING[selectedClass] || "SS 1";
+    
+    const classRecord = classes.find((c) => c.name === dbClass);
+    if (!classRecord) {
+      toast.error(`Class ${dbClass} not found in database.`);
+      return;
+    }
 
     const payload = {
       attendance_date: selectedDate,
-      class_name: dbClass,
+      class_id: classRecord.id,
       records: roster.map((r) => ({
         student_id: r.id,
         status: (r.status === "Present"
@@ -84,7 +92,7 @@ export function MarkAttendance() {
     };
 
     try {
-      await submitBulkAttendance(payload);
+      await submitClassAttendance(payload);
 
       const presentCount = roster.filter(
         (s) => s.status === "Present" || s.status === "Late",

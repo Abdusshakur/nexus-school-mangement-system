@@ -105,7 +105,7 @@ export default function TeacherAttendance() {
       hour: "2-digit",
       minute: "2-digit",
     });
-    
+
     try {
       await submitAttendance({
         teacherId: user?.id || "",
@@ -128,10 +128,10 @@ export default function TeacherAttendance() {
         description: "Pending admin approval",
       });
       setSubmissionTime(time);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSubmitting(false);
       toast.error("Failed to submit attendance", {
-        description: error.message || "Please try again later.",
+        description: (error as Error).message || "Please try again later.",
       });
     }
   };

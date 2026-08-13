@@ -1,5 +1,5 @@
 
-import { Trash2 } from "lucide-react";
+import { Trash2, UserCircle } from "lucide-react";
 import type { Announcement } from "./data";
 
 interface AnnouncementListProps {
@@ -24,6 +24,10 @@ export function AnnouncementList({ announcements, onDelete }: AnnouncementListPr
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-slate-900 text-lg">{ann.title}</h3>
               <span className="text-xs font-semibold text-slate-500">{ann.date}</span>
+            </div>
+            <div className="flex items-center gap-1.5 mb-2.5 text-indigo-600 bg-indigo-50 w-fit px-2.5 py-1 rounded-md">
+              <UserCircle size={14} />
+              <span className="text-xs font-bold">{ann.authorRole || ann.author}</span>
             </div>
             <p className="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed">{ann.content}</p>
           </div>

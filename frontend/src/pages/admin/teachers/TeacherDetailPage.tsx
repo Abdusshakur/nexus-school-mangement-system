@@ -280,7 +280,7 @@ export function TeacherDetailPage() {
                     >
                       <Users size={15} className="text-indigo-700" />
                       <span className="text-xs font-bold text-indigo-700">
-                        {cls.name} Class Stream
+                        {cls.name}
                       </span>
                     </div>
                   );
