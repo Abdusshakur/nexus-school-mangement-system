@@ -16,3 +16,10 @@ class AcademicEntityResponse(BaseModel):
 
 class FormTeacherAssignRequest(BaseModel):
     teacher_id: Optional[UUID] = None  # Allows passing null to unassign a teacher
+
+
+class ClassWithTeacherResponse(BaseModel):
+    id: UUID
+    name: str
+    form_teacher_id: Optional[UUID] = None
+    form_teacher_name: str

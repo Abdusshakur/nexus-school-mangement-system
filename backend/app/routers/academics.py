@@ -8,8 +8,7 @@ from backend.app.db.database import get_session
 from backend.app.models import Class, Subject, TeacherProfile
 from backend.app.core.auth_utils import RoleChecker
 from backend.app.schemas.academic import ( AcademicEntityCreate, AcademicEntityResponse, 
-                                            AcademicEntityUpdate,FormTeacherAssignRequest )
-
+                                            AcademicEntityUpdate,FormTeacherAssignRequest, ClassWithTeacherResponse )
 
 
 router = APIRouter(prefix="/academics", tags=["Academic Setup"])
@@ -35,11 +34,36 @@ def create_class(payload: AcademicEntityCreate, session: Session = Depends(get_s
     return new_class
 
 
-@router.get("/classes", response_model=List[AcademicEntityResponse], dependencies=[Depends(allow_admin_only)])
+
+@router.get("/classes", response_model=List[ClassWithTeacherResponse], dependencies=[Depends(allow_admin_only)])
 def list_classes(session: Session = Depends(get_session)):
-    """Fetch all available classes."""
-    classes = session.exec(select(Class).order_by(Class.name)).all()
-    return classes
+    """Fetch all available classes along with their assigned form teacher."""
+    
+    # The isouter=True creates a LEFT OUTER JOIN
+    # This guarantees classes without an assigned teacher are still returned
+    statement = (
+        select(Class, TeacherProfile)
+        .join(TeacherProfile, Class.form_teacher_id == TeacherProfile.id, isouter=True)
+        .order_by(Class.name)
+    )
+    
+    results = session.exec(statement).all()
+    
+    response_data = []
+    for cls, teacher in results:
+        # Gracefully handle classes that don't have a teacher yet
+        teacher_name = f"{teacher.first_name} {teacher.last_name}" if teacher else "Unassigned"
+        
+        response_data.append(
+            ClassWithTeacherResponse(
+                id=cls.id,
+                name=cls.name,
+                form_teacher_id=cls.form_teacher_id,
+                form_teacher_name=teacher_name
+            )
+        )
+        
+    return response_data
 
 
 @router.patch("/classes/{class_id}/form-teacher", dependencies=[Depends(allow_admin_only)])
