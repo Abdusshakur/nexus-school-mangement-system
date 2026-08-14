@@ -255,6 +255,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
       // Construct a mapped teacher object for the confirm screen
       const newTeacher: Teacher = {
         id: teacherData.id,
+        user_id: teacherData.user_id,
         staffId: teacherData.id.substring(0, 8).toUpperCase(),
         name: `${teacherData.first_name} ${teacherData.last_name}`,
         email: teacherData.email,

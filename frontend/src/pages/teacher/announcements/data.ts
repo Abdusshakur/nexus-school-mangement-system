@@ -4,6 +4,7 @@ export interface Announcement {
   content: string;
   target: string;
   author: string;
+  authorRole?: string;
   date: string;
 }
 

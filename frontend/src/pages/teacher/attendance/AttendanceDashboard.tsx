@@ -3,9 +3,12 @@ import { CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useTeacherAttendanceStore } from "../../../store/teacherAttendance.store";
-import { generateStudents } from "./teacherData";
+import { type RollStudent, AVATAR_COLORS } from "./teacherData";
 import { useClassStore } from "../../../store/class.store";
 import { useAuthStore } from "../../../store/auth/authStore";
+import { useTeacherStore } from "../../../store/teacher.store";
+import { useEffect } from "react";
+import { fetchStudentsList } from "../../../api/students";
 
 type MarkStatus = "P" | "A" | "";
 
@@ -50,16 +53,46 @@ const TODAY_ISO = new Date().toISOString().slice(0, 10);
 export default function TeacherAttendance() {
   const { submitAttendance, attendanceSubmissions } =
     useTeacherAttendanceStore();
-  const { classTeacherAssignments, classes } = useClassStore();
+  const { classTeacherAssignments, classes, loadClasses } = useClassStore();
   const { user } = useAuthStore();
+  const { teachers, fetchTeachers } = useTeacherStore();
+
+  useEffect(() => {
+    loadClasses().catch(() => {});
+    fetchTeachers().catch(() => {});
+  }, [loadClasses, fetchTeachers]);
+
+  const myTeacherProfile = teachers.find(t => t.user_id === user?.id);
+  const myTeacherProfileId = myTeacherProfile?.id;
 
   const myClassId = Object.keys(classTeacherAssignments).find(
-    (classId) => classTeacherAssignments[classId] === user?.id,
+    (classId) => classTeacherAssignments[classId] === myTeacherProfileId,
   );
 
   const realClass = classes.find((c) => c.id === myClassId);
   const cls = realClass ? { id: realClass.id, name: realClass.name } : null;
-  const students = myClassId ? generateStudents(myClassId) : [];
+
+  const [students, setStudents] = useState<RollStudent[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (cls?.name) {
+      fetchStudentsList(undefined, cls.name, undefined).then(data => {
+        if (!isMounted) return;
+        const mapped = data.map((d, i) => ({
+          id: d.id,
+          name: `${d.first_name} ${d.last_name}`,
+          admNo: d.admission_number,
+          initials: `${d.first_name[0] || ""}${d.last_name[0] || ""}`,
+          color: AVATAR_COLORS[i % AVATAR_COLORS.length]
+        }));
+        setStudents(mapped);
+      }).catch(err => {
+         console.error("Failed to fetch students", err);
+      });
+    }
+    return () => { isMounted = false; };
+  }, [cls?.name]);
 
   const [marks, setMarks] = useState<Record<string, MarkStatus>>({});
   const [showConfirm, setShowConfirm] = useState(false);
@@ -105,7 +138,7 @@ export default function TeacherAttendance() {
       hour: "2-digit",
       minute: "2-digit",
     });
-    
+
     try {
       await submitAttendance({
         teacherId: user?.id || "",
@@ -128,10 +161,10 @@ export default function TeacherAttendance() {
         description: "Pending admin approval",
       });
       setSubmissionTime(time);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSubmitting(false);
       toast.error("Failed to submit attendance", {
-        description: error.message || "Please try again later.",
+        description: (error as Error).message || "Please try again later.",
       });
     }
   };

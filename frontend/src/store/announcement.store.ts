@@ -11,6 +11,8 @@ export interface StoreAnnouncement {
   content: string;
   target: string;
   author: string;
+  authorName: string;
+  authorRole: string;
   date: string;
   priority: "low" | "medium" | "high";
   category: string;
@@ -58,8 +60,8 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
     try {
       const data = await fetchAnnouncements("PUBLISHED");
       const mapped = data.map((a: AnnouncementResponse) => {
-        const name = a.author_name || "";
-        const role = a.author_role ? a.author_role.charAt(0).toUpperCase() + a.author_role.slice(1) : "";
+        const name = a.author_name || "Administrator";
+        const role = a.author_role ? a.author_role.charAt(0).toUpperCase() + a.author_role.slice(1) : "Admin";
 
         const meta = deserializeAnnouncementContent(a.content);
 
@@ -72,6 +74,8 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
           category: meta.category,
           audience: meta.audience,
           author: role ? `${name} (${role})`.trim() : name,
+          authorName: name,
+          authorRole: role,
           date: new Date(a.created_at).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -105,17 +109,17 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
       const name = result.author_name || "";
       const role = result.author_role ? result.author_role.charAt(0).toUpperCase() + result.author_role.slice(1) : "";
 
-      const meta = deserializeAnnouncementContent(result.content);
-
       const newAnn: StoreAnnouncement = {
         id: result.id,
         title: result.title,
-        content: meta.body,
-        target: meta.audience,
-        priority: meta.priority,
-        category: meta.category,
-        audience: meta.audience,
+        content: ann.content,
+        target: ann.audience || "All School",
+        priority: (ann.priority as "low" | "medium" | "high") || "medium",
+        category: ann.category || "General",
+        audience: ann.audience || "All School",
         author: role ? `${name} (${role})`.trim() : name,
+        authorName: name,
+        authorRole: role,
         date: "Just now",
       };
       set((state) => ({

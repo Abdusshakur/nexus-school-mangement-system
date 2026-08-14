@@ -38,7 +38,7 @@ export function AnnouncementDetail() {
     date: found.date,
     priority: found.priority,
     audience: found.audience,
-    author: found.author,
+    author: found.authorName || found.author,
     category: found.category,
   };
 

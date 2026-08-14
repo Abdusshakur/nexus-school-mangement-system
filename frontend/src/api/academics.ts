@@ -3,6 +3,8 @@ import { apiFetch } from "./client";
 export interface AcademicClass {
   id: string;
   name: string;
+  form_teacher_id?: string;
+  form_teacher_name?: string;
 }
 
 export interface AcademicSubject {
@@ -25,6 +27,13 @@ export async function createClass(payload: { name: string }): Promise<AcademicCl
 export async function deleteClass(classId: string): Promise<void> {
   return apiFetch(`/academics/classes/${classId}`, {
     method: "DELETE",
+  });
+}
+
+export async function assignFormTeacher(classId: string, teacherId: string | null): Promise<void> {
+  return apiFetch(`/academics/classes/${classId}/form-teacher`, {
+    method: "PATCH",
+    body: JSON.stringify({ teacher_id: teacherId }),
   });
 }
 

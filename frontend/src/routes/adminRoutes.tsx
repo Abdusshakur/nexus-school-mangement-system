@@ -21,6 +21,7 @@ import { AnnouncementDetail } from "../pages/admin/announcements/AnnoncementDeta
 import { Settings } from "../pages/admin/settings/Settings";
 import { AcademicsSetup } from "../pages/admin/academics/AcademicsSetup";
 import { AdminTimetable } from "../pages/admin/timetable/AdminTimetable";
+import { AcademicSessionsPage } from "../pages/admin/sessions/AcademicSessionsPage";
 
 export const adminRoutes = (
   <Route path="/admin" element={<RoleRoute allowedRoles={[UserRole.ADMIN]} />}>
@@ -41,6 +42,7 @@ export const adminRoutes = (
     <Route path="announcements/:id" element={<AnnouncementDetail />} />
     <Route path="academics" element={<AcademicsSetup />} />
     <Route path="timetable" element={<AdminTimetable />} />
+    <Route path="sessions" element={<AcademicSessionsPage />} />
     <Route path="settings" element={<Settings />} />
   </Route>
 );

@@ -9,6 +9,7 @@ import {
   BookOpen,
   ClipboardList,
   Star,
+  Archive,
   // MessageSquare,
   UserCircle,
 } from "lucide-react";
@@ -54,6 +55,11 @@ const ADMIN_NAV_ITEMS = [
     label: "Timetable",
     href: ROUTES.ADMIN.TIMETABLE,
     icon: CalendarCheck,
+  },
+  {
+    label: "Sessions",
+    href: ROUTES.ADMIN.SESSIONS,
+    icon: Archive,
   },
   {
     label: "Settings",

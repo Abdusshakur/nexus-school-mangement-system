@@ -56,7 +56,7 @@ export function generateStudents(classId: string, count = 28): RollStudent[] {
     return {
       id: `${classId}-${String(i + 1).padStart(3, "0")}`,
       name: `${first} ${last}`,
-      admNo: `WW/${classId}/${String(i + 1).padStart(3, "0")}`,
+      admNo: `NEX-2026-${String(i + 1).padStart(4, "0")}`,
       initials: `${first[0]}${last[0]}`,
       color: AVATAR_COLORS[i % AVATAR_COLORS.length],
     };

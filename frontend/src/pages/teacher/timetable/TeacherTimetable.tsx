@@ -14,23 +14,21 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 const PERIODS = [
-  { id: 1, label: "Period 1", time: "8:00 – 8:50 AM" },
-  { id: 2, label: "Period 2", time: "9:00 – 9:50 AM" },
-  { id: 3, label: "Period 3", time: "10:00 – 10:50 AM" },
-  { id: 4, label: "Break", time: "11:00 – 11:30 AM" },
-  { id: 5, label: "Period 4", time: "11:30 AM – 12:20 PM" },
-  { id: 6, label: "Period 5", time: "12:30 – 1:20 PM" },
-  { id: 7, label: "Lunch", time: "1:20 – 2:00 PM" },
-  { id: 8, label: "Period 6", time: "2:00 – 2:50 PM" },
-  { id: 9, label: "Period 7", time: "3:00 – 3:50 PM" },
+  { id: 1, label: "Period 1", time: "8:00 - 8:50 AM" },
+  { id: 2, label: "Period 2", time: "9:00 - 9:50 AM" },
+  { id: 3, label: "Period 3", time: "10:00 - 10:50 AM" },
+  { id: 4, label: "Break", time: "11:00 - 11:30 AM" },
+  { id: 5, label: "Period 4", time: "11:30 AM - 12:20 PM" },
+  { id: 6, label: "Period 5", time: "12:30 - 1:20 PM" },
+  { id: 7, label: "Lunch", time: "1:20 - 2:00 PM" },
+  { id: 8, label: "Period 6", time: "2:00 - 2:50 PM" },
+  { id: 9, label: "Period 7", time: "3:00 - 3:50 PM" },
 ];
 const BREAK_IDS = new Set([4, 7]);
 
 function ttKey(d: number, p: number): TimetableKey {
   return `${d}-${p}` as TimetableKey;
 }
-
-// ─── Subject colours ──────────────────────────────────────────────────────────
 
 const SUBJECT_COLORS: Record<
   string,
@@ -123,8 +121,6 @@ function cellColor(sub: string) {
   );
 }
 
-// ─── Read-only grid ───────────────────────────────────────────────────────────
-
 function TimetableGrid({
   grid,
   highlightTeacherId,
@@ -137,13 +133,13 @@ function TimetableGrid({
       <table className="w-full border-separate border-spacing-1.5">
         <thead>
           <tr>
-            <th className="w-[120px] pb-2.5 text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+            <th className="w-32 pb-2.5 text-left text-sm text-slate-400 font-semibold uppercase tracking-wider">
               Period
             </th>
             {SHORT.map((d) => (
               <th
                 key={d}
-                className="pb-2.5 text-center text-[12px] text-slate-900 font-bold"
+                className="pb-2.5 text-center text-sm text-slate-900 font-bold"
               >
                 {d}
               </th>
@@ -156,7 +152,7 @@ function TimetableGrid({
             return (
               <tr key={p.id}>
                 <td className="align-middle pr-2">
-                  <p className="text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-semibold text-slate-700">
                     {p.label}
                   </p>
                   <p className="text-[10px] text-slate-400">{p.time}</p>
@@ -184,19 +180,19 @@ function TimetableGrid({
                     );
                   }
                   const cs = cellColor(cell.subject);
-                  const isMine = highlightTeacherId
+                  const isSelected = highlightTeacherId
                     ? cell.teacherId === highlightTeacherId
                     : false;
 
                   // Convert generic ring border for highlighting
-                  const ringClass = isMine
+                  const ringClass = isSelected
                     ? `ring-2 ring-offset-0 ${cs.border.replace("border-", "ring-")}`
                     : "";
 
                   return (
                     <td key={d} className="p-1 align-top min-w-[108px]">
                       <div
-                        className={`${cs.bg} border-[1.5px] ${cs.border} rounded-xl px-2.5 py-2 min-h-[60px] ${highlightTeacherId && !isMine ? "opacity-35" : ""} ${ringClass}`}
+                        className={`${cs.bg} border-[1.5px] ${cs.border} rounded-xl px-2.5 py-2 min-h-[60px] ${highlightTeacherId && !isSelected ? "opacity-35" : ""} ${ringClass}`}
                       >
                         <p
                           className={`text-[11px] font-bold ${cs.text} leading-tight`}
@@ -211,7 +207,7 @@ function TimetableGrid({
                         <p
                           className={`text-[10px] ${cs.text} opacity-60 mt-0.5`}
                         >
-                          {isMine
+                          {isSelected
                             ? cell.room ||
                               cell.teacherName.split(" ").slice(-1)[0]
                             : cell.teacherName.split(" ").slice(-1)[0]}
@@ -248,7 +244,8 @@ export default function TeacherTimetable() {
     loadClasses();
   }, [fetchTerms, loadClasses]);
 
-  const activeClassId = selectedClassId || (classes.length > 0 ? classes[0].id : "");
+  const activeClassId =
+    selectedClassId || (classes.length > 0 ? classes[0].id : "");
   const activeTerm = term || (terms.length > 0 ? terms[0] : "");
 
   useEffect(() => {
@@ -437,7 +434,7 @@ export default function TeacherTimetable() {
       {/* Legend */}
       <div className="bg-white rounded-xl p-4 border border-slate-200">
         <p className="text-xs font-semibold uppercase tracking-wide mb-3 text-slate-400">
-          Subject Colour Guide
+          Subject Color Guide
         </p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(SUBJECT_COLORS).map(([sub, cs]) => (

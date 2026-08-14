@@ -6,7 +6,11 @@ interface ToggleProps {
   activeColor?: string; // Tailwind class like "bg-indigo-600"
 }
 
-export function Toggle({ defaultOn = false, onChange, activeColor = "bg-indigo-600" }: ToggleProps) {
+export function Toggle({
+  defaultOn = false,
+  onChange,
+  activeColor = "bg-indigo-600",
+}: ToggleProps) {
   const [on, setOn] = useState(defaultOn);
 
   const handleToggle = () => {
@@ -21,7 +25,7 @@ export function Toggle({ defaultOn = false, onChange, activeColor = "bg-indigo-6
     <button
       type="button"
       onClick={handleToggle}
-      className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+      className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
         on ? activeColor : "bg-slate-300"
       }`}
     >

@@ -23,6 +23,7 @@ export const ROUTES = {
     ANNOUNCEMENT_DETAIL: (id: string) => `/admin/announcements/${id}`,
     ACADEMICS: "/admin/academics",
     TIMETABLE: "/admin/timetable",
+    SESSIONS: "/admin/sessions",
     SETTINGS: "/admin/settings",
   },
   TEACHER: {
