@@ -242,10 +242,10 @@ export function ClassAttendanceView() {
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedAbsent, setSelectedAbsent] = useState<Set<string>>(new Set());
-  const [notifModal, setNotifModal] = useState(false);
+  const [notisModal, setNotisModal] = useState(false);
   const [reason, setReason] = useState("Absent without prior notice");
-  const [notifHistory, setNotifHistory] = useState<NotifRecord[]>([]);
-  const [notifSent, setNotifSent] = useState(false);
+  const [notisHistory, setNotisHistory] = useState<NotifRecord[]>([]);
+  const [notisSent, setNotisSent] = useState(false);
   const [tab, setTab] = useState<"classes" | "history">("classes");
 
   const getTeacherName = (classId: string) => {
@@ -290,11 +290,11 @@ export function ClassAttendanceView() {
         status: "sent",
       };
     });
-    setNotifHistory((prev) => [...newRecs, ...prev]);
-    setNotifSent(true);
-    setNotifModal(false);
+    setNotisHistory((prev) => [...newRecs, ...prev]);
+    setNotisSent(true);
+    setNotisModal(false);
     setSelectedAbsent(new Set());
-    setTimeout(() => setNotifSent(false), 3000);
+    setTimeout(() => setNotisSent(false), 3000);
   };
 
   const absentStudents = todayRecs
@@ -320,7 +320,7 @@ export function ClassAttendanceView() {
           { key: "classes", label: "All Classes" },
           {
             key: "history",
-            label: `Notification History (${notifHistory.length})`,
+            label: `Notification History (${notisHistory.length})`,
           },
         ].map((t) => (
           <button
@@ -336,7 +336,7 @@ export function ClassAttendanceView() {
         ))}
       </div>
 
-      {notifSent && (
+      {notisSent && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-100 border border-emerald-300">
           <CheckCircle size={18} className="text-emerald-500" />
           <p className="text-sm font-semibold text-emerald-800">
@@ -347,7 +347,7 @@ export function ClassAttendanceView() {
 
       {tab === "history" && (
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-          {notifHistory.length === 0 ? (
+          {notisHistory.length === 0 ? (
             <div className="py-16 text-center text-sm text-slate-400">
               No notifications sent yet.
             </div>
@@ -368,7 +368,7 @@ export function ClassAttendanceView() {
                 </tr>
               </thead>
               <tbody>
-                {notifHistory.map((n) => (
+                {notisHistory.map((n) => (
                   <tr key={n.id} className="border-t border-slate-100">
                     <td className="px-5 py-3 text-sm font-medium text-slate-900">
                       {n.studentName}
@@ -507,7 +507,7 @@ export function ClassAttendanceView() {
             </div>
             {selectedAbsent.size > 0 && (
               <button
-                onClick={() => setNotifModal(true)}
+                onClick={() => setNotisModal(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition-colors"
               >
                 <Bell size={15} /> Notify {selectedAbsent.size} Parent
@@ -601,8 +601,8 @@ export function ClassAttendanceView() {
       )}
 
       {/* Notify parent modal */}
-      {notifModal && selectedCls && (
-        <Modal title="Notify Parents" onClose={() => setNotifModal(false)} wide>
+      {notisModal && selectedCls && (
+        <Modal title="Notify Parents" onClose={() => setNotisModal(false)} wide>
           <div className="space-y-4">
             <p className="text-sm text-slate-500">
               Sending absence notification to {selectedAbsent.size} parent
@@ -676,7 +676,7 @@ export function ClassAttendanceView() {
                 <Send size={14} /> Send Notifications
               </button>
               <button
-                onClick={() => setNotifModal(false)}
+                onClick={() => setNotisModal(false)}
                 className="px-4 py-2.5 rounded-lg text-sm border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
               >
                 Cancel

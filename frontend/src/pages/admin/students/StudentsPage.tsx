@@ -1,5 +1,6 @@
 import { ROUTES } from "../../../config/routes";
 import { useEffect, useState } from "react";
+import { useClassStore } from "../../../store/class.store";
 import { Link } from "react-router-dom";
 import { Search, Plus, ChevronRight, CheckCircle } from "lucide-react";
 import {
@@ -9,13 +10,18 @@ import {
 } from "../../../api/students";
 
 export function StudentList() {
+  const { classes, loadClasses } = useClassStore();
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [students, setStudents] = useState<StudentResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const grades = ["All", "JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
+  const grades = ["All", ...classes.map((c) => c.name)];
+
+  useEffect(() => {
+    loadClasses().catch(() => {});
+  }, [loadClasses]);
 
   useEffect(() => {
     let isMounted = true;

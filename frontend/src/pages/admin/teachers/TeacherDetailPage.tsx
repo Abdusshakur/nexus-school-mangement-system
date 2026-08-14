@@ -51,6 +51,7 @@ export function TeacherDetailPage() {
         // Map backend TeacherDetailResponse to frontend Teacher interface
         setTeacher({
           id: data.id,
+          user_id: data.user_id,
           staffId: data.id.substring(0, 8).toUpperCase(),
           name: `${data.first_name} ${data.last_name}`,
           email: data.email,

@@ -4,6 +4,7 @@ import { formatParentInitials } from "../utils/formatters";
 
 export interface Teacher {
   id: string;
+  user_id: string;
   staffId: string;
   name: string;
   email: string;
@@ -56,6 +57,7 @@ export const useTeacherStore = create<TeacherState>((set) => ({
 
         return {
           id: d.id,
+          user_id: d.user_id,
           staffId: d.id.substring(0, 8).toUpperCase(),
           name,
           email: d.email,
