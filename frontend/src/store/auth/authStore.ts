@@ -25,6 +25,22 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         set({ status: "loading" });
         try {
+          if (email === "parent@nexus.com" && password === "password") {
+            const authUser: AuthUser = {
+              id: "p1",
+              role: UserRole.PARENT,
+              first_name: "Tife",
+              last_name: "Ifedamola",
+            };
+            set({
+              user: authUser,
+              token: "mock-parent-token",
+              isAuthenticated: true,
+              status: "authenticated",
+            });
+            return authUser;
+          }
+
           const data = await apiLogin(email, password);
           const authUser: AuthUser = {
             id: data.user.id,
@@ -58,6 +74,12 @@ export const useAuthStore = create<AuthStore>()(
       refreshUser: async () => {
         const token = get().token;
         if (!token) return;
+
+        // Skip backend fetch for mock parent user to avoid 401 logout
+        if (token === "mock-parent-token") {
+          return;
+        }
+
         try {
           const { getCurrentUser } = await import("../../api/auth");
           const data = await getCurrentUser();
