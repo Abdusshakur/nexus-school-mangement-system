@@ -3,12 +3,18 @@ from sqlmodel import Session, select
 from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
+from sqlalchemy import func
 
 from backend.app.db.database import get_session
-from backend.app.models import Class, Subject, TeacherProfile
+from backend.app.models import Class, Subject, TeacherProfile, AcademicSession, AcademicTerm, StudentProfile, Class, TeacherProfile, Subject
 from backend.app.core.auth_utils import RoleChecker
 from backend.app.schemas.academic import ( AcademicEntityCreate, AcademicEntityResponse, 
-                                            AcademicEntityUpdate,FormTeacherAssignRequest, ClassWithTeacherResponse )
+                                            AcademicEntityUpdate,FormTeacherAssignRequest, ClassWithTeacherResponse,
+                                             AcademicSessionCreate, AcademicSessionResponse, AcademicTermCreate, 
+                                             AcademicTermResponse, ActiveContextSummary, TermWithSessionResponse)
+
+
+
 
 
 router = APIRouter(prefix="/academics", tags=["Academic Setup"])
@@ -164,3 +170,101 @@ def delete_subject(subject_id: UUID, session: Session = Depends(get_session)):
     session.delete(db_subject)
     session.commit()
     return
+
+
+# ==========================================
+# SESSION & TERM ENDPOINTS
+# ==========================================
+
+@router.post("/sessions", response_model=AcademicSessionResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(allow_admin_only)])
+def create_academic_session(request: AcademicSessionCreate, db: Session = Depends(get_session)):
+    """Creates a new Academic Year. Automatically deactivates the old one if set to active."""
+    
+    if request.is_active:
+        active_sessions = db.exec(select(AcademicSession).where(AcademicSession.is_active == True)).all()
+        for old in active_sessions:
+            old.is_active = False
+            db.add(old)
+            
+    new_session = AcademicSession(**request.model_dump())
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+    return new_session
+
+@router.post("/terms", response_model=AcademicTermResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(allow_admin_only)])
+def create_academic_term(request: AcademicTermCreate, db: Session = Depends(get_session)):
+    """Creates a Term inside a Session. Automatically deactivates the old term if set to active."""
+    
+    parent_session = db.get(AcademicSession, request.session_id)
+    if not parent_session:
+        raise HTTPException(status_code=404, detail="Parent Academic Session not found.")
+
+    if request.is_active:
+        active_terms = db.exec(select(AcademicTerm).where(AcademicTerm.is_active == True)).all()
+        for old in active_terms:
+            old.is_active = False
+            db.add(old)
+            
+    new_term = AcademicTerm(**request.model_dump())
+    db.add(new_term)
+    db.commit()
+    db.refresh(new_term)
+    
+    return AcademicTermResponse(
+        **new_term.model_dump(),
+        session_name=parent_session.name
+    )
+
+
+@router.get("/terms/all", response_model=List[TermWithSessionResponse])
+def get_all_terms_and_sessions(db: Session = Depends(get_session)):
+    """Fetches a complete list of all terms and their parent sessions."""
+    
+    # Join AcademicTerm and AcademicSession
+    statement = (
+        select(AcademicTerm, AcademicSession)
+        .join(AcademicSession, AcademicTerm.session_id == AcademicSession.id) # type: ignore
+        .order_by(AcademicSession.start_date.desc(), AcademicTerm.start_date.desc())
+    )
+    
+    results = db.exec(statement).all()
+    
+    return [
+        TermWithSessionResponse(
+            term_id=term.id,
+            term_name=term.name.value, # Extracts 'First Term' from the Enum
+            term_start_date=term.start_date,
+            term_end_date=term.end_date,
+            is_term_active=term.is_active,
+            
+            session_id=sess.id,
+            session_name=sess.name,
+            is_session_active=sess.is_active
+        ) for term, sess in results
+    ]
+
+@router.get("/active-summary", response_model=ActiveContextSummary)
+def get_active_school_context(db: Session = Depends(get_session)):
+    """Fetches the active term & session, plus school-wide stats for the Admin Dashboard."""
+    
+    active_term = db.exec(select(AcademicTerm).where(AcademicTerm.is_active == True)).first()
+    if not active_term:
+        raise HTTPException(status_code=404, detail="No active term found in the system.")
+        
+    # Dynamically calculate stats
+    students = db.exec(select(func.count(StudentProfile.id))).one_or_none() or 0
+    classes = db.exec(select(func.count(Class.id))).one_or_none() or 0
+    teachers = db.exec(select(func.count(TeacherProfile.id))).one_or_none() or 0
+    subjects = db.exec(select(func.count(Subject.id))).one_or_none() or 0
+
+    return ActiveContextSummary(
+        active_session_name=active_term.session.name,
+        active_term_name=active_term.name.value,
+        term_id=active_term.id,
+        session_id=active_term.session_id,
+        total_students=students,
+        total_classes=classes,
+        active_teachers=teachers,
+        total_subjects=subjects
+    )
