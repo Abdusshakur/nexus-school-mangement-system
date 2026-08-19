@@ -45,5 +45,12 @@ export const ROUTES = {
   },
   PARENT: {
     DASHBOARD: "/parent/dashboard",
+    CHILDREN: "/parent/children",
+    ATTENDANCE: "/parent/attendance",
+    ASSIGNMENTS: "/parent/assignments",
+    RESULTS: "/parent/results",
+    ANNOUNCEMENTS: "/parent/announcements",
+    NOTIFICATIONS: "/parent/notifications",
+    PROFILE: "/parent/profile",
   },
 } as const;

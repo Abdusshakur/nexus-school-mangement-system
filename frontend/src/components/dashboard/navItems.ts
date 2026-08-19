@@ -12,6 +12,8 @@ import {
   Archive,
   // MessageSquare,
   UserCircle,
+  Baby,
+  Bell,
 } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
@@ -126,9 +128,55 @@ const TEACHER_NAV_ITEMS = [
   },
 ];
 
+const PARENT_NAV_ITEMS = [
+  {
+    label: "Dashboard",
+    href: ROUTES.PARENT.DASHBOARD,
+    icon: LayoutDashboard,
+  },
+  {
+    label: "My Children",
+    href: ROUTES.PARENT.CHILDREN,
+    icon: Baby,
+  },
+  {
+    label: "Attendance",
+    href: ROUTES.PARENT.ATTENDANCE,
+    icon: CalendarCheck,
+  },
+  {
+    label: "Assignments",
+    href: ROUTES.PARENT.ASSIGNMENTS,
+    icon: ClipboardList,
+  },
+  {
+    label: "Results",
+    href: ROUTES.PARENT.RESULTS,
+    icon: Star,
+  },
+  {
+    label: "Announcements",
+    href: ROUTES.PARENT.ANNOUNCEMENTS,
+    icon: Megaphone,
+  },
+  {
+    label: "Notifications",
+    href: ROUTES.PARENT.NOTIFICATIONS,
+    icon: Bell,
+  },
+  {
+    label: "Profile",
+    href: ROUTES.PARENT.PROFILE,
+    icon: UserCircle,
+  },
+];
+
 export function getNavItems(role: string | null) {
   if (role === "teacher") {
     return TEACHER_NAV_ITEMS;
+  }
+  if (role === "parent") {
+    return PARENT_NAV_ITEMS;
   }
   return ADMIN_NAV_ITEMS;
 }
