@@ -4,6 +4,7 @@ import { UserRole } from "../types/roles";
 
 import { ParentDashboard } from "../pages/parent/dashboard/ParentDashboard";
 
+
 const ParentPlaceholder = ({ title }: { title: string }) => (
   <div className="p-8">
     <h1 className="text-2xl font-bold">{title}</h1>

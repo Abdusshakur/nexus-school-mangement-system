@@ -91,8 +91,8 @@ export function AttendanceDashboard() {
             },
             {
               label: "Attendance Rate",
-              value: summaryData?.classes.length 
-                ? `${Math.round(summaryData.classes.reduce((sum, c) => sum + c.attendance_rate_percentage, 0) / summaryData.classes.length)}%` 
+              value: summaryData?.classes.length
+                ? `${Math.round(summaryData.classes.reduce((sum, c) => sum + c.attendance_rate_percentage, 0) / summaryData.classes.length)}%`
                 : "0%",
               icon: TrendingUp,
               text: "text-indigo-500",
@@ -205,10 +205,10 @@ export function AttendanceDashboard() {
                 <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${g.attendance_rate_percentage >= 90
+                      ? "bg-indigo-500"
+                      : g.attendance_rate_percentage >= 85
                         ? "bg-indigo-500"
-                        : g.attendance_rate_percentage >= 85
-                          ? "bg-indigo-500"
-                          : "bg-amber-500"
+                        : "bg-amber-500"
                       }`}
                     style={{
                       width: `${g.attendance_rate_percentage}%`,
