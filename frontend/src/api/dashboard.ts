@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface AttendanceTodaySummary {
   present: number;
@@ -23,9 +23,9 @@ export interface DailyAttendance {
 }
 
 export const getDashboardSummary = async (): Promise<DashboardSummaryResponse> => {
-  return apiFetch("/dashboard/summary", { method: "GET" });
+  return apiClient.get("/dashboard/summary");
 };
 
 export const fetchAttendanceTrends = async (): Promise<DailyAttendance[]> => {
-  return apiFetch("/dashboard/attendance-trends", { method: "GET" });
+  return apiClient.get("/dashboard/attendance-trends");
 };

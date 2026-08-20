@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface ParentChild {
   id: string;
@@ -48,13 +48,13 @@ export const fetchParentsList = async (
   const path = search
     ? `/parents?search=${encodeURIComponent(search)}`
     : "/parents";
-  return apiFetch(path, { method: "GET" });
+  return apiClient.get(path);
 };
 
 export const fetchParentById = async (
   parentId: string,
 ): Promise<ParentResponse> => {
-  return apiFetch(`/parents/${parentId}`, { method: "GET" });
+  return apiClient.get(`/parents/${parentId}`);
 };
 
 export const searchParents = async (
@@ -73,17 +73,11 @@ export const createParent = async (
     password: payload.password,
     phone_number: payload.phone_number,
   };
-  return apiFetch("/parents", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return apiClient.post("/parents", data);
 };
 
 export const linkParentToStudent = async (
   payload: RelationshipCreatePayload,
 ): Promise<RelationshipResponse> => {
-  return apiFetch("/relationships", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/relationships", payload);
 };

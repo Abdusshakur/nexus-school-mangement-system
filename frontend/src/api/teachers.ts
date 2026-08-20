@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface AssignedClassItem {
   id: string;
@@ -62,48 +62,36 @@ export interface TeacherDetailResponse {
 }
 
 export const fetchTeachersList = async (): Promise<TeacherCreateResponse[]> => {
-  return apiFetch("/teachers", { method: "GET" });
+  return apiClient.get("/teachers");
 };
 
 export const fetchTeacherById = async (id: string): Promise<TeacherDetailResponse> => {
-  return apiFetch(`/teachers/${id}`, { method: "GET" });
+  return apiClient.get(`/teachers/${id}`);
 };
 
 export const createTeacher = async (
   payload: TeacherCreatePayload
 ): Promise<TeacherCreateResponse> => {
-  return apiFetch("/teachers", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/teachers", payload);
 };
 
 export const updateTeacherProfile = async (
   id: string,
   payload: TeacherProfileUpdatePayload
 ): Promise<any> => {
-  return apiFetch(`/teachers/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.patch(`/teachers/${id}`, payload);
 };
 
 export const assignTeacherClasses = async (
   id: string,
   classIds: string[]
 ): Promise<any> => {
-  return apiFetch(`/teachers/${id}/classes`, {
-    method: "PUT",
-    body: JSON.stringify({ class_ids: classIds }),
-  });
+  return apiClient.put(`/teachers/${id}/classes`, { class_ids: classIds });
 };
 
 export const assignTeacherSubjects = async (
   id: string,
   subjectIds: string[]
 ): Promise<any> => {
-  return apiFetch(`/teachers/${id}/subjects`, {
-    method: "PUT",
-    body: JSON.stringify({ subject_ids: subjectIds }),
-  });
+  return apiClient.put(`/teachers/${id}/subjects`, { subject_ids: subjectIds });
 };
