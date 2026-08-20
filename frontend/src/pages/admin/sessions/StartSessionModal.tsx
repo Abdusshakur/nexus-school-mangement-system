@@ -20,6 +20,7 @@ const CHECKLIST = [
 ];
 
 interface StartSessionModalProps {
+  activeSession?: any;
   onClose: () => void;
   onConfirm: (data: {
     name: string;
@@ -30,6 +31,7 @@ interface StartSessionModalProps {
 }
 
 export function StartSessionModal({
+  activeSession,
   onClose,
   onConfirm,
 }: StartSessionModalProps) {
@@ -42,6 +44,11 @@ export function StartSessionModal({
   });
 
   const allDone = CHECKLIST.every((c) => c.done);
+
+  // Checks if current active session is not yet over
+  const isSessionNotOver = activeSession && activeSession.endDate
+    ? new Date(activeSession.endDate).getTime() > new Date().getTime()
+    : false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -71,11 +78,10 @@ export function StartSessionModal({
                 {CHECKLIST.map((item) => (
                   <div
                     key={item.key}
-                    className={`flex items-start gap-3 p-3 rounded-xl border ${
-                      item.done
+                    className={`flex items-start gap-3 p-3 rounded-xl border ${item.done
                         ? "bg-emerald-50 border-emerald-200"
                         : "bg-amber-50 border-amber-200"
-                    }`}
+                      }`}
                   >
                     <div className="shrink-0 mt-0.5">
                       {item.done ? (
@@ -107,7 +113,20 @@ export function StartSessionModal({
                   recommended to resolve them first.
                 </div>
               )}
-              <div className="flex gap-3">
+              {isSessionNotOver && (
+                <div className="p-4 rounded-xl border border-red-200 bg-red-50">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={18} />
+                    <div>
+                      <h4 className="font-bold text-red-900 text-sm">Warning: Session Not Yet Over</h4>
+                      <p className="text-sm text-red-700 mt-1">
+                        The current academic session officially ends on <strong>{new Date(activeSession.endDate).toLocaleDateString()}</strong>. Archiving it now will prematurely close the session. Are you absolutely sure you want to proceed?
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-3 mt-2">
                 <button
                   onClick={() => setStep("form")}
                   className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors cursor-pointer"
@@ -195,11 +214,10 @@ export function StartSessionModal({
                 <button
                   onClick={() => onConfirm(form)}
                   disabled={!form.name || !form.startDate || !form.endDate}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors cursor-pointer ${
-                    form.name && form.startDate && form.endDate
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors cursor-pointer ${form.name && form.startDate && form.endDate
                       ? "bg-indigo-500 hover:bg-indigo-600"
                       : "bg-slate-300 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   <Plus size={14} /> Start New Session
                 </button>

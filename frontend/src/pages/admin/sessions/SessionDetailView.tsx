@@ -134,7 +134,7 @@ export function SessionDetailView({
       {tab === "overview" && (
         <OverviewTab session={session} classesCount={classes.length} />
       )}
-      {tab === "terms" && <TermsTab isActive={isActive} />}
+      {tab === "terms" && <TermsTab sessionId={session.id} isActive={isActive} terms={session.terms} />}
       {tab === "classes" && <ClassesTab classes={classes} />}
       {tab === "students" && <StudentsTab />}
       {tab === "reports" && <ReportsTab />}

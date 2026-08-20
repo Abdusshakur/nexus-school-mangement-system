@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface AttendanceRecordPayload {
   student_id: string;
@@ -36,13 +36,10 @@ export interface DailyAttendanceSummaryResponse {
 }
 
 export async function submitClassAttendance(payload: AttendanceSubmitRequest): Promise<AttendanceSubmitResponse> {
-  return apiFetch("/attendance/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/attendance/", payload);
 }
 
 export async function fetchDailyAttendanceSummary(date?: string): Promise<DailyAttendanceSummaryResponse> {
   const query = date ? `?date=${date}` : "";
-  return apiFetch(`/attendance/classes/summary${query}`);
+  return apiClient.get(`/attendance/classes/summary${query}`);
 }

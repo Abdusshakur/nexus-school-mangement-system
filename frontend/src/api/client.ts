@@ -1,52 +1,42 @@
+
+import axios from "axios";
 import { useAuthStore } from "../store/auth";
 import { toast } from "sonner";
 
 const RAW_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-// Centralized safety wrapper: If missing the API prefix, append it automatically
 export const API_BASE = RAW_BASE.includes("/api/v1")
   ? RAW_BASE
   : `${RAW_BASE.replace(/\/$/, "")}/api/v1`;
 
-// Helper to get authorization headers uniformly across all requests
-export const getAuthHeaders = (): HeadersInit => {
-  const token = useAuthStore.getState().token;
-  return {
-    Authorization: `Bearer ${token}`,
+const apiClient = axios.create({
+  baseURL: API_BASE,
+  headers: {
     "Content-Type": "application/json",
-  };
-};
+  },
+});
 
-export const apiFetch = async (
-  path: string,
-  options: RequestInit = {}
-): Promise<any> => {
-  const url = path.startsWith("http")
-    ? path
-    : `${API_BASE}/${path.replace(/^\//, "")}`;
+apiClient.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-  const headers = {
-    ...getAuthHeaders(),
-    ...options.headers,
-  };
+apiClient.interceptors.response.use(
+  (response) => {
+    return response.status === 204 ? null : response.data;
+  },
+  (error) => {
+    let errorMsg = "An error occurred";
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    if (error.response) {
+      const data = error.response.data;
+      const backendMessage = data?.detail || data?.message;
+      const status = error.response.status;
 
-    if (response.status === 204) {
-      return null;
-    }
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      let errorMsg = "An error occurred";
-      const backendMessage = data.detail || data.message;
-
-      switch (response.status) {
+      switch (status) {
         case 400:
           errorMsg = typeof backendMessage === "string" ? backendMessage : "The information provided is invalid. Please check your inputs and try again.";
           break;
@@ -55,7 +45,7 @@ export const apiFetch = async (
           errorMsg = "Your session has expired. Please log in again.";
           toast.error(errorMsg);
           window.location.href = "/login";
-          throw new Error(errorMsg);
+          return Promise.reject(new Error(errorMsg)); // Fast exit
         case 403:
           errorMsg = "You do not have permission to perform this action.";
           break;
@@ -66,10 +56,10 @@ export const apiFetch = async (
           errorMsg = typeof backendMessage === "string" ? backendMessage : "This record already exists in the system.";
           break;
         case 422:
-          if (Array.isArray(data.detail)) {
+          if (Array.isArray(data?.detail)) {
             const firstErr = data.detail[0];
-            const field = firstErr.loc?.length > 1 ? firstErr.loc[1] : "Input";
-            if (firstErr.msg.includes("valid email address")) {
+            const field = firstErr?.loc?.length > 1 ? firstErr.loc[1] : "Input";
+            if (firstErr?.msg?.includes("valid email address")) {
               errorMsg = "Invalid email address.";
             } else {
               errorMsg = `Invalid format provided for ${field}.`;
@@ -87,18 +77,17 @@ export const apiFetch = async (
           errorMsg = "The system is currently undergoing maintenance. Please try again in a few minutes.";
           break;
         default:
-          errorMsg = typeof backendMessage === "string" ? backendMessage : `Request failed with status ${response.status}`;
+          errorMsg = typeof backendMessage === "string" ? backendMessage : "An unexpected error occurred. Please try again.";
       }
+    } else {
+      errorMsg = error.message || "A network error occurred. Please try again.";
+    }
 
+    if (errorMsg !== "Session expired or unauthorized.") {
       toast.error(errorMsg);
-      throw new Error(errorMsg);
     }
-
-    return data;
-  } catch (err: any) {
-    if (err.message !== "Session expired or unauthorized.") {
-      toast.error(err.message || "A network error occurred. Please try again.");
-    }
-    throw err;
+    return Promise.reject(new Error(errorMsg));
   }
-};
+);
+
+export default apiClient;

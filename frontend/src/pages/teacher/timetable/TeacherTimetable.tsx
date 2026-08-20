@@ -7,6 +7,7 @@ import {
 } from "../../../store/timetable.store";
 import { useAuthStore } from "../../../store/auth/authStore";
 import { useClassStore } from "../../../store/class.store";
+import { useSessionStore } from "../../../store/session.store";
 
 // ─── Period / day structure ────────────────────────────────────────────────────
 
@@ -228,34 +229,42 @@ function TimetableGrid({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function TeacherTimetable() {
-  const { timetableGrid, terms, loading, fetchTerms, fetchTimetable } =
+  const { timetableGrid, myTimetableGrid, terms, loading, fetchTerms, fetchTimetable, fetchMyTimetable } =
     useTimetableStore();
   const { classes, loadClasses } = useClassStore();
   const { user } = useAuthStore();
+  const { academicSessions, fetchSessions } = useSessionStore();
 
   const MY_TEACHER_ID = user?.id || "";
 
   const [tab, setTab] = useState<"mine" | "school">("mine");
-  const [term, setTerm] = useState("");
+  const [selectedTermId, setSelectedTermId] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
+
+  const activeTermId = selectedTermId || (academicSessions.find(s => s.status === "active")?.termId || "");
 
   useEffect(() => {
     fetchTerms();
     loadClasses();
-  }, [fetchTerms, loadClasses]);
+    fetchSessions();
+  }, [fetchTerms, loadClasses, fetchSessions]);
+
+  useEffect(() => {
+    if (activeTermId) {
+      fetchMyTimetable(activeTermId);
+    }
+  }, [activeTermId, fetchMyTimetable]);
 
   const activeClassId =
     selectedClassId || (classes.length > 0 ? classes[0].id : "");
-  const activeTerm = term || (terms.length > 0 ? terms[0] : "");
 
   useEffect(() => {
-    if (activeTerm) {
-      fetchTimetable(activeTerm);
+    if (activeClassId && activeTermId) {
+      fetchTimetable(activeClassId, activeTermId);
     }
-  }, [activeTerm, fetchTimetable]);
+  }, [activeClassId, activeTermId, fetchTimetable]);
 
-  // My timetable: map composite keys back to simple day-period for the grid
-  const myGrid: Record<string, TimetableCell | undefined> = {};
+  const myGrid = myTimetableGrid || {};
   const schoolGrid: Record<string, TimetableCell | undefined> = {};
 
   Object.entries(timetableGrid).forEach(([key, cell]) => {
@@ -263,9 +272,6 @@ export default function TeacherTimetable() {
     const [classId, day, period] = key.split("-");
     const dpKey = `${day}-${period}`;
 
-    if (cell.teacherId === MY_TEACHER_ID) {
-      myGrid[dpKey] = cell;
-    }
     if (classId === activeClassId) {
       schoolGrid[dpKey] = cell;
     }
@@ -317,13 +323,13 @@ export default function TeacherTimetable() {
             )}
             <div className="relative">
               <select
-                value={activeTerm}
-                onChange={(e) => setTerm(e.target.value)}
+                value={activeTermId}
+                onChange={(e) => setSelectedTermId(e.target.value)}
                 className="pl-3 pr-8 py-2 rounded-lg text-sm bg-white appearance-none font-medium border border-slate-200 text-slate-700 outline-none"
               >
-                {terms.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {academicSessions.map((s) => (
+                  <option key={s.termId} value={s.termId}>
+                    {s.term}
                   </option>
                 ))}
               </select>

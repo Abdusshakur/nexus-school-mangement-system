@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface AcademicClass {
   id: string;
@@ -14,43 +14,62 @@ export interface AcademicSubject {
 
 // CLASSES
 export async function fetchClasses(): Promise<AcademicClass[]> {
-  return apiFetch("/academics/classes");
+  return apiClient.get("/academics/classes");
 }
 
 export async function createClass(payload: { name: string }): Promise<AcademicClass> {
-  return apiFetch("/academics/classes", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/academics/classes", payload);
 }
 
 export async function deleteClass(classId: string): Promise<void> {
-  return apiFetch(`/academics/classes/${classId}`, {
-    method: "DELETE",
-  });
+  return apiClient.delete(`/academics/classes/${classId}`);
 }
 
 export async function assignFormTeacher(classId: string, teacherId: string | null): Promise<void> {
-  return apiFetch(`/academics/classes/${classId}/form-teacher`, {
-    method: "PATCH",
-    body: JSON.stringify({ teacher_id: teacherId }),
-  });
+  return apiClient.patch(`/academics/classes/${classId}/form-teacher`, { teacher_id: teacherId });
 }
 
 // SUBJECTS
 export async function fetchSubjects(): Promise<AcademicSubject[]> {
-  return apiFetch("/academics/subjects");
+  return apiClient.get("/academics/subjects");
 }
 
 export async function createSubject(payload: { name: string }): Promise<AcademicSubject> {
-  return apiFetch("/academics/subjects", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/academics/subjects", payload);
 }
 
 export async function deleteSubject(subjectId: string): Promise<void> {
-  return apiFetch(`/academics/subjects/${subjectId}`, {
-    method: "DELETE",
-  });
+  return apiClient.delete(`/academics/subjects/${subjectId}`);
+}
+
+// SESSIONS & TERMS
+export interface AcademicSessionCreate {
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active?: boolean;
+}
+
+export interface AcademicTermCreate {
+  session_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active?: boolean;
+}
+
+export async function createSession(payload: AcademicSessionCreate): Promise<any> {
+  return apiClient.post("/academics/sessions", payload);
+}
+
+export async function createTerm(payload: AcademicTermCreate): Promise<any> {
+  return apiClient.post("/academics/terms", payload);
+}
+
+export async function fetchAllTermsAndSessions(): Promise<any> {
+  return apiClient.get("/academics/terms/all");
+}
+
+export async function fetchActiveSummary(): Promise<any> {
+  return apiClient.get("/academics/active-summary");
 }

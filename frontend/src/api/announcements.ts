@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface AnnouncementCreatePayload {
   title: string;
@@ -20,14 +20,11 @@ export interface AnnouncementResponse {
 export const fetchAnnouncements = async (
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED" = "PUBLISHED",
 ): Promise<AnnouncementResponse[]> => {
-  return apiFetch(`/announcements/?status=${status}`, { method: "GET" });
+  return apiClient.get(`/announcements/?status=${status}`);
 };
 
 export const createAnnouncement = async (
   payload: AnnouncementCreatePayload,
 ): Promise<AnnouncementResponse> => {
-  return apiFetch("/announcements", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/announcements", payload);
 };
