@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, time
 from enum import Enum
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -243,3 +243,58 @@ class ClassSubjectAssignment(SQLModel, table=True):
     subject_id: UUID = Field(foreign_key="subject.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class DayOfWeek(str, Enum):
+    MONDAY = "MONDAY"
+    TUESDAY = "TUESDAY"
+    WEDNESDAY = "WEDNESDAY"
+    THURSDAY = "THURSDAY"
+    FRIDAY = "FRIDAY"
+
+class TimetableEntry(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+
+    term_id: UUID = Field(foreign_key="academicterm.id", index=True)
+    
+    # The 3 Pillars of the Event
+    class_id: UUID = Field(foreign_key="class.id")
+    subject_id: UUID = Field(foreign_key="subject.id")
+    teacher_id: UUID = Field(foreign_key="teacherprofile.id")
+    
+    # The Temporal Data
+    day_of_week: DayOfWeek
+    start_time: time
+    end_time: time
+
+
+class AcademicSession(SQLModel, table=True):
+    """The Parent: Represents the entire school year (e.g., 2026/2027)"""
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field(index=True, unique=True) # e.g., "2026/2027"
+    start_date: date
+    end_date: date
+    is_active: bool = Field(default=False) # Is this the current school year?
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Link to the child terms
+    terms: List["AcademicTerm"] = Relationship(back_populates="session")
+
+
+class TermEnum(str, Enum):
+    FIRST = "First Term"
+    SECOND = "Second Term"
+    THIRD = "Third Term"
+
+class AcademicTerm(SQLModel, table=True):
+    """The Child: Represents the specific term inside a session"""
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    session_id: UUID = Field(foreign_key="academicsession.id")
+    name: TermEnum
+    start_date: date
+    end_date: date
+    is_active: bool = Field(default=False) # Is this the exact current term?
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Link back to the parent session
+    session: AcademicSession = Relationship(back_populates="terms")
