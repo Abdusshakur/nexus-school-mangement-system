@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   CheckCircle,
@@ -22,10 +22,12 @@ function fmtDate(iso: string) {
   });
 }
 
-
-
 export function AcademicSessionsPage() {
-  const { academicSessions, startNewSession } = useSessionStore();
+  const { academicSessions, fetchSessions, startNewSession } = useSessionStore();
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
   const [showModal, setShowModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
@@ -341,6 +343,7 @@ export function AcademicSessionsPage() {
 
       {showModal && (
         <StartSessionModal
+          activeSession={active}
           onClose={() => setShowModal(false)}
           onConfirm={handleStartSession}
         />

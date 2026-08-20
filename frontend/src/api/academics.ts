@@ -41,3 +41,35 @@ export async function createSubject(payload: { name: string }): Promise<Academic
 export async function deleteSubject(subjectId: string): Promise<void> {
   return apiClient.delete(`/academics/subjects/${subjectId}`);
 }
+
+// SESSIONS & TERMS
+export interface AcademicSessionCreate {
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active?: boolean;
+}
+
+export interface AcademicTermCreate {
+  session_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active?: boolean;
+}
+
+export async function createSession(payload: AcademicSessionCreate): Promise<any> {
+  return apiClient.post("/academics/sessions", payload);
+}
+
+export async function createTerm(payload: AcademicTermCreate): Promise<any> {
+  return apiClient.post("/academics/terms", payload);
+}
+
+export async function fetchAllTermsAndSessions(): Promise<any> {
+  return apiClient.get("/academics/terms/all");
+}
+
+export async function fetchActiveSummary(): Promise<any> {
+  return apiClient.get("/academics/active-summary");
+}

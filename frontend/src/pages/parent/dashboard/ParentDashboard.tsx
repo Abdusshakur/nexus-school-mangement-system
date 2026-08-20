@@ -37,8 +37,6 @@ const PRIORITY_STYLES: Record<string, string> = {
   Low: "bg-indigo-100 text-indigo-800",
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function ParentDashboard() {
   const profile = mockProfile;
   const children = profile.children;
@@ -160,28 +158,36 @@ export function ParentDashboard() {
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <CalendarCheck size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">Attendance</span>
+            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+              Attendance
+            </span>
           </button>
-          
+
           <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <ClipboardList size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">Assignments</span>
+            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+              Assignments
+            </span>
           </button>
-          
+
           <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <Star size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">Results</span>
+            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+              Results
+            </span>
           </button>
 
           <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <Bell size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">Notifications</span>
+            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+              Notifications
+            </span>
           </button>
         </div>
       </div>
