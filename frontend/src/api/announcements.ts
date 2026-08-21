@@ -28,3 +28,14 @@ export const createAnnouncement = async (
 ): Promise<AnnouncementResponse> => {
   return apiClient.post("/announcements", payload);
 };
+
+export const updateAnnouncement = async (
+  id: string,
+  payload: Partial<AnnouncementCreatePayload>,
+): Promise<AnnouncementResponse> => {
+  return apiClient.patch(`/announcements/${id}`, payload);
+};
+
+export const deleteAnnouncement = async (id: string): Promise<void> => {
+  return apiClient.delete(`/announcements/${id}`);
+};

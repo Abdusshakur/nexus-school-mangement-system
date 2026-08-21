@@ -3,6 +3,7 @@ import {
   fetchParentsList,
   createParent,
   linkParentToStudent,
+  updateParentProfile,
   type ParentResponse,
   type ParentCreatePayload,
   type RelationshipCreatePayload,
@@ -16,6 +17,7 @@ interface ParentState {
   fetchParents: (force?: boolean) => Promise<ParentResponse[]>;
   addParent: (payload: ParentCreatePayload) => Promise<ParentResponse>;
   linkParent: (payload: RelationshipCreatePayload) => Promise<RelationshipResponse>;
+  updateParent: (id: string, payload: Partial<ParentCreatePayload>) => Promise<any>;
 }
 
 export const useParentStore = create<ParentState>((set, get) => ({
@@ -66,6 +68,21 @@ export const useParentStore = create<ParentState>((set, get) => ({
       return result;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to link parent to student.";
+      set({ error: msg, loading: false });
+      throw err;
+    }
+  },
+
+  updateParent: async (id, payload) => {
+    set({ loading: true, error: null });
+    try {
+      await updateParentProfile(id, payload);
+      // Fetch fresh parent list to update mapped arrays in state
+      const data = await fetchParentsList();
+      set({ parents: data, loading: false });
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update parent profile.";
       set({ error: msg, loading: false });
       throw err;
     }

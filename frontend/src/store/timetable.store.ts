@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { getClassTimetable, createTimetableEntry, getTeacherSchedule } from "../api/timetable";
+import { fetchAllTermsAndSessions } from "../api/academics";
 
 export type TimetableKey = string; // format: classId-day-periodId
 
@@ -28,12 +29,12 @@ interface TimetableState {
   fetchMyTimetable: (termId: string) => Promise<void>;
   saveTimetableCell: (
     termId: string,
-    classId: string, 
-    day: number, 
-    dayString: string, 
-    startTime: string, 
-    endTime: string, 
-    periodId: number, 
+    classId: string,
+    day: number,
+    dayString: string,
+    startTime: string,
+    endTime: string,
+    periodId: number,
     cell: TimetableCell | undefined
   ) => Promise<void>;
 }
@@ -43,16 +44,22 @@ export const useTimetableStore = create<TimetableState>()(
     (set, get) => ({
       timetableGrid: {},
       myTimetableGrid: {},
-      terms: ["2026/2027 Term 1"], // Hardcoding active term temporarily if backend doesn't provide it yet
+      terms: [],
       loading: false,
       error: null,
 
       fetchTerms: async () => {
         set({ loading: true, error: null });
         try {
-          // In a fully integrated system, this would call fetchAllTermsAndSessions()
-          // For now, we will leave the hardcoded active term as the only option
-          set({ terms: ["2026/2027 Term 1"], loading: false });
+          const data = await fetchAllTermsAndSessions();
+          // Extract term_id to match the backend expectation
+          const fetchedTerms = Array.isArray(data) ? data.map((item: any) => item.term_id) : [];
+          
+          if (fetchedTerms.length > 0) {
+            set({ terms: fetchedTerms, loading: false });
+          } else {
+            set({ terms: [], loading: false });
+          }
         } catch (error: any) {
           set({ error: error.message, loading: false });
         }
@@ -71,7 +78,7 @@ export const useTimetableStore = create<TimetableState>()(
               const dIndex = dayMap[dayStr] ?? 0;
 
               // Convert start_time to period
-              // Based on PERIODS in AdminTimetable.tsx: 08:00:00 -> 1, 09:00:00 -> 2, etc.
+
               const time = entry.start_time;
               let pIndex = 1;
               if (time === "08:00:00") pIndex = 1;
@@ -97,7 +104,7 @@ export const useTimetableStore = create<TimetableState>()(
               };
             });
           }
-          
+
           set({ timetableGrid: grid, loading: false });
         } catch (error: any) {
           set({ error: error.message, loading: false });
@@ -109,9 +116,9 @@ export const useTimetableStore = create<TimetableState>()(
         try {
           const promises = classIds.map(id => getClassTimetable(id, termId).catch(() => []));
           const results = await Promise.all(promises);
-          
+
           let grid: Record<string, TimetableCell | undefined> = {};
-          
+
           results.forEach((data, index) => {
             const classId = classIds[index];
             if (Array.isArray(data)) {
@@ -146,7 +153,7 @@ export const useTimetableStore = create<TimetableState>()(
               });
             }
           });
-          
+
           set({ timetableGrid: grid, loading: false });
         } catch (error: any) {
           set({ error: error.message, loading: false });
@@ -185,19 +192,19 @@ export const useTimetableStore = create<TimetableState>()(
         set({ loading: true, error: null });
         try {
           if (cell) {
-             // Create or update entry
-             await createTimetableEntry({
-               term_id: termId,
-               class_id: classId,
-               subject_id: cell.subjectId || cell.subject,
-               teacher_id: cell.teacherId,
-               day_of_week: dayString,
-               start_time: startTime,
-               end_time: endTime
-             });
+            // Create or update entry
+            await createTimetableEntry({
+              term_id: termId,
+              class_id: classId,
+              subject_id: cell.subjectId || cell.subject,
+              teacher_id: cell.teacherId,
+              day_of_week: dayString,
+              start_time: startTime,
+              end_time: endTime
+            });
           } else {
-             // We don't have a specific delete endpoint, so we might need one or send empty to createTimetableEntry
-             // This is an assumption that the endpoint handles clears.
+            // We don't have a specific delete endpoint, so we might need one or send empty to createTimetableEntry
+            // This is an assumption that the endpoint handles clears.
           }
 
           const key = `${classId}-${day}-${periodId}`;
