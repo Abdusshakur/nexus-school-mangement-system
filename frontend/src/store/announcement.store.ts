@@ -53,7 +53,7 @@ interface AnnouncementState {
   updateAnnouncement: (id: string, updates: Partial<{ title: string; content: string; priority: string; category: string; audience: string }>) => Promise<void>;
 }
 
-export const useAnnouncementStore = create<AnnouncementState>((set) => ({
+export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
   announcements: [],
   loading: false,
   error: null,
@@ -151,7 +151,7 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
   updateAnnouncement: async (id, updates) => {
     try {
       // Find the current one to see if we need to repackage meta
-      const current = get().announcements.find((a) => a.id === id);
+      const current = get().announcements.find((a: StoreAnnouncement) => a.id === id);
       if (!current) throw new Error("Announcement not found");
 
       let metaContent = current.content;
