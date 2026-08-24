@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronRight, ChevronDown, LogOut, CalendarCheck, ClipboardList } from "lucide-react";
+import { ChevronRight, ChevronDown, LogOut, CalendarCheck, ClipboardList, QrCode } from "lucide-react";
 import { getNavItems } from "./navItems";
 import { useUIStore } from "../../store/ui";
 import { useAuthStore } from "../../store/auth";
@@ -16,7 +16,8 @@ export function Sidebar() {
 
   const ATTENDANCE_SUB_ITEMS = [
     { label: "Class Attendance", href: ROUTES.ADMIN.ATTENDANCE_CLASSES, icon: CalendarCheck },
-    { label: "Teacher Assignment", href: ROUTES.ADMIN.ATTENDANCE_TEACHERS, icon: ClipboardList }
+    { label: "Teacher Assignment", href: ROUTES.ADMIN.ATTENDANCE_TEACHERS, icon: ClipboardList },
+    { label: "QR Scanner", href: ROUTES.ADMIN.ATTENDANCE_TEACHER_RECORDS, icon: QrCode }
   ];
 
 

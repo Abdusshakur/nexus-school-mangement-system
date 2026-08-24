@@ -41,6 +41,22 @@ export const useAuthStore = create<AuthStore>()(
             return authUser;
           }
 
+          if (email === "security@nexus.com" && password === "password") {
+            const authUser: AuthUser = {
+              id: "s1",
+              role: UserRole.SECURITY,
+              first_name: "Chief",
+              last_name: "Security",
+            };
+            set({
+              user: authUser,
+              token: "mock-security-token",
+              isAuthenticated: true,
+              status: "authenticated",
+            });
+            return authUser;
+          }
+
           const data = await apiLogin(email, password);
           const authUser: AuthUser = {
             id: data.user.id,
@@ -75,8 +91,8 @@ export const useAuthStore = create<AuthStore>()(
         const token = get().token;
         if (!token) return;
 
-        // Skip backend fetch for mock parent user to avoid 401 logout
-        if (token === "mock-parent-token") {
+        // Skip backend fetch for mock users to avoid 401 logout
+        if (token === "mock-parent-token" || token === "mock-security-token") {
           return;
         }
 

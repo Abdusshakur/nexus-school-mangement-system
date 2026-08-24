@@ -171,12 +171,23 @@ const PARENT_NAV_ITEMS = [
   },
 ];
 
+const SECURITY_NAV_ITEMS = [
+  {
+    label: "QR Scanner",
+    href: ROUTES.SECURITY.DASHBOARD,
+    icon: LayoutDashboard,
+  },
+];
+
 export function getNavItems(role: string | null) {
   if (role === "teacher") {
     return TEACHER_NAV_ITEMS;
   }
   if (role === "parent") {
     return PARENT_NAV_ITEMS;
+  }
+  if (role === "security") {
+    return SECURITY_NAV_ITEMS;
   }
   return ADMIN_NAV_ITEMS;
 }
