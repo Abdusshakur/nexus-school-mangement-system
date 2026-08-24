@@ -8,6 +8,7 @@ import { adminRoutes } from "./adminRoutes";
 import { teacherRoutes } from "./teacherRoutes";
 import { studentRoutes } from "./studentRoutes";
 import { parentRoutes } from "./parentRoutes";
+import { securityRoutes } from "./securityRoutes";
 
 export default function AppRoutes() {
   return (
@@ -21,6 +22,7 @@ export default function AppRoutes() {
           {teacherRoutes}
           {studentRoutes}
           {parentRoutes}
+          {securityRoutes}
         </Route>
       </Route>
 

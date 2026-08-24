@@ -11,6 +11,8 @@ export const getDashboardRoute = (role: UserRole | string): string => {
       return ROUTES.STUDENT.DASHBOARD;
     case UserRole.PARENT:
       return ROUTES.PARENT.DASHBOARD;
+    case UserRole.SECURITY:
+      return ROUTES.SECURITY.DASHBOARD;
     default:
       return ROUTES.ADMIN.DASHBOARD;
   }

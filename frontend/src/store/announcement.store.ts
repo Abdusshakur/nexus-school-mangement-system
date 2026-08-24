@@ -2,6 +2,8 @@ import { create } from "zustand";
 import {
   fetchAnnouncements,
   createAnnouncement,
+  deleteAnnouncement as apiDeleteAnnouncement,
+  updateAnnouncement as apiUpdateAnnouncement,
   type AnnouncementResponse,
 } from "../api/announcements";
 
@@ -47,10 +49,11 @@ interface AnnouncementState {
   error: string | null;
   fetchAnnouncements: () => Promise<StoreAnnouncement[]>;
   postAnnouncement: (ann: { title: string; content: string; priority?: string; category?: string; audience?: string }) => Promise<void>;
-  deleteAnnouncement: (id: string) => void;
+  deleteAnnouncement: (id: string) => Promise<void>;
+  updateAnnouncement: (id: string, updates: Partial<{ title: string; content: string; priority: string; category: string; audience: string }>) => Promise<void>;
 }
 
-export const useAnnouncementStore = create<AnnouncementState>((set) => ({
+export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
   announcements: [],
   loading: false,
   error: null,
@@ -133,9 +136,57 @@ export const useAnnouncementStore = create<AnnouncementState>((set) => ({
     }
   },
 
-  deleteAnnouncement: (id) => {
-    set((state) => ({
-      announcements: state.announcements.filter((a) => a.id !== id),
-    }));
+  deleteAnnouncement: async (id) => {
+    try {
+      await apiDeleteAnnouncement(id);
+      set((state) => ({
+        announcements: state.announcements.filter((a) => a.id !== id),
+      }));
+    } catch (err) {
+      console.error("Failed to delete announcement:", err);
+      throw err;
+    }
+  },
+
+  updateAnnouncement: async (id, updates) => {
+    try {
+      // Find the current one to see if we need to repackage meta
+      const current = get().announcements.find((a: StoreAnnouncement) => a.id === id);
+      if (!current) throw new Error("Announcement not found");
+
+      let metaContent = current.content;
+      // Re-serialize if content or any meta field changed
+      if (updates.content || updates.priority || updates.category || updates.audience) {
+        metaContent = serializeAnnouncementContent(
+          updates.content !== undefined ? updates.content : current.content,
+          {
+            priority: updates.priority || current.priority,
+            category: updates.category || current.category,
+            audience: updates.audience || current.audience,
+          }
+        );
+      }
+
+      const apiPayload: any = {};
+      if (updates.title) apiPayload.title = updates.title;
+      if (updates.content || updates.priority || updates.category || updates.audience) {
+        apiPayload.content = metaContent;
+      }
+
+      await apiUpdateAnnouncement(id, apiPayload);
+      
+      set((state) => ({
+        announcements: state.announcements.map((a) => 
+          a.id === id ? { 
+            ...a, 
+            ...updates, 
+            target: updates.audience || a.audience 
+          } as StoreAnnouncement : a
+        )
+      }));
+    } catch (err) {
+      console.error("Failed to update announcement:", err);
+      throw err;
+    }
   },
 }));

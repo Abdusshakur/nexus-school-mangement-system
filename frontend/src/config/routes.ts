@@ -16,6 +16,7 @@ export const ROUTES = {
     ATTENDANCE: "/admin/attendance",
     ATTENDANCE_CLASSES: "/admin/attendance/classes",
     ATTENDANCE_TEACHERS: "/admin/attendance/teachers",
+    ATTENDANCE_TEACHER_RECORDS: "/admin/attendance/teacher-records",
     ATTENDANCE_MARK: "/admin/attendance/mark",
     ATTENDANCE_REPORT: "/admin/attendance/report",
     ANNOUNCEMENTS: "/admin/announcements",
@@ -53,4 +54,7 @@ export const ROUTES = {
     NOTIFICATIONS: "/parent/notifications",
     PROFILE: "/parent/profile",
   },
+  SECURITY: {
+    DASHBOARD: "/security/dashboard",
+  }
 } as const;

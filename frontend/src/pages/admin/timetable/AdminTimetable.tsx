@@ -186,9 +186,11 @@ export function AdminTimetable() {
             <div className="relative">
               <select value={activeTermId} onChange={(e) => setSelectedTermId(e.target.value)}
                 className="pl-3 pr-8 py-2.5 rounded-lg text-sm bg-white appearance-none font-medium shadow-sm transition-colors cursor-pointer focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 text-slate-700 outline-none">
-                {academicSessions.map((s) => (
-                  <option key={s.termId} value={s.termId}>{s.term} ({s.name})</option>
-                ))}
+                {academicSessions.flatMap(s => 
+                  s.terms.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({s.name})</option>
+                  ))
+                )}
               </select>
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
             </div>

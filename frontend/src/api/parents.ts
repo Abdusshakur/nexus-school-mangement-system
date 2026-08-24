@@ -76,6 +76,13 @@ export const createParent = async (
   return apiClient.post("/parents", data);
 };
 
+export const updateParentProfile = async (
+  id: string,
+  payload: Partial<ParentCreatePayload>,
+): Promise<any> => {
+  return apiClient.patch(`/parents/${id}`, payload);
+};
+
 export const linkParentToStudent = async (
   payload: RelationshipCreatePayload,
 ): Promise<RelationshipResponse> => {

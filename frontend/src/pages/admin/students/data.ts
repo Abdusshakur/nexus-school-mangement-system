@@ -31,9 +31,6 @@ export const SESSIONS = [
   "2024-25 Term 1",
 ];
 
-export const allStudents: Student[] = [];
-export const STUDENT_DB: Record<string, Student> = {};
-
 // --- MOCK DATA GENERATION FOR TABS ---
 
 export const SUBJECTS_BY_GRADE: Record<string, string[]> = {

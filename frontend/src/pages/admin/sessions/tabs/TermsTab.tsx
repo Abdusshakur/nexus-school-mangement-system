@@ -31,7 +31,7 @@ export function TermsTab({ sessionId, isActive, terms }: TermsTabProps) {
   const [termToClose, setTermToClose] = useState<AcademicTerm | null>(null);
 
   const activeTerm = terms.find(t => t.status === "active");
-  
+
   const isTermPremature = (term: AcademicTerm | undefined) => {
     return term && term.endDate ? new Date(term.endDate).getTime() > new Date().getTime() : false;
   };
@@ -104,7 +104,7 @@ export function TermsTab({ sessionId, isActive, terms }: TermsTabProps) {
                 </div>
               </div>
               {isTermActive && isActive && (
-                <button 
+                <button
                   onClick={() => setTermToClose(term)}
                   className="w-full py-2 rounded-lg text-sm font-semibold mb-2 bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors cursor-pointer"
                 >
@@ -257,12 +257,12 @@ export function TermsTab({ sessionId, isActive, terms }: TermsTabProps) {
                 <X size={18} />
               </button>
             </div>
-            
+
             <div className="p-6">
               <p className="text-slate-700 mb-6">
                 Are you sure you want to close <strong>{termToClose.name}</strong>? This will lock grades and attendance for this term.
               </p>
-              
+
               {isTermPremature(termToClose) && (
                 <div className="p-4 rounded-xl border border-red-200 bg-red-50 mb-6">
                   <div className="flex items-start gap-3">
@@ -288,7 +288,7 @@ export function TermsTab({ sessionId, isActive, terms }: TermsTabProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    // TODO: call close term API when backend supports it
+                    // TODO: await API when backend supports it
                     alert("Close Term functionality is pending backend implementation.");
                     setTermToClose(null);
                   }}
