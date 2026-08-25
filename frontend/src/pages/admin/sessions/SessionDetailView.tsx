@@ -75,7 +75,7 @@ export function SessionDetailView({
           Academic Sessions
         </button>
         <span className="text-slate-400">›</span>
-        <span className="text-slate-700">{session.name} Academic Session</span>
+        <span className="text-slate-700">{session.name}</span>
       </div>
 
       {/* Header */}
@@ -134,7 +134,13 @@ export function SessionDetailView({
       {tab === "overview" && (
         <OverviewTab session={session} classesCount={classes.length} />
       )}
-      {tab === "terms" && <TermsTab sessionId={session.id} isActive={isActive} terms={session.terms} />}
+      {tab === "terms" && (
+        <TermsTab
+          sessionId={session.id}
+          isActive={isActive}
+          terms={session.terms}
+        />
+      )}
       {tab === "classes" && <ClassesTab classes={classes} />}
       {tab === "students" && <StudentsTab />}
       {tab === "reports" && <ReportsTab />}
