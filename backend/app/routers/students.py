@@ -10,7 +10,7 @@ from backend.app.db.database import get_session
 from backend.app.core.auth_utils import CurrentContext, require_permission, hash_password
 from backend.app.models import (
     User, StudentProfile, ParentProfile, ParentStudentLink, 
-    Class, AcademicSession, AcademicTerm, StudentEnrollment, SchoolSettings, EnrollmentStatus,
+    SchoolClass, AcademicSession, AcademicTerm, StudentEnrollment, SchoolSettings, EnrollmentStatus,
     Role, UserRole
 )
 from backend.app.schemas.student import (
@@ -119,7 +119,7 @@ def create_student_with_parent_onboarding(
 
     # Note: request.class_name must be changed to request.class_id in your UnifiedStudentOnboardingCreate schema!
     target_class = session.exec(
-        select(Class).where(Class.id == request.class_id, Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.id == request.class_id, SchoolClass.school_id == context.school_id)
     ).first()
 
     if not target_class:
@@ -273,7 +273,7 @@ def list_students(
     # 3. Base Query: Join Profile -> User -> Enrollment -> Class
     # We use OUTER joins for enrollments so we still list students even if they aren't assigned to a class yet.
     query = (
-        select(StudentProfile, User, Class.name)
+        select(StudentProfile, User, SchoolClass.name)
         .join(User, StudentProfile.user_id == User.id)
         .join(
             StudentEnrollment, 
@@ -283,7 +283,7 @@ def list_students(
             (StudentEnrollment.status == EnrollmentStatus.ACTIVE),
             isouter=True
         )
-        .join(Class, StudentEnrollment.class_id == Class.id, isouter=True)
+        .join(SchoolClass, StudentEnrollment.class_id == SchoolClass.id, isouter=True)
         .where(StudentProfile.school_id == context.school_id) # 👈 4. Hard Tenant Isolation
     )
 
@@ -293,7 +293,7 @@ def list_students(
     
     # Class filter (checks the dynamically joined Class table!)
     if class_name:
-        query = query.where(Class.name == class_name)
+        query = query.where(SchoolClass.name == class_name)
         
     # Admission Number filter
     if search:
@@ -383,8 +383,8 @@ def get_student_by_admission_number(
     current_class_name = "Unassigned"
     if current_session and current_term:
         enrollment_query = (
-            select(Class.name)
-            .join(StudentEnrollment, StudentEnrollment.class_id == Class.id)
+            select(SchoolClass.name)
+            .join(StudentEnrollment, StudentEnrollment.class_id == SchoolClass.id)
             .where(
                 StudentEnrollment.student_id == profile.id,
                 StudentEnrollment.session_id == current_session.id,
@@ -479,8 +479,8 @@ def update_student_profile(
     current_class_name = "Unassigned"
     if current_session and current_term:
         enrollment_query = (
-            select(Class.name)
-            .join(StudentEnrollment, StudentEnrollment.class_id == Class.id)
+            select(SchoolClass.name)
+            .join(StudentEnrollment, StudentEnrollment.class_id == SchoolClass.id)
             .where(
                 StudentEnrollment.student_id == profile.id,
                 StudentEnrollment.session_id == current_session.id,
@@ -506,7 +506,7 @@ def update_student_profile(
     )
 
 
-from backend.app.models import StudentEnrollment, EnrollmentStatus, Class, AcademicSession, AcademicTerm
+from backend.app.models import StudentEnrollment, EnrollmentStatus, SchoolClass, AcademicSession, AcademicTerm
 
 # ------------------------------------------------------------------
 # POST: Single Student Transfer / Promote
@@ -522,7 +522,7 @@ def transfer_student(
     
     # 1. SECURE FETCH: Verify Student, Class, Session, and Term all belong to this tenant
     student = session.exec(select(StudentProfile).where(StudentProfile.id == student_id, StudentProfile.school_id == context.school_id)).first()
-    target_class = session.exec(select(Class).where(Class.id == payload.class_id, Class.school_id == context.school_id)).first()
+    target_class = session.exec(select(SchoolClass).where(SchoolClass.id == payload.class_id, SchoolClass.school_id == context.school_id)).first()
     target_session = session.exec(select(AcademicSession).where(AcademicSession.id == payload.session_id, AcademicSession.school_id == context.school_id)).first()
     target_term = session.exec(select(AcademicTerm).where(AcademicTerm.id == payload.term_id, AcademicTerm.school_id == context.school_id)).first()
 
@@ -576,7 +576,7 @@ def bulk_transfer_students(
         raise HTTPException(status_code=400, detail="No students provided for transfer.")
 
     # 1. SECURE FETCH: Verify Class, Session, and Term
-    target_class = session.exec(select(Class).where(Class.id == payload.class_id, Class.school_id == context.school_id)).first()
+    target_class = session.exec(select(SchoolClass).where(SchoolClass.id == payload.class_id, SchoolClass.school_id == context.school_id)).first()
     target_session = session.exec(select(AcademicSession).where(AcademicSession.id == payload.session_id, AcademicSession.school_id == context.school_id)).first()
     target_term = session.exec(select(AcademicTerm).where(AcademicTerm.id == payload.term_id, AcademicTerm.school_id == context.school_id)).first()
 
@@ -653,8 +653,8 @@ def get_student_enrollments(
 
     # 2. SECURE QUERY: Join the enrollment table with Class, Session, and Term tables
     statement = (
-        select(StudentEnrollment, Class, AcademicSession, AcademicTerm)
-        .join(Class, StudentEnrollment.class_id == Class.id)
+        select(StudentEnrollment, SchoolClass, AcademicSession, AcademicTerm)
+        .join(SchoolClass, StudentEnrollment.class_id == SchoolClass.id)
         .join(AcademicSession, StudentEnrollment.session_id == AcademicSession.id)
         .join(AcademicTerm, StudentEnrollment.term_id == AcademicTerm.id)
         .where(

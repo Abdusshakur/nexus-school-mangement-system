@@ -12,7 +12,7 @@ from backend.app.db.database import get_session
 from backend.app.core.auth_utils import CurrentContext, require_permission, hash_password
 from backend.app.models import (
     User, Role, ParentProfile, StudentProfile, ParentStudentLink, 
-    AcademicSession, AcademicTerm, StudentEnrollment, Class, EnrollmentStatus
+    AcademicSession, AcademicTerm, StudentEnrollment, SchoolClass, EnrollmentStatus
 )
 from backend.app.schemas.parent import (
     ParentCreateRequest, ParentProfileUpdate, ParentResponse,
@@ -63,8 +63,8 @@ def fetch_linked_children_for_parent(
         # 3. 🛡️ CONTEXTUAL ENROLLMENT RESOLUTION (The V2 Fix)
         if current_session and current_term:
             enrollment_query = (
-                select(Class.name)
-                .join(StudentEnrollment, StudentEnrollment.class_id == Class.id)
+                select(SchoolClass.name)
+                .join(StudentEnrollment, StudentEnrollment.class_id == SchoolClass.id)
                 .where(
                     StudentEnrollment.student_id == student_profile.id,
                     StudentEnrollment.session_id == current_session.id,
