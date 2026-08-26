@@ -81,7 +81,6 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   const absentToday = totalTeachers - checkedInCount;
 
   const qrToken = currentQRSession?.token ?? "NEXUS-QR-DEFAULT";
-  const validUntil = currentQRSession?.validUntil ?? "";
   const displayDate = currentQRSession?.date
     ? formatDate(currentQRSession.date)
     : formatDate(todayISO);

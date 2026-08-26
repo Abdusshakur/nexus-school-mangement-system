@@ -116,12 +116,20 @@ export function TeacherDetailPage() {
     setEditing(true);
   };
 
+  const syncGlobalStore = (t: Teacher) => {
+    updateTeacher({
+      ...t,
+      classes: t.classes.map((id) => classes.find((c) => c.id === id)?.name || id),
+      subjects: t.subjects.map((id) => subjects.find((s) => s.id === id)?.name || id),
+    });
+  };
+
   const handleSaveProfile = async () => {
     if (!editForm || !id) return;
 
     try {
       toast.info("Updating profile....");
-      updateTeacher(editForm);
+      syncGlobalStore(editForm);
       setTeacher(editForm);
       setEditing(false);
     } catch {
@@ -134,7 +142,7 @@ export function TeacherDetailPage() {
     try {
       await assignTeacherClasses(id, teacher.classes);
       toast.success("Classes assigned successfully");
-      updateTeacher(teacher);
+      syncGlobalStore(teacher);
       setShowEditClasses(false);
     } catch {
       toast.error("Failed to assign classes");
@@ -146,7 +154,7 @@ export function TeacherDetailPage() {
     try {
       await assignTeacherSubjects(id, teacher.subjects);
       toast.success("Subjects assigned successfully");
-      updateTeacher(teacher);
+      syncGlobalStore(teacher);
       setShowEditSubjects(false);
     } catch {
       toast.error("Failed to assign subjects");

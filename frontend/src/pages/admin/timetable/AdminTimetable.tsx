@@ -438,7 +438,7 @@ export function AdminTimetable() {
                     if (assigned.length === 0) {
                       return (
                         <>
-                          <optgroup label="⚠️ No subjects assigned">
+                          <optgroup label="No subjects assigned" className="text-red-500">
                             <option disabled value="warning">Update profile to assign</option>
                           </optgroup>
                           <optgroup label="All Subjects">
@@ -492,7 +492,7 @@ export function AdminTimetable() {
                     if (assigned.length === 0) {
                       return (
                         <>
-                          <optgroup label="⚠️ No teachers assigned">
+                          <optgroup label="No teachers assigned" className="text-red-500">
                             <option disabled value="warning">Assign in teacher profiles</option>
                           </optgroup>
                           <optgroup label="All Teachers">
