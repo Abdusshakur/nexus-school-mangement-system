@@ -1,15 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Assignment, Submission } from "../pages/teacher/assignments/data";
-import { DEFAULT_ASSIGNMENTS, DEFAULT_SUBMISSIONS } from "../pages/teacher/assignments/data";
+import {
+  DEFAULT_ASSIGNMENTS,
+  DEFAULT_SUBMISSIONS,
+} from "../pages/teacher/assignments/data";
 
 interface AssignmentState {
   assignments: Assignment[];
   submissions: Submission[];
-  
-  // Actions
-  addAssignment: (as: Omit<Assignment, "id" | "submittedCount" | "gradedCount">) => void;
-  gradeSubmission: (submissionId: string, grade: number, feedback: string) => void;
+
+  addAssignment: (
+    as: Omit<Assignment, "id" | "submittedCount" | "gradedCount">,
+  ) => void;
+  gradeSubmission: (
+    submissionId: string,
+    grade: number,
+    feedback: string,
+  ) => void;
 }
 
 export const useAssignmentStore = create<AssignmentState>()(
@@ -68,6 +76,6 @@ export const useAssignmentStore = create<AssignmentState>()(
     }),
     {
       name: "nexus_assignments_store",
-    }
-  )
+    },
+  ),
 );

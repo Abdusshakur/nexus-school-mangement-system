@@ -13,8 +13,7 @@ export type AttendanceHistoryRecord = {
 interface AttendanceState {
   rosters: Record<string, StudentAttendance[]>;
   history: AttendanceHistoryRecord[];
-  
-  // Actions
+
   saveRoster: (key: string, roster: StudentAttendance[]) => void;
   saveHistory: (record: AttendanceHistoryRecord) => void;
 }
@@ -37,20 +36,20 @@ export const useAttendanceStore = create<AttendanceState>()(
         set((state) => {
           // Check if history already has an entry for this class and date
           const existingIndex = state.history.findIndex(
-            (h) => h.class === record.class && h.date === record.date
+            (h) => h.class === record.class && h.date === record.date,
           );
-          
+
           if (existingIndex >= 0) {
             const updatedHistory = [...state.history];
             updatedHistory[existingIndex] = record;
             return { history: updatedHistory };
           }
-          
+
           return { history: [record, ...state.history] };
         }),
     }),
     {
       name: "nexus_attendance_store",
-    }
-  )
+    },
+  ),
 );

@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { fetchTeachersList, fetchTeacherById } from "../api/teachers";
-import { useAuthStore } from "./auth";
 import { formatParentInitials } from "../utils/formatters";
 
 export interface Teacher {
@@ -43,25 +42,6 @@ export const useTeacherStore = create<TeacherState>((set) => ({
   fetchTeachers: async () => {
     set({ loading: true, error: null });
     try {
-      const { token } = useAuthStore.getState();
-      if (token === "mock-security-token") {
-        const mockTeachers: Teacher[] = [
-          {
-            id: "t1", user_id: "u1", staffId: "T001", name: "John Doe", email: "john@nexus.com",
-            phone: "08000000000", gender: "Male", qualification: "BSc", dept: "Science",
-            title: "BSc", address: "Lagos", classes: [], subjects: [], status: "Active",
-            avatar: "JD", avatarColor: "bg-indigo-500", experience: "1 Year", classrooms: 0, created_at: ""
-          },
-          {
-            id: "t2", user_id: "u2", staffId: "T002", name: "Jane Smith", email: "jane@nexus.com",
-            phone: "08000000001", gender: "Female", qualification: "MSc", dept: "Arts",
-            title: "MSc", address: "Lagos", classes: [], subjects: [], status: "Active",
-            avatar: "JS", avatarColor: "bg-emerald-500", experience: "2 Years", classrooms: 0, created_at: ""
-          }
-        ];
-        set({ teachers: mockTeachers, loading: false });
-        return mockTeachers;
-      }
 
       const data = await fetchTeachersList();
       

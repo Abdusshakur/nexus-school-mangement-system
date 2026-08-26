@@ -21,12 +21,17 @@ export interface StoreAnnouncement {
   audience: string;
 }
 
-export function serializeAnnouncementContent(body: string, meta: { priority: string; category: string; audience: string }) {
+export function serializeAnnouncementContent(
+  body: string,
+  meta: { priority: string; category: string; audience: string },
+) {
   return `[META:priority=${meta.priority};category=${meta.category};audience=${meta.audience}]${body}`;
 }
 
 export function deserializeAnnouncementContent(content: string) {
-  const match = content.match(/^\[META:priority=(.*?);category=(.*?);audience=(.*?)\](.*)/s);
+  const match = content.match(
+    /^\[META:priority=(.*?);category=(.*?);audience=(.*?)\](.*)/s,
+  );
   if (match) {
     return {
       priority: match[1] as "low" | "medium" | "high",
@@ -48,9 +53,24 @@ interface AnnouncementState {
   loading: boolean;
   error: string | null;
   fetchAnnouncements: () => Promise<StoreAnnouncement[]>;
-  postAnnouncement: (ann: { title: string; content: string; priority?: string; category?: string; audience?: string }) => Promise<void>;
+  postAnnouncement: (ann: {
+    title: string;
+    content: string;
+    priority?: string;
+    category?: string;
+    audience?: string;
+  }) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
-  updateAnnouncement: (id: string, updates: Partial<{ title: string; content: string; priority: string; category: string; audience: string }>) => Promise<void>;
+  updateAnnouncement: (
+    id: string,
+    updates: Partial<{
+      title: string;
+      content: string;
+      priority: string;
+      category: string;
+      audience: string;
+    }>,
+  ) => Promise<void>;
 }
 
 export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
@@ -64,7 +84,9 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
       const data = await fetchAnnouncements("PUBLISHED");
       const mapped = data.map((a: AnnouncementResponse) => {
         const name = a.author_name || "Administrator";
-        const role = a.author_role ? a.author_role.charAt(0).toUpperCase() + a.author_role.slice(1) : "Admin";
+        const role = a.author_role
+          ? a.author_role.charAt(0).toUpperCase() + a.author_role.slice(1)
+          : "Admin";
 
         const meta = deserializeAnnouncementContent(a.content);
 
@@ -88,7 +110,8 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
       set({ announcements: mapped, loading: false });
       return mapped;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to load announcements";
+      const msg =
+        err instanceof Error ? err.message : "Failed to load announcements";
       set({ error: msg, loading: false });
       throw err;
     }
@@ -110,7 +133,10 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
       });
 
       const name = result.author_name || "";
-      const role = result.author_role ? result.author_role.charAt(0).toUpperCase() + result.author_role.slice(1) : "";
+      const role = result.author_role
+        ? result.author_role.charAt(0).toUpperCase() +
+          result.author_role.slice(1)
+        : "";
 
       const newAnn: StoreAnnouncement = {
         id: result.id,
@@ -130,7 +156,8 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
         loading: false,
       }));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to post announcement";
+      const msg =
+        err instanceof Error ? err.message : "Failed to post announcement";
       set({ error: msg, loading: false });
       throw err;
     }
@@ -150,39 +177,53 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
 
   updateAnnouncement: async (id, updates) => {
     try {
-      // Find the current one to see if we need to repackage meta
-      const current = get().announcements.find((a: StoreAnnouncement) => a.id === id);
+      // Find the current announcement
+      const current = get().announcements.find(
+        (a: StoreAnnouncement) => a.id === id,
+      );
       if (!current) throw new Error("Announcement not found");
 
       let metaContent = current.content;
-      // Re-serialize if content or any meta field changed
-      if (updates.content || updates.priority || updates.category || updates.audience) {
+
+      if (
+        updates.content ||
+        updates.priority ||
+        updates.category ||
+        updates.audience
+      ) {
         metaContent = serializeAnnouncementContent(
           updates.content !== undefined ? updates.content : current.content,
           {
             priority: updates.priority || current.priority,
             category: updates.category || current.category,
             audience: updates.audience || current.audience,
-          }
+          },
         );
       }
 
       const apiPayload: any = {};
       if (updates.title) apiPayload.title = updates.title;
-      if (updates.content || updates.priority || updates.category || updates.audience) {
+      if (
+        updates.content ||
+        updates.priority ||
+        updates.category ||
+        updates.audience
+      ) {
         apiPayload.content = metaContent;
       }
 
       await apiUpdateAnnouncement(id, apiPayload);
-      
+
       set((state) => ({
-        announcements: state.announcements.map((a) => 
-          a.id === id ? { 
-            ...a, 
-            ...updates, 
-            target: updates.audience || a.audience 
-          } as StoreAnnouncement : a
-        )
+        announcements: state.announcements.map((a) =>
+          a.id === id
+            ? ({
+                ...a,
+                ...updates,
+                target: updates.audience || a.audience,
+              } as StoreAnnouncement)
+            : a,
+        ),
       }));
     } catch (err) {
       console.error("Failed to update announcement:", err);

@@ -84,13 +84,6 @@ function StatCard({
   );
 }
 
-const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
-  { day: "Mon", date: "2026-07-14", present: 210, absent: 15, late: 5 },
-  { day: "Tue", date: "2026-07-15", present: 225, absent: 10, late: 2 },
-  { day: "Wed", date: "2026-07-16", present: 205, absent: 20, late: 8 },
-  { day: "Thu", date: "2026-07-17", present: 230, absent: 8, late: 4 },
-  { day: "Fri", date: "2026-07-18", present: 220, absent: 15, late: 3 },
-];
 
 const quickActions = [
   {
@@ -148,9 +141,22 @@ export function DashboardPage() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
+      // 1. Try to load from local storage first (Optimistic UI)
+      const cachedMetrics = localStorage.getItem("dash_metrics");
+      const cachedStudents = localStorage.getItem("dash_students");
+      const cachedTrends = localStorage.getItem("dash_trends");
+      
+      if (cachedMetrics) setMetrics(JSON.parse(cachedMetrics));
+      if (cachedStudents) setRecentStudents(JSON.parse(cachedStudents));
+      if (cachedTrends) setAttendanceTrends(JSON.parse(cachedTrends));
+
+      // 2. Fetch fresh data from API
       try {
         await Promise.all([
-          getDashboardSummary().then(setMetrics),
+          getDashboardSummary().then((data) => {
+            setMetrics(data);
+            localStorage.setItem("dash_metrics", JSON.stringify(data));
+          }),
           fetchStudentsList().then((studentsData) => {
             const sorted = [...studentsData]
               .sort(
@@ -160,9 +166,13 @@ export function DashboardPage() {
               )
               .slice(0, 5);
             setRecentStudents(sorted);
+            localStorage.setItem("dash_students", JSON.stringify(sorted));
           }),
           fetchAttendanceTrends()
-            .then(setAttendanceTrends)
+            .then((data) => {
+              setAttendanceTrends(data);
+              localStorage.setItem("dash_trends", JSON.stringify(data));
+            })
             .catch(() => []),
           fetchAnnouncements(),
         ]);
@@ -170,7 +180,7 @@ export function DashboardPage() {
         if (err instanceof Error) {
           toast.error(err.message);
 
-          if (err.message.includes("Session expired")) {
+          if (err.message.includes("Session expired") || err.message.includes("401")) {
             navigate("/login");
           }
         }
@@ -323,7 +333,7 @@ export function DashboardPage() {
               data={
                 attendanceTrends.length > 0
                   ? attendanceTrends
-                  : MOCK_ATTENDANCE_TRENDS
+                  : []
               }
               margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
             >

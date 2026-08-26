@@ -17,13 +17,6 @@ import {
 } from "../../../api/dashboard";
 import { fetchDailyAttendanceSummary, type DailyAttendanceSummaryResponse } from "../../../api/attendance";
 
-const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
-  { day: "Mon", date: "2026-07-14", present: 210, absent: 15, late: 5 },
-  { day: "Tue", date: "2026-07-15", present: 225, absent: 10, late: 2 },
-  { day: "Wed", date: "2026-07-16", present: 205, absent: 20, late: 8 },
-  { day: "Thu", date: "2026-07-17", present: 230, absent: 8, late: 4 },
-  { day: "Fri", date: "2026-07-18", present: 220, absent: 15, late: 3 },
-];
 
 export function AttendanceDashboard() {
   const [trendsData, setTrendsData] = useState<DailyAttendance[]>([]);
@@ -133,7 +126,7 @@ export function AttendanceDashboard() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={trendsData.length > 0 ? trendsData : MOCK_ATTENDANCE_TRENDS}
+                data={trendsData.length > 0 ? trendsData : []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />

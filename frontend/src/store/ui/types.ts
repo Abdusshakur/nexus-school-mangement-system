@@ -11,18 +11,12 @@ export interface UIActions {
   toggleSidebar: () => void;
 
   /**
-   * Explicitly sets the desktop sidebar collapsed state.
+   *  sets the desktop sidebar collapsed state.
    */
   setSidebarCollapsed: (collapsed: boolean) => void;
 
-  /**
-   * Toggles the mobile sidebar overlay.
-   */
   setMobileSidebarOpen: (open: boolean) => void;
 
-  /**
-   * Enables or disables the global application loading overlay.
-   */
   setGlobalLoading: (loading: boolean) => void;
 }
 
