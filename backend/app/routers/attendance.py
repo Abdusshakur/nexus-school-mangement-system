@@ -1,45 +1,54 @@
 # backend/app/routers/attendance.py
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
-from datetime import datetime
-from uuid import UUID  # Ensure UUID is imported here!
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlmodel import Session, select, func
+from datetime import datetime, date, timezone
+from typing import Optional
+from uuid import UUID
+
 from backend.app.db.database import get_session
-from backend.app.schemas.attendance import ( AttendanceSubmitRequest, AttendanceSubmitResponse, 
-                                            DailyAttendanceSummaryResponse, ClassAttendanceSummary, AttendanceStatus)
-from backend.app.core.auth_utils import RoleChecker
-from backend.app.db.database import get_session
+from backend.app.schemas.attendance import ( 
+    AttendanceSubmitRequest, AttendanceSubmitResponse, 
+    DailyAttendanceSummaryResponse, ClassAttendanceSummary, AttendanceStatus
+)
+# 👇 1. Import the V2 Gatekeeper
+from backend.app.core.auth_utils import CurrentContext, require_permission
+
 from backend.app.models import (
     Class, TeacherProfile, StudentProfile, 
-    AttendanceSession, AttendanceRecord, AttendanceStatus, SessionStatus
+    AttendanceSession, AttendanceRecord, SessionStatus, AcademicSession, AcademicTerm, StudentEnrollment, EnrollmentStatus
 )
+
 
 router = APIRouter(
     prefix="/attendance",
     tags=["Attendance Management"]
 )
 
-allow_staff_only = RoleChecker(["admin", "teacher"])
-
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=AttendanceSubmitResponse)
 def submit_class_attendance(
     request: AttendanceSubmitRequest, 
-    session: Session = Depends(get_session),
-    current_user: dict = Depends(allow_staff_only)
+    # 👇 2. Gatekeeper secures the endpoint and provides the school_id
+    context: CurrentContext = Depends(require_permission("attendance:write")),
+    session: Session = Depends(get_session)
 ):
-    """Creates a locked daily attendance session for a class and records all students."""
+    """Creates a locked daily attendance session bound to a specific academic term and records all students."""
     
-    staff_user_id = UUID(current_user.get("user_id"))
-
-    # 1. Verify the class actually exists
-    db_class = session.get(Class, request.class_id)
+    # 1. SECURE FETCH: Verify the class exists AND belongs to this active school
+    db_class = session.exec(
+        select(Class).where(Class.id == request.class_id, Class.school_id == context.school_id)
+    ).first()
+    
     if not db_class:
-        raise HTTPException(status_code=404, detail="Class not found.")
+        raise HTTPException(status_code=404, detail="Class not found or access denied.")
 
-    # 2. ENFORCE THE RULE: Only one session per class, per day!
+    # 2. ENFORCE THE RULE: Only one session per class, per day, per school!
     existing_session = session.exec(
         select(AttendanceSession)
-        .where(AttendanceSession.class_id == request.class_id)
-        .where(AttendanceSession.attendance_date == request.attendance_date)
+        .where(
+            AttendanceSession.class_id == request.class_id,
+            AttendanceSession.attendance_date == request.attendance_date,
+            AttendanceSession.school_id == context.school_id # 👈 Tenant Isolation
+        )
     ).first()
 
     if existing_session:
@@ -48,17 +57,23 @@ def submit_class_attendance(
             detail=f"Attendance for {db_class.name} on {request.attendance_date} has already been submitted."
         )
 
-    # 3. Create the Master Session (Parent)
+    # 3. Create the Master Session (Parent) with Temporal Anchors!
     new_session = AttendanceSession(
+        school_id=context.school_id,                     # 👈 Tenant anchor
+        session_id=request.academic_session_id,          # 👈 Temporal anchor (Year)
+        term_id=request.academic_term_id,                # 👈 Temporal anchor (Term)
         class_id=request.class_id,
         attendance_date=request.attendance_date,
         status=SessionStatus.SUBMITTED,
-        recorded_by_id=staff_user_id
+        recorded_by_id=context.user_id                   # 👈 Track who actually submitted it
     )
+    
     session.add(new_session)
     session.flush() # Flushes to DB immediately so we can get new_session.id
 
     # 4. Create the Individual Student Records (Children)
+    # (Note: In a highly strict system, we could query StudentEnrollment here to ensure 
+    # every student_id is actually enrolled in this class_id for this term_id)
     for record in request.records:
         new_record = AttendanceRecord(
             session_id=new_session.id,
@@ -78,44 +93,76 @@ def submit_class_attendance(
     )
 
 
-from fastapi import APIRouter, Depends, Query
-from sqlmodel import Session, select, func
-from datetime import datetime, date, timezone
-from typing import Optional
 
-
-@router.get("/classes/summary", response_model=DailyAttendanceSummaryResponse, dependencies=[Depends(allow_staff_only)])
+@router.get("/classes/summary", response_model=DailyAttendanceSummaryResponse)
 def get_daily_attendance_summary(
     target_date: Optional[date] = Query(None, alias="date", description="Format: YYYY-MM-DD. Defaults to today."),
+    academic_session_id: Optional[UUID] = Query(None, description="Optional: specific year ID"),
+    academic_term_id: Optional[UUID] = Query(None, description="Optional: specific term ID"),
+    context: CurrentContext = Depends(require_permission("attendance:read")),
     session: Session = Depends(get_session)
 ):
-    """Returns a highly optimized daily attendance summary for all classes."""
+    """Returns a highly optimized, tenant-isolated daily attendance summary using Contextual Enrollments."""
     
-    # 1. Default to today if no date is provided
     if not target_date:
         target_date = datetime.now(timezone.utc).date()
 
-    # 2. Fetch all classes and their Form Teachers in ONE query
-    # Doing a left outer join in case a class has no form teacher yet
-    classes_query = select(Class, TeacherProfile).join(
-        TeacherProfile, Class.form_teacher_id == TeacherProfile.id, isouter=True
+    # 1. Resolve Temporal Anchors (Graceful fallback to the school's current active term)
+    if not academic_session_id or not academic_term_id:
+        current_session = session.exec(
+            select(AcademicSession).where(
+                AcademicSession.school_id == context.school_id, AcademicSession.is_current == True
+            )
+        ).first()
+        current_term = session.exec(
+            select(AcademicTerm).where(
+                AcademicTerm.school_id == context.school_id, AcademicTerm.is_current == True
+            )
+        ).first()
+        
+        if not current_session or not current_term:
+            raise HTTPException(
+                status_code=400, 
+                detail="No active academic session/term found. Please provide them in the query or configure your calendar."
+            )
+        
+        academic_session_id = academic_session_id or current_session.id
+        academic_term_id = academic_term_id or current_term.id
+
+    # 2. Fetch classes & Form Teachers scoped strictly to this Tenant
+    classes_query = (
+        select(Class, TeacherProfile)
+        .join(TeacherProfile, Class.form_teacher_id == TeacherProfile.id, isouter=True)
+        .where(Class.school_id == context.school_id)
     )
     class_results = session.exec(classes_query).all()
 
-    # 3. Fetch student counts grouped by class in ONE query
-    # Assuming StudentProfile uses class_name to link (based on your current onboarding code)
-    student_counts_query = select(StudentProfile.class_name, func.count(StudentProfile.id)).group_by(StudentProfile.class_name)
-    student_counts = dict(session.exec(student_counts_query).all()) # e.g., {"JSS 1": 35, "SS 1": 40}
+    # 3. Fetch student counts using the NEW Contextual Enrollment table!
+    student_counts_query = (
+        select(StudentEnrollment.class_id, func.count(StudentEnrollment.id))
+        .where(
+            StudentEnrollment.school_id == context.school_id,
+            StudentEnrollment.session_id == academic_session_id,
+            StudentEnrollment.term_id == academic_term_id,
+            StudentEnrollment.status == EnrollmentStatus.ACTIVE
+        )
+        .group_by(StudentEnrollment.class_id)
+    )
+    student_counts = dict(session.exec(student_counts_query).all()) # Returns mapping like {class_id: 35}
 
-    # 4. Fetch today's Attendance Sessions for ALL classes in ONE query
-    sessions_query = select(AttendanceSession).where(AttendanceSession.attendance_date == target_date)
+    # 4. Fetch Attendance Sessions anchored to Time and Tenant
+    sessions_query = select(AttendanceSession).where(
+        AttendanceSession.school_id == context.school_id,
+        AttendanceSession.session_id == academic_session_id,
+        AttendanceSession.term_id == academic_term_id,
+        AttendanceSession.attendance_date == target_date
+    )
     today_sessions = {s.class_id: s for s in session.exec(sessions_query).all()}
 
     # 5. Fetch all Attendance Records for today's sessions in ONE query
     session_ids = [s.id for s in today_sessions.values()]
     records_stats = {}
     if session_ids:
-        # Group records by session_id and status
         records_query = select(
             AttendanceRecord.session_id, 
             AttendanceRecord.status, 
@@ -127,38 +174,27 @@ def get_daily_attendance_summary(
                 records_stats[s_id] = {"PRESENT": 0, "ABSENT": 0, "LATE": 0}
             records_stats[s_id][status.value] = count
 
-    # 6. Stitch it all together in memory (Blazing fast!)
+    # 6. Stitch it all together in memory
     summary_list = []
-    
     for cls, teacher in class_results:
-        # Get total students for this specific class
-        total_students = student_counts.get(cls.name, 0)
-        
-        # Form Teacher formatting
+        # Get total students for this specific class using the actual UUID
+        total_students = student_counts.get(cls.id, 0)
         teacher_name = f"{teacher.first_name} {teacher.last_name}" if teacher else "Unassigned"
-        
-        # Check if attendance was taken today
         att_session = today_sessions.get(cls.id)
         
         if att_session:
-            # Attendance WAS submitted
             stats = records_stats.get(att_session.id, {"PRESENT": 0, "ABSENT": 0, "LATE": 0})
             total_present = stats.get(AttendanceStatus.PRESENT.value, 0)
             total_absent = stats.get(AttendanceStatus.ABSENT.value, 0)
             total_late = stats.get(AttendanceStatus.LATE.value, 0)
-            status = att_session.status.value
+            status_val = att_session.status.value
             
-            # Calculate Rate (Present + Late count as attended)
             attended = total_present + total_late
             rate = (attended / total_students * 100) if total_students > 0 else 0.0
             
         else:
-            # Attendance is PENDING (No session exists yet)
-            status = "PENDING"
-            total_present = 0
-            total_absent = 0
-            total_late = 0
-            rate = 0.0
+            status_val = "PENDING"
+            total_present, total_absent, total_late, rate = 0, 0, 0, 0.0
             
         summary_list.append(
             ClassAttendanceSummary(
@@ -166,7 +202,7 @@ def get_daily_attendance_summary(
                 class_name=cls.name,
                 form_teacher_name=teacher_name,
                 total_students=total_students,
-                session_status=status,
+                session_status=status_val,
                 total_present=total_present,
                 total_absent=total_absent,
                 total_late=total_late,
@@ -176,5 +212,7 @@ def get_daily_attendance_summary(
 
     return DailyAttendanceSummaryResponse(
         date=target_date,
+        academic_session_id=academic_session_id, # 👈 Send temporal anchors back to the frontend
+        academic_term_id=academic_term_id,
         classes=summary_list
     )

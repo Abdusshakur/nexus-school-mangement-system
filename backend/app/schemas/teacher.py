@@ -92,7 +92,12 @@ class AssignSubjectsResponse(BaseModel):
     teacher_id: UUID
     assigned_subjects: List[AssignedSubjectItem]
 
+class AssignmentPair(BaseModel):
+    class_id: UUID
+    subject_id: UUID
 
+class BulkTeacherAssignmentRequest(BaseModel):
+    assignments: List[AssignmentPair]
 # ==================================================================
 # 6. FULL TEACHER DETAILS (GET /teachers/{id} or List Endpoints)
 # ==================================================================
