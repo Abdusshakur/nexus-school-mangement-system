@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, field_validator, Field
 from typing import Optional, List
 from datetime import datetime, date
 from uuid import UUID
-from backend.app.models import RelationshipType
+
 from backend.app.schemas.parent import ParentOnboardingDetails 
 
 
@@ -16,11 +16,12 @@ class UnifiedStudentOnboardingCreate(BaseModel):
     last_name: str
     gender: str
     date_of_birth: date                  # Required!
-    address: str                 # Required!
-    phone_number: Optional[str] = None # Optional!
-    class_name: str
+    address: str                         # Required!
+    phone_number: Optional[str] = None   # Optional!
     
- 
+    # 🛠️ FIXED: Replaced class_name with class_id for Contextual Enrollment
+    class_id: UUID 
+    
     # This now uses the imported schema!
     parents: List[ParentOnboardingDetails] = Field(min_length=1, max_length=2)
 
@@ -66,15 +67,17 @@ class StudentResponse(BaseModel):
     last_name: str
     email: str
     admission_number: str
-    class_name: str
+    
+    # Note: We keep class_name here because the backend dynamically injects it!
+    class_name: str 
+    
     gender: str
     date_of_birth: date
-    address: str                 # Required!
-    phone_number: Optional[str] # Optional!
+    address: str                 
+    phone_number: Optional[str] 
     created_at: datetime
 
 
-# Add this schema to your file
 class StudentProfileUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -82,7 +85,7 @@ class StudentProfileUpdate(BaseModel):
     date_of_birth: Optional[date] = None
     address: Optional[str] = None
     phone_number: Optional[str] = None
-    class_name: Optional[str] = None
+    # ❌ class_name has been removed. Class changes must use an enrollment transfer workflow!
 
 
 # ------------------------------------------------------------------
@@ -95,7 +98,10 @@ class StudentDetailResponse(BaseModel):
     last_name: str
     email: str
     admission_number: str
+    
+    # Kept for dynamic backend injection
     class_name: str
+    
     gender: str
     date_of_birth: date
     phone_number: Optional[str] = None
@@ -103,3 +109,29 @@ class StudentDetailResponse(BaseModel):
     created_at: datetime
     # Nested relationship
     parents: List[LinkedParentResponse] = []
+
+
+class TransferStudentRequest(BaseModel):
+    class_id: UUID
+    session_id: UUID
+    term_id: UUID
+
+class BulkTransferStudentRequest(BaseModel):
+    student_ids: List[UUID]
+    class_id: UUID
+    session_id: UUID
+    term_id: UUID
+
+from datetime import datetime
+from backend.app.models import EnrollmentStatus
+
+class StudentEnrollmentHistoryResponse(BaseModel):
+    id: UUID
+    class_id: UUID
+    class_name: str
+    session_id: UUID
+    session_name: str
+    term_id: UUID
+    term_name: str
+    status: EnrollmentStatus
+    created_at: datetime

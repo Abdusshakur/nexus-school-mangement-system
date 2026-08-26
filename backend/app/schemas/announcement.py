@@ -22,6 +22,7 @@ class AnnouncementResponse(BaseModel):
     priority: PriorityEnum
     status: AnnouncementStatus
     author_id: UUID
+    school_id: UUID  # 👈 Added so the frontend can properly route UI data
     created_at: datetime
 
 

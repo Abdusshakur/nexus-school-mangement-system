@@ -2,8 +2,6 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
 from uuid import UUID
-
-# Import your AttendanceStatus enum from models
 from backend.app.models import AttendanceStatus
 
 # ==========================================
@@ -16,6 +14,8 @@ class StudentAttendanceInput(BaseModel):
 
 class AttendanceSubmitRequest(BaseModel):
     class_id: UUID
+    academic_session_id: UUID  # 👈 Temporal Anchor (Year)
+    academic_term_id: UUID     # 👈 Temporal Anchor (Term)
     attendance_date: date
     records: List[StudentAttendanceInput]
     
@@ -25,7 +25,7 @@ class AttendanceSubmitResponse(BaseModel):
     records_processed: int
 
 # ==========================================
-# 2. ATTENDANCE SUMMARY SCHEMAS (For the Dashboard/GET endpoint)
+# 2. ATTENDANCE SUMMARY SCHEMAS (For the Dashboard)
 # ==========================================
 class ClassAttendanceSummary(BaseModel):
     class_id: UUID
@@ -40,4 +40,6 @@ class ClassAttendanceSummary(BaseModel):
 
 class DailyAttendanceSummaryResponse(BaseModel):
     date: date
+    academic_session_id: UUID  # 👈 Temporal Anchor (Year)
+    academic_term_id: UUID     # 👈 Temporal Anchor (Term)
     classes: List[ClassAttendanceSummary]
