@@ -190,8 +190,8 @@ export function AdminTimetable() {
       );
       toast.success("Lesson assigned successfully");
       setEditCell(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save assignment");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save assignment");
     } finally {
       setIsSaving(false);
     }
@@ -223,8 +223,8 @@ export function AdminTimetable() {
       );
       toast.success("Lesson cleared");
       setEditCell(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to clear assignment");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to clear assignment");
     } finally {
       setIsSaving(false);
     }

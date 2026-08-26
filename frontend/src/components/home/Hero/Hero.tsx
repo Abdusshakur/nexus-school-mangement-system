@@ -1,4 +1,5 @@
 import { ArrowRight, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import HeroImg from "../../../assets/images/hero.png";
 
 export default function Hero() {
@@ -54,13 +55,13 @@ export default function Hero() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
 
-              <a
-                href="#contact"
+              <Link
+                to="/request-demo"
                 id="hero-btn-secondary"
                 className="flex items-center justify-center w-full sm:w-auto bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 active:scale-98 px-7 py-3.5 rounded-xl font-semibold transition-all duration-200"
               >
                 Request Demo
-              </a>
+              </Link>
             </div>
 
             {/* Social Proof rating and Avatars */}
