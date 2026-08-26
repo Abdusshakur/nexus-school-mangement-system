@@ -15,6 +15,7 @@ import {
   fetchAttendanceTrends,
   type DailyAttendance,
 } from "../../../api/dashboard";
+import { fetchDailyAttendanceSummary, type DailyAttendanceSummaryResponse } from "../../../api/attendance";
 
 const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
   { day: "Mon", date: "2026-07-14", present: 210, absent: 15, late: 5 },
@@ -26,9 +27,11 @@ const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
 
 export function AttendanceDashboard() {
   const [trendsData, setTrendsData] = useState<DailyAttendance[]>([]);
+  const [summaryData, setSummaryData] = useState<DailyAttendanceSummaryResponse | null>(null);
 
   useEffect(() => {
     fetchAttendanceTrends().then(setTrendsData).catch(console.error);
+    fetchDailyAttendanceSummary().then(setSummaryData).catch(console.error);
   }, []);
 
   const currentDateString = new Intl.DateTimeFormat("en-US", {
@@ -67,28 +70,30 @@ export function AttendanceDashboard() {
           {[
             {
               label: "Present Today",
-              value: 220,
+              value: summaryData?.classes.reduce((sum, c) => sum + c.total_present, 0) || 0,
               icon: CheckCircle,
               text: "text-indigo-500",
               bg: "bg-indigo-100",
             },
             {
               label: "Absent Today",
-              value: 18,
+              value: summaryData?.classes.reduce((sum, c) => sum + c.total_absent, 0) || 0,
               icon: XCircle,
               text: "text-red-500",
               bg: "bg-red-100",
             },
             {
               label: "Late Arrivals",
-              value: 12,
+              value: summaryData?.classes.reduce((sum, c) => sum + c.total_late, 0) || 0,
               icon: Clock,
               text: "text-amber-500",
               bg: "bg-amber-100",
             },
             {
               label: "Attendance Rate",
-              value: "88%",
+              value: summaryData?.classes.length
+                ? `${Math.round(summaryData.classes.reduce((sum, c) => sum + c.attendance_rate_percentage, 0) / summaryData.classes.length)}%`
+                : "0%",
               icon: TrendingUp,
               text: "text-indigo-500",
               bg: "bg-indigo-100",
@@ -186,44 +191,43 @@ export function AttendanceDashboard() {
             </p>
           </div>
           <div className="space-y-4">
-            {[
-              { grade: "JSS 1", total: 32, present: 29, rate: 91 },
-              { grade: "JSS 2", total: 38, present: 33, rate: 87 },
-              { grade: "JSS 3", total: 41, present: 37, rate: 90 },
-              { grade: "SS 1", total: 45, present: 40, rate: 89 },
-              { grade: "SS 2", total: 50, present: 43, rate: 86 },
-              { grade: "SS 3", total: 44, present: 38, rate: 86 },
-            ].map((g) => (
+            {summaryData?.classes.map((g) => (
               <div
-                key={g.grade}
+                key={g.class_id}
                 className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
               >
-                <div className="w-24 text-sm text-slate-700 font-bold">
-                  {g.grade}
+                <div className="w-24 text-sm text-slate-700 font-bold flex flex-col">
+                  <span>{g.class_name}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {g.session_status}
+                  </span>
                 </div>
                 <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${g.rate >= 90
+                    className={`h-full rounded-full transition-all duration-300 ${g.attendance_rate_percentage >= 90
+                      ? "bg-indigo-500"
+                      : g.attendance_rate_percentage >= 85
                         ? "bg-indigo-500"
-                        : g.rate >= 85
-                          ? "bg-indigo-500"
-                          : "bg-amber-500"
+                        : "bg-amber-500"
                       }`}
                     style={{
-                      width: `${g.rate}%`,
+                      width: `${g.attendance_rate_percentage}%`,
                     }}
                   />
                 </div>
                 <div className="w-28 text-right shrink-0">
                   <span className="text-sm font-bold text-slate-800">
-                    {g.present} / {g.total}
+                    {g.total_present + g.total_late} / {g.total_students}
                   </span>
                   <span className="text-xs font-semibold text-slate-400 ml-1.5">
-                    ({g.rate}%)
+                    ({Math.round(g.attendance_rate_percentage)}%)
                   </span>
                 </div>
               </div>
             ))}
+            {!summaryData?.classes.length && (
+              <p className="text-sm text-slate-500">No classes found.</p>
+            )}
           </div>
         </div>
       </main>

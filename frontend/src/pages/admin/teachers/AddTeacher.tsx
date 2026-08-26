@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   CheckCircle,
@@ -8,14 +8,12 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { useTeacherStore, type Teacher } from "../../../store/teacher.store";
-import {
-  CLASSES,
-  DEPARTMENTS,
-  QUALIFICATIONS,
-  classColor,
-  getSubjectsForClasses,
-} from "./data";
+import { toast } from "sonner";
+import { type Teacher } from "../../../store/teacher.store";
+import { createTeacher } from "../../../api/teachers";
+import { useClassStore } from "../../../store/class.store";
+import { useSubjectStore } from "../../../store/subject.store";
+import { DEPARTMENTS, QUALIFICATIONS } from "./data";
 
 interface ModalProps {
   title: string;
@@ -49,9 +47,9 @@ export function Modal({ title, onClose, children, wide }: ModalProps) {
 
 interface TagSelectorProps {
   label: string;
-  options: string[];
+  options: { id: string; name: string }[];
   selected: string[];
-  onToggle: (v: string) => void;
+  onToggle: (id: string) => void;
   searchable?: boolean;
 }
 
@@ -64,7 +62,7 @@ export function TagSelector({
 }: TagSelectorProps) {
   const [q, setQ] = useState("");
   const visible = searchable
-    ? options.filter((o) => o.toLowerCase().includes(q.toLowerCase()))
+    ? options.filter((o) => o.name.toLowerCase().includes(q.toLowerCase()))
     : options;
 
   return (
@@ -72,46 +70,49 @@ export function TagSelector({
       <p className="text-sm font-semibold text-slate-700">{label}</p>
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {selected.map((s) => (
-            <span
-              key={s}
-              className="flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100"
-            >
-              {s}
-              <button
-                type="button"
-                onClick={() => onToggle(s)}
-                className="ml-0.5 hover:text-indigo-800 cursor-pointer"
+          {selected.map((s) => {
+            const opt = options.find((o) => o.id === s);
+            return (
+              <span
+                key={s}
+                className="flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100"
               >
-                <X size={10} />
-              </button>
-            </span>
-          ))}
+                {opt ? opt.name : s}
+                <button
+                  type="button"
+                  onClick={() => onToggle(s)}
+                  className="ml-0.5 hover:text-indigo-800 cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            );
+          })}
         </div>
       )}
       {searchable && (
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Filter subjects…"
+          placeholder="Filter..."
           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50 transition-all"
         />
       )}
       <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1">
         {visible.map((o) => {
-          const on = selected.includes(o);
+          const on = selected.includes(o.id);
           return (
             <button
-              key={o}
+              key={o.id}
               type="button"
-              onClick={() => onToggle(o)}
+              onClick={() => onToggle(o.id)}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 on
                   ? "bg-indigo-600 border-indigo-600 text-white"
                   : "bg-white border-slate-250 text-slate-500 hover:bg-slate-50"
               }`}
             >
-              {o}
+              {o.name}
             </button>
           );
         })}
@@ -126,8 +127,7 @@ interface ClassSelectorProps {
 }
 
 export function ClassSelector({ selected, onToggle }: ClassSelectorProps) {
-  const junior = CLASSES.filter((c) => c.level === "junior");
-  const senior = CLASSES.filter((c) => c.level === "senior");
+  const { classes } = useClassStore();
 
   return (
     <div className="space-y-3">
@@ -135,19 +135,18 @@ export function ClassSelector({ selected, onToggle }: ClassSelectorProps) {
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selected.map((id) => {
-            const cls = CLASSES.find((c) => c.id === id);
+            const cls = classes.find((c) => c.id === id);
             if (!cls) return null;
-            const cs = classColor(cls.level);
             return (
               <span
                 key={id}
-                className={`flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-bold ${cs.bg} ${cs.text}`}
+                className="flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100"
               >
                 {cls.name}
                 <button
                   type="button"
                   onClick={() => onToggle(id)}
-                  className="ml-0.5 cursor-pointer"
+                  className="ml-0.5 cursor-pointer hover:text-indigo-900"
                 >
                   <X size={10} />
                 </button>
@@ -156,37 +155,24 @@ export function ClassSelector({ selected, onToggle }: ClassSelectorProps) {
           })}
         </div>
       )}
-      <div className="space-y-3">
-        {[
-          { label: "Junior Secondary (JSS 1 – JSS 3)", classes: junior },
-          { label: "Senior Secondary (SS 1 – SS 3)", classes: senior },
-        ].map(({ label, classes }) => (
-          <div key={label} className="space-y-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              {label}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {classes.map((c) => {
-                const on = selected.includes(c.id);
-                const cs = classColor(c.level);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => onToggle(c.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border-2 transition-all cursor-pointer ${
-                      on
-                        ? `${cs.bg} border-indigo-600 text-indigo-700`
-                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <div className="flex flex-wrap gap-1.5">
+        {classes.map((c) => {
+          const on = selected.includes(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onToggle(c.id)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold border-2 transition-all cursor-pointer ${
+                on
+                  ? "bg-indigo-50 border-indigo-600 text-indigo-700"
+                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              {c.name}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -199,12 +185,12 @@ interface AddTeacherModalProps {
 type AssignStep = "info" | "assign" | "confirm";
 
 export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
-  const { addTeacher } = useTeacherStore();
   const [step, setStep] = useState<AssignStep>("info");
   const [created, setCreated] = useState<Teacher | null>(null);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     gender: "Male",
@@ -233,29 +219,69 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
     }));
   };
 
-  const availableSubjects = getSubjectsForClasses(form.classes);
+  const { classes, loadClasses } = useClassStore();
+  const { subjects, loadSubjects } = useSubjectStore();
+
+  useEffect(() => {
+    loadClasses();
+    loadSubjects();
+  }, [loadClasses, loadSubjects]);
+
+  const availableSubjects = subjects;
 
   const infoValid =
-    form.name.trim() &&
+    form.firstName.trim() &&
+    form.lastName.trim() &&
     form.email.trim() &&
     form.phone.trim() &&
     form.department;
 
-  const handleCreate = () => {
-    const teacher = addTeacher({
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      gender: form.gender,
-      qualification: form.qualification,
-      dept: form.department,
-      address: form.address,
-      classes: form.classes,
-      subjects: form.subjects,
-      status: "Active",
-    });
-    setCreated(teacher);
-    setStep("confirm");
+  const handleCreate = async () => {
+    try {
+      const firstName = form.firstName.trim() || "";
+      const lastName = form.lastName.trim() || " ";
+
+      const teacherData = await createTeacher({
+        first_name: firstName,
+        last_name: lastName,
+        email: form.email,
+        phone_number: form.phone,
+        gender: form.gender,
+        department: form.department,
+        qualification: form.qualification,
+        address: form.address || "Address not provided",
+      });
+
+      // Construct a mapped teacher object for the confirm screen
+      const newTeacher: Teacher = {
+        id: teacherData.id,
+        user_id: teacherData.user_id,
+        staffId: teacherData.id.substring(0, 8).toUpperCase(),
+        name: `${teacherData.first_name} ${teacherData.last_name}`,
+        email: teacherData.email,
+        phone: teacherData.phone_number,
+        gender: teacherData.gender,
+        qualification: teacherData.qualification,
+        dept: teacherData.department,
+        title: `${teacherData.qualification} Instructor`,
+        address: teacherData.address,
+        classes: form.classes,
+        subjects: form.subjects,
+        status: "Active",
+        defaultPassword: "Teacher@Nexus2026",
+        avatar: "",
+        avatarColor: "bg-indigo-500",
+        experience: "0 Years",
+        classrooms: form.classes.length,
+        created_at: teacherData.created_at,
+      };
+
+      setCreated(newTeacher);
+      setStep("confirm");
+      toast.success("Teacher profile created successfully!");
+    } catch {
+      toast.error("Failed to create teacher profile.");
+    }
   };
 
   const copyCredentials = () => {
@@ -322,16 +348,29 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
       {step === "info" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Full Name *
+                First Name *
               </label>
               <input
-                value={form.name}
+                value={form.firstName}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
+                  setForm((f) => ({ ...f, firstName: e.target.value }))
                 }
-                placeholder="e.g. Mrs. Chioma Eze"
+                placeholder="e.g. Chioma"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Last Name *
+              </label>
+              <input
+                value={form.lastName}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, lastName: e.target.value }))
+                }
+                placeholder="e.g. Eze"
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-all"
               />
             </div>
@@ -542,15 +581,33 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
               {created.subjects.length} subject
               {created.subjects.length !== 1 ? "s" : ""}
             </p>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {created.classes.map((id) => {
+                const cls = classes.find((c) => c.id === id);
+                if (!cls) return null;
+                return (
+                  <span
+                    key={id}
+                    className="px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100"
+                  >
+                    {cls.name}
+                  </span>
+                );
+              })}
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              {created.subjects.map((s) => (
-                <span
-                  key={s}
-                  className="px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100"
-                >
-                  {s}
-                </span>
-              ))}
+              {created.subjects.map((id) => {
+                const subject = subjects.find((s) => s.id === id);
+                if (!subject) return null;
+                return (
+                  <span
+                    key={id}
+                    className="px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100"
+                  >
+                    {subject.name}
+                  </span>
+                );
+              })}
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface ParentChild {
   id: string;
@@ -42,41 +42,49 @@ export interface RelationshipResponse {
   message: string;
 }
 
-export const fetchParentsList = async (search?: string): Promise<ParentResponse[]> => {
-  const path = search ? `/parents?search=${encodeURIComponent(search)}` : "/parents";
-  return apiFetch(path, { method: "GET" });
+export const fetchParentsList = async (
+  search?: string,
+): Promise<ParentResponse[]> => {
+  const path = search
+    ? `/parents?search=${encodeURIComponent(search)}`
+    : "/parents";
+  return apiClient.get(path);
 };
 
-export const fetchParentById = async (parentId: string): Promise<ParentResponse> => {
-  return apiFetch(`/parents/${parentId}`, { method: "GET" });
+export const fetchParentById = async (
+  parentId: string,
+): Promise<ParentResponse> => {
+  return apiClient.get(`/parents/${parentId}`);
 };
 
-export const searchParents = async (query: string): Promise<ParentResponse[]> => {
+export const searchParents = async (
+  query: string,
+): Promise<ParentResponse[]> => {
   return fetchParentsList(query);
 };
 
 export const createParent = async (
-  payload: ParentCreatePayload
+  payload: ParentCreatePayload,
 ): Promise<ParentResponse> => {
   const data = {
-    first_name: payload.first_name || "Parent",
-    last_name: payload.last_name || "Guardian",
+    first_name: payload.first_name,
+    last_name: payload.last_name,
     email: payload.email,
-    password: payload.password || "WelcomeNexus2026!",
+    password: payload.password,
     phone_number: payload.phone_number,
   };
-  return apiFetch("/parents", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  return apiClient.post("/parents", data);
+};
+
+export const updateParentProfile = async (
+  id: string,
+  payload: Partial<ParentCreatePayload>,
+): Promise<any> => {
+  return apiClient.patch(`/parents/${id}`, payload);
 };
 
 export const linkParentToStudent = async (
-  payload: RelationshipCreatePayload
+  payload: RelationshipCreatePayload,
 ): Promise<RelationshipResponse> => {
-  return apiFetch("/relationships", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/relationships", payload);
 };
-

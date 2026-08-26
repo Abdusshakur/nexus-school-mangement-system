@@ -8,16 +8,30 @@ import {
   Star,
 } from "lucide-react";
 import { CLASSES_DATA } from "./data";
+import { useClassStore } from "../../../store/class.store";
+import { useAuthStore } from "../../../store/auth/authStore";
+import { useTeacherStore } from "../../../store/teacher.store";
+import { useEffect } from "react";
 
 export default function ClassDetail() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("students");
+  const { classTeacherAssignments } = useClassStore();
+  const { user } = useAuthStore();
+  const { teachers, fetchTeachers } = useTeacherStore();
+
+  useEffect(() => {
+    fetchTeachers().catch(() => {});
+  }, [fetchTeachers]);
+
+  const myTeacherProfile = teachers.find(t => t.user_id === user?.id);
+  const isClassTeacher = classTeacherAssignments[id!] === myTeacherProfile?.id;
 
   const classData = CLASSES_DATA.find((c) => c.id === id) || CLASSES_DATA[0];
 
   const tabs = [
     { id: "students", label: "Students", icon: Users },
-    { id: "attendance", label: "Attendance", icon: CalendarCheck },
+    ...(isClassTeacher ? [{ id: "attendance", label: "Attendance", icon: CalendarCheck }] : []),
     { id: "assignments", label: "Assignments", icon: ClipboardList },
     { id: "grades", label: "Grades", icon: Star },
   ];
@@ -76,9 +90,7 @@ export default function ClassDetail() {
               <h3 className="font-bold text-lg mb-4 text-slate-800">
                 Enrolled Students ({classData.count})
               </h3>
-              <p className="text-slate-500 text-sm">
-                Searchable table coming soon...
-              </p>
+              <p className="text-slate-500 text-sm">Is Coming...</p>
             </div>
           )}
 
@@ -87,9 +99,7 @@ export default function ClassDetail() {
               <h3 className="font-bold text-lg mb-4 text-slate-800">
                 Mark Attendance
               </h3>
-              <p className="text-slate-500 text-sm">
-                Per-student P/L/A toggle coming soon...
-              </p>
+              <p className="text-slate-500 text-sm">Is Coming...</p>
             </div>
           )}
 
@@ -98,9 +108,7 @@ export default function ClassDetail() {
               <h3 className="font-bold text-lg mb-4 text-slate-800">
                 Class Assignments
               </h3>
-              <p className="text-slate-500 text-sm">
-                Create link and progress bars coming soon...
-              </p>
+              <p className="text-slate-500 text-sm">Is Coming...</p>
             </div>
           )}
 

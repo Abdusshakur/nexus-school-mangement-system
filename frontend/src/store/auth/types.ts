@@ -35,6 +35,11 @@ export interface AuthActions {
    * Updates the current authentication lifecycle status.
    */
   setStatus: (status: AuthState['status']) => void;
+
+  /**
+   * Fetches the latest profile data from the backend to sync the state.
+   */
+  refreshUser: () => Promise<void>;
 }
 
 export type AuthStore = AuthState & AuthActions;

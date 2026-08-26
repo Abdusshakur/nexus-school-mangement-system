@@ -31,9 +31,6 @@ export const SESSIONS = [
   "2024-25 Term 1",
 ];
 
-export const allStudents: Student[] = [];
-export const STUDENT_DB: Record<string, Student> = {};
-
 // --- MOCK DATA GENERATION FOR TABS ---
 
 export const SUBJECTS_BY_GRADE: Record<string, string[]> = {
@@ -99,11 +96,9 @@ export function seedRand(
 
 export function generateResults(
   studentId: string,
-  grade: string,
+  subjects: string[],
   session: string,
 ) {
-  const cleanGrade = grade.replace(/[\s-]/g, "").toUpperCase();
-  const subjects = SUBJECTS_BY_GRADE[cleanGrade] ?? SUBJECTS_BY_GRADE.SS2;
   const seed = parseInt(studentId.replace(/[^\d]/g, ""), 10) || 1;
   return subjects.map((subject) => {
     const r = (col: number) =>

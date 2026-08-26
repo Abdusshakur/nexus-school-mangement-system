@@ -8,8 +8,22 @@ import {
   BarChart3,
   CalendarCheck,
 } from "lucide-react";
+import { useClassStore } from "../../../store/class.store";
+import { useAuthStore } from "../../../store/auth/authStore";
+import { useTeacherStore } from "../../../store/teacher.store";
+import { useEffect } from "react";
 
 export default function TeacherClasses() {
+  const { classTeacherAssignments } = useClassStore();
+  const { user } = useAuthStore();
+  const { teachers, fetchTeachers } = useTeacherStore();
+
+  useEffect(() => {
+    fetchTeachers().catch(() => {});
+  }, [fetchTeachers]);
+
+  const myTeacherProfileId = teachers.find(t => t.user_id === user?.id)?.id;
+
   return (
     <div className="max-w-7xl space-y-6">
       {/* Header */}
@@ -57,22 +71,24 @@ export default function TeacherClasses() {
               </div>
 
               {/* Attendance Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between items-end mb-1.5">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                    <CalendarCheck size={12} /> Attendance
-                  </p>
-                  <span className="text-xs font-bold text-slate-700">
-                    {cls.attendanceRate}
-                  </span>
+              {classTeacherAssignments[cls.id] === myTeacherProfileId && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-end mb-1.5">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                      <CalendarCheck size={12} /> Attendance
+                    </p>
+                    <span className="text-xs font-bold text-slate-700">
+                      {cls.attendanceRate}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full ${cls.color}`}
+                      style={{ width: cls.attendanceRate }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full ${cls.color}`}
-                    style={{ width: cls.attendanceRate }}
-                  />
-                </div>
-              </div>
+              )}
 
               <Link
                 to={ROUTES.TEACHER.CLASS_DETAIL(cls.id)}

@@ -38,7 +38,7 @@ export function AnnouncementDetail() {
     date: found.date,
     priority: found.priority,
     audience: found.audience,
-    author: found.author,
+    author: found.authorName || found.author,
     category: found.category,
   };
 
@@ -62,9 +62,8 @@ export function AnnouncementDetail() {
         </Link>
         <div>
           <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
-            Announcement Details
+            Announcement
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">Viewing bulletin</p>
         </div>
         <button
           onClick={handleDelete}

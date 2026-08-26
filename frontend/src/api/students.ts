@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import apiClient from "./client";
 
 export interface ParentOnboardingDetails {
   first_name: string;
@@ -59,10 +59,7 @@ export interface PaginatedStudentsResponse {
 export const createStudent = async (
   payload: StudentCreatePayload,
 ): Promise<StudentResponse> => {
-  return apiFetch("/students", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.post("/students", payload);
 };
 
 // GET: Fetch student profile from the db
@@ -82,7 +79,14 @@ export const fetchStudentsList = async (
     path += `?${query}`;
   }
 
-  return apiFetch(path, { method: "GET" });
+  return apiClient.get(path);
+};
+
+// GET: Fetch a single student's complete profile
+export const fetchStudentById = async (
+  id: string,
+): Promise<StudentResponse> => {
+  return apiClient.get(`/students/${id}`);
 };
 
 export function formatClassName(name?: string): string {
@@ -103,15 +107,12 @@ export function formatClassName(name?: string): string {
 export const getStudentByAdmissionNumber = async (
   admissionNumber: string,
 ): Promise<StudentResponse> => {
-  return apiFetch(`/students/${admissionNumber}`, { method: "GET" });
+  return apiClient.get(`/students/${admissionNumber}`);
 };
 
 export const updateStudentProfile = async (
   studentId: string,
   payload: Partial<StudentResponse>,
 ): Promise<StudentResponse> => {
-  return apiFetch(`/students/${studentId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  return apiClient.patch(`/students/${studentId}`, payload);
 };

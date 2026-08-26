@@ -9,8 +9,11 @@ import {
   BookOpen,
   ClipboardList,
   Star,
-  MessageSquare,
-  UserCircle
+  Archive,
+  // MessageSquare,
+  UserCircle,
+  Baby,
+  Bell,
 } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
@@ -46,6 +49,21 @@ const ADMIN_NAV_ITEMS = [
     icon: Megaphone,
   },
   {
+    label: "Academics",
+    href: ROUTES.ADMIN.ACADEMICS,
+    icon: BookOpen,
+  },
+  {
+    label: "Timetable",
+    href: ROUTES.ADMIN.TIMETABLE,
+    icon: CalendarCheck,
+  },
+  {
+    label: "Sessions",
+    href: ROUTES.ADMIN.SESSIONS,
+    icon: Archive,
+  },
+  {
     label: "Settings",
     href: ROUTES.ADMIN.SETTINGS,
     icon: Settings,
@@ -62,6 +80,11 @@ const TEACHER_NAV_ITEMS = [
     label: "My Classes",
     href: ROUTES.TEACHER.CLASSES,
     icon: BookOpen,
+  },
+  {
+    label: "Timetable",
+    href: ROUTES.TEACHER.TIMETABLE,
+    icon: CalendarCheck,
   },
   {
     label: "Attendance",
@@ -88,11 +111,11 @@ const TEACHER_NAV_ITEMS = [
     href: ROUTES.TEACHER.ANNOUNCEMENTS,
     icon: Megaphone,
   },
-  {
-    label: "Messages",
-    href: ROUTES.TEACHER.MESSAGES,
-    icon: MessageSquare,
-  },
+  // {
+  //   label: "Messages",
+  //   href: ROUTES.TEACHER.MESSAGES,
+  //   icon: MessageSquare,
+  // },
   {
     label: "Profile",
     href: ROUTES.TEACHER.PROFILE,
@@ -105,9 +128,66 @@ const TEACHER_NAV_ITEMS = [
   },
 ];
 
+const PARENT_NAV_ITEMS = [
+  {
+    label: "Dashboard",
+    href: ROUTES.PARENT.DASHBOARD,
+    icon: LayoutDashboard,
+  },
+  {
+    label: "My Children",
+    href: ROUTES.PARENT.CHILDREN,
+    icon: Baby,
+  },
+  {
+    label: "Attendance",
+    href: ROUTES.PARENT.ATTENDANCE,
+    icon: CalendarCheck,
+  },
+  {
+    label: "Assignments",
+    href: ROUTES.PARENT.ASSIGNMENTS,
+    icon: ClipboardList,
+  },
+  {
+    label: "Results",
+    href: ROUTES.PARENT.RESULTS,
+    icon: Star,
+  },
+  {
+    label: "Announcements",
+    href: ROUTES.PARENT.ANNOUNCEMENTS,
+    icon: Megaphone,
+  },
+  {
+    label: "Notifications",
+    href: ROUTES.PARENT.NOTIFICATIONS,
+    icon: Bell,
+  },
+  {
+    label: "Profile",
+    href: ROUTES.PARENT.PROFILE,
+    icon: UserCircle,
+  },
+];
+
+const SECURITY_NAV_ITEMS = [
+  {
+    label: "QR Scanner",
+    href: ROUTES.SECURITY.DASHBOARD,
+    icon: LayoutDashboard,
+  },
+];
+
 export function getNavItems(role: string | null) {
   if (role === "teacher") {
     return TEACHER_NAV_ITEMS;
+  }
+  if (role === "parent") {
+    return PARENT_NAV_ITEMS;
+  }
+  if (role === "security") {
+    return SECURITY_NAV_ITEMS;
   }
   return ADMIN_NAV_ITEMS;
 }

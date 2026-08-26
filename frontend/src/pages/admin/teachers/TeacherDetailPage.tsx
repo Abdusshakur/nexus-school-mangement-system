@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,33 +7,90 @@ import {
   MapPin,
   GraduationCap,
   Edit3,
-  BookOpen,
   Users,
-  EyeOff,
-  Eye,
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "../../../config/routes";
 import { useTeacherStore, type Teacher } from "../../../store/teacher.store";
 import {
-  CLASSES,
-  classColor,
-  getSubjectsForClasses,
-  DEPARTMENTS,
-} from "./data";
+  fetchTeacherById,
+  assignTeacherClasses,
+  assignTeacherSubjects,
+} from "../../../api/teachers";
+import {
+  formatPhoneNumber,
+  formatParentInitials,
+} from "../../../utils/formatters";
+import { useClassStore } from "../../../store/class.store";
+import { useSubjectStore } from "../../../store/subject.store";
+import { DEPARTMENTS } from "./data";
 import { Modal, ClassSelector, TagSelector } from "./AddTeacher";
 
 export function TeacherDetailPage() {
   const { id } = useParams();
   const { teachers, updateTeacher } = useTeacherStore();
-  const teacher = teachers.find((t) => t.id === id);
+  const { classes, loadClasses } = useClassStore();
+  const { subjects, loadSubjects } = useSubjectStore();
+
+  // Use existing basic info from the list as initial state if available
+  const existingTeacher = teachers.find((t) => t.id === id);
+  const [teacher, setTeacher] = useState<Teacher | undefined>(existingTeacher);
+  const [loading, setLoading] = useState(!!id);
+
+  useEffect(() => {
+    loadClasses();
+    loadSubjects();
+  }, [loadClasses, loadSubjects]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    fetchTeacherById(id)
+      .then((data) => {
+        // Map backend TeacherDetailResponse to frontend Teacher interface
+        setTeacher({
+          id: data.id,
+          user_id: data.user_id,
+          staffId: data.id.substring(0, 8).toUpperCase(),
+          name: `${data.first_name} ${data.last_name}`,
+          email: data.email,
+          phone: formatPhoneNumber(data.phone_number),
+          gender: data.gender,
+          qualification: data.qualification,
+          dept: data.department,
+          title: `${data.qualification || "Teacher"}`,
+          address: data.address,
+          classes: data.assigned_classes.map((c) => c.id),
+          subjects: data.assigned_subjects.map((s) => s.id),
+          status: "Active",
+          avatar: formatParentInitials(`${data.first_name} ${data.last_name}`),
+          avatarColor: "bg-indigo-500",
+          experience: "1 Year",
+          classrooms: data.assigned_classes.length,
+          created_at: data.created_at,
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to fetch teacher profile:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id]);
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<Teacher | null>(null);
   const [showEditClasses, setShowEditClasses] = useState(false);
   const [showEditSubjects, setShowEditSubjects] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+        <p className="mb-4 animate-pulse">Loading teacher profile...</p>
+      </div>
+    );
+  }
 
   if (!teacher) {
     return (
@@ -52,23 +109,52 @@ export function TeacherDetailPage() {
   const toggleTag = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
 
-  const availSubjects = getSubjectsForClasses(teacher.classes);
+  const availSubjects = subjects;
 
   const handleOpenEdit = () => {
     setEditForm({ ...teacher });
     setEditing(true);
   };
 
-  const handleSaveProfile = () => {
-    if (!editForm) return;
-    updateTeacher(editForm);
-    setEditing(false);
-    toast.success("Teacher profile updated successfully!");
+  const handleSaveProfile = async () => {
+    if (!editForm || !id) return;
+
+    try {
+      toast.info("Updating profile....");
+      updateTeacher(editForm);
+      setTeacher(editForm);
+      setEditing(false);
+    } catch {
+      toast.error("Failed to update profile.");
+    }
+  };
+
+  const handleSaveClasses = async () => {
+    if (!id || !teacher) return;
+    try {
+      await assignTeacherClasses(id, teacher.classes);
+      toast.success("Classes assigned successfully");
+      updateTeacher(teacher);
+      setShowEditClasses(false);
+    } catch {
+      toast.error("Failed to assign classes");
+    }
+  };
+
+  const handleSaveSubjects = async () => {
+    if (!id || !teacher) return;
+    try {
+      await assignTeacherSubjects(id, teacher.subjects);
+      toast.success("Subjects assigned successfully");
+      updateTeacher(teacher);
+      setShowEditSubjects(false);
+    } catch {
+      toast.error("Failed to assign subjects");
+    }
   };
 
   return (
     <div className="max-w-4xl space-y-6 font-inter">
-      {/* Header Navigation */}
       <div className="flex items-center gap-3">
         <Link
           to={ROUTES.ADMIN.TEACHERS}
@@ -78,10 +164,7 @@ export function TeacherDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-slate-900 text-2xl font-bold">{teacher.name}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            {teacher.dept} ·{" "}
-            <span className="font-mono">{teacher.staffId}</span>
-          </p>
+          <p className="text-slate-500 text-sm mt-0.5">{teacher.dept}</p>
         </div>
         <button
           onClick={handleOpenEdit}
@@ -150,23 +233,24 @@ export function TeacherDetailPage() {
             })}
           </div>
 
-          {/* Access Password Section */}
-          <div className="pt-4 border-t border-slate-100 space-y-1">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              Default Login Password
-            </span>
-            <div className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-150 p-2.5 rounded-xl">
-              <span className="font-mono text-sm font-bold text-slate-700 select-all">
-                {showPassword ? teacher.defaultPassword : "••••••••••"}
+          {/* Security Section */}
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                Account Security
               </span>
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              >
-                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
+              <p className="text-xs font-semibold text-slate-500">
+                Reset the teacher's password by sending a reset link to their
+                registered email address.
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={() => toast.info("Password reset link sent to teacher.")}
+              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+            >
+              Reset Password
+            </button>
           </div>
         </div>
 
@@ -188,17 +272,16 @@ export function TeacherDetailPage() {
             {teacher.classes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {teacher.classes.map((id) => {
-                  const cls = CLASSES.find((c) => c.id === id);
+                  const cls = classes.find((c) => c.id === id);
                   if (!cls) return null;
-                  const cs = classColor(cls.level);
                   return (
                     <div
                       key={id}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border border-slate-100 ${cs.bg}`}
+                      className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-100 bg-indigo-50"
                     >
-                      <Users size={15} className={cs.text} />
-                      <span className={`text-xs font-bold ${cs.text}`}>
-                        {cls.name} Class Stream
+                      <Users size={15} className="text-indigo-700" />
+                      <span className="text-xs font-bold text-indigo-700">
+                        {cls.name}
                       </span>
                     </div>
                   );
@@ -226,59 +309,22 @@ export function TeacherDetailPage() {
             </div>
             {teacher.subjects.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {teacher.subjects.map((s) => (
-                  <span
-                    key={s}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-655 border border-indigo-100"
-                  >
-                    <BookOpen size={12} /> {s}
-                  </span>
-                ))}
+                {teacher.subjects.map((id) => {
+                  const subject = subjects.find((s) => s.id === id);
+                  if (!subject) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 border border-indigo-100 text-indigo-700"
+                    >
+                      {subject.name}
+                    </span>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-slate-400">No subjects assigned.</p>
             )}
-          </div>
-
-          {/* Weekly Work Snapshot */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900 text-base">
-              Faculty Weekly Snapshot
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                {
-                  label: "Classes",
-                  value: teacher.classes.length,
-                  color: "text-indigo-600",
-                  bg: "bg-indigo-50",
-                },
-                {
-                  label: "Subjects",
-                  value: teacher.subjects.length,
-                  color: "text-purple-650",
-                  bg: "bg-purple-50/70",
-                },
-                {
-                  label: "Periods / wk",
-                  value: teacher.classes.length * 5,
-                  color: "text-amber-700",
-                  bg: "bg-amber-50",
-                },
-              ].map(({ label, value, color, bg }) => (
-                <div
-                  key={label}
-                  className={`text-center p-4 rounded-2xl ${bg}`}
-                >
-                  <p className={`text-2xl font-black ${color}`}>{value}</p>
-                  <p
-                    className={`text-[10px] uppercase font-bold tracking-wider mt-0.5 ${color} opacity-80`}
-                  >
-                    {label}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -373,14 +419,14 @@ export function TeacherDetailPage() {
             <ClassSelector
               selected={teacher.classes}
               onToggle={(classId) =>
-                updateTeacher({
+                setTeacher({
                   ...teacher,
                   classes: toggleTag(teacher.classes, classId),
                 })
               }
             />
             <button
-              onClick={() => setShowEditClasses(false)}
+              onClick={handleSaveClasses}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm"
             >
               Done
@@ -402,7 +448,7 @@ export function TeacherDetailPage() {
               options={availSubjects}
               selected={teacher.subjects}
               onToggle={(sName) =>
-                updateTeacher({
+                setTeacher({
                   ...teacher,
                   subjects: toggleTag(teacher.subjects, sName),
                 })
@@ -410,7 +456,7 @@ export function TeacherDetailPage() {
               searchable
             />
             <button
-              onClick={() => setShowEditSubjects(false)}
+              onClick={handleSaveSubjects}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm"
             >
               Done

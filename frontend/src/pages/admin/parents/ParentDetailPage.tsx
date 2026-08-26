@@ -3,8 +3,11 @@ import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
 import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
-import { formatParentName, formatParentInitials } from "./ParentPage";
-
+import {
+  formatParentName,
+  formatParentInitials,
+  formatPhoneNumber,
+} from "../../../utils/formatters";
 
 export function ParentDetail() {
   const { id } = useParams();
@@ -16,15 +19,27 @@ export function ParentDetail() {
 
   const found = dbParents.find((p) => p.id === id);
 
-  const parentName = found ? formatParentName(found.first_name, found.last_name, found.email) : "";
+  const parentName = found
+    ? formatParentName(found.first_name, found.last_name, found.email)
+    : "";
   const initials = found ? formatParentInitials(parentName) : "PG";
 
   const childrenList = found
-    ? (found.children && found.children.length > 0 ? found.children : found.students || [])
+    ? found.children && found.children.length > 0
+      ? found.children
+      : found.students || []
     : [];
 
-  const isInvalidPhone = found && (!found.phone_number || found.phone_number.toLowerCase().startsWith("string") || found.phone_number.toLowerCase() === "null");
-  const phoneDisplay = found ? (isInvalidPhone ? "No phone registered" : found.phone_number) : "";
+  const isInvalidPhone =
+    found &&
+    (!found.phone_number ||
+      found.phone_number.toLowerCase().startsWith("string") ||
+      found.phone_number.toLowerCase() === "null");
+  const phoneDisplay = found
+    ? isInvalidPhone
+      ? "No phone registered"
+      : found.phone_number
+    : "";
 
   const parent = found
     ? {
@@ -33,7 +48,7 @@ export function ParentDetail() {
         occupation: "Parent / Guardian",
         email: found.email,
         phone: phoneDisplay,
-        address: "Westwood Campus",
+        address: "Address not provided",
         avatarColor: "bg-purple-500",
         avatar: initials,
         children: childrenList.map((c) => {
@@ -41,14 +56,13 @@ export function ParentDetail() {
           return {
             id: c.id,
             admission_number: c.admission_number,
-            name: childName === "Parent / Guardian" ? "Student Profile" : childName,
+            name:
+              childName === "Parent / Guardian" ? "Student Profile" : childName,
             class_name: c.class_name,
           };
         }),
       }
     : null;
-
-
 
   if (loading) {
     return (
@@ -76,7 +90,7 @@ export function ParentDetail() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 ">
-      <header className=" border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex items-center gap-4">
+      <header className=" px-8 py-2.5 z-10 flex items-center gap-4">
         <Link
           to={ROUTES.ADMIN.PARENTS}
           className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
@@ -107,7 +121,7 @@ export function ParentDetail() {
           </p>
           <div className="mt-6 space-y-3.5 text-left pt-6 border-t border-slate-100">
             {[
-              { icon: Phone, label: parent.phone },
+              { icon: Phone, label: formatPhoneNumber(parent.phone) },
               { icon: Mail, label: parent.email },
               { icon: MapPin, label: parent.address },
             ].map(({ icon: Icon, label }, i) => (
@@ -145,12 +159,13 @@ export function ParentDetail() {
                     </p>
                   </div>
                   <Link
-                    to={ROUTES.ADMIN.STUDENT_DETAIL(child.admission_number || child.id)}
+                    to={ROUTES.ADMIN.STUDENT_DETAIL(
+                      child.admission_number || child.id,
+                    )}
                     className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-bold flex items-center gap-0.5"
                   >
                     Profile <ChevronRight size={14} />
                   </Link>
-
                 </div>
               ))}
             </div>

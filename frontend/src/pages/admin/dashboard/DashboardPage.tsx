@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Clock,
   Triangle,
+  BookMarked,
 } from "lucide-react";
 import {
   AreaChart,
@@ -93,8 +94,8 @@ const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
 
 const quickActions = [
   {
-    label: "Mark Today's Attendance",
-    to: ROUTES.ADMIN.ATTENDANCE_MARK,
+    label: "Class Attendance",
+    to: ROUTES.ADMIN.ATTENDANCE_CLASSES,
     icon: CalendarCheck,
     colorClass: "text-indigo-500",
     bgClass: "bg-indigo-50",
@@ -114,8 +115,8 @@ const quickActions = [
     bgClass: "bg-amber-100",
   },
   {
-    label: "Generate Report",
-    to: ROUTES.ADMIN.ATTENDANCE_REPORT,
+    label: "Teacher Assignment",
+    to: ROUTES.ADMIN.ATTENDANCE_TEACHERS,
     icon: TrendingUp,
     colorClass: "text-purple-500",
     bgClass: "bg-purple-50",
@@ -123,12 +124,15 @@ const quickActions = [
 ];
 
 import { useAnnouncementStore } from "../../../store/announcement.store";
+import { useSessionStore } from "../../../store/session.store";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashboardSummaryResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { announcements, fetchAnnouncements } = useAnnouncementStore();
+  const { academicSessions } = useSessionStore();
+  const activeSession = academicSessions.find((s) => s.status === "active");
 
   const currentDateString = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -177,15 +181,13 @@ export function DashboardPage() {
     loadDashboardData();
   }, [navigate, fetchAnnouncements]);
 
-  const dashboardAnnouncements = announcements
-    .slice(0, 3)
-    .map((ann) => ({
-      id: ann.id,
-      title: ann.title,
-      date: ann.date,
-      audience: ann.target,
-      dotClass: "bg-indigo-500",
-    }));
+  const dashboardAnnouncements = announcements.slice(0, 3).map((ann) => ({
+    id: ann.id,
+    title: ann.title,
+    date: ann.date,
+    audience: ann.target,
+    dotClass: "bg-indigo-500",
+  }));
 
   if (loading) {
     return (
@@ -199,6 +201,38 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6 font-inter">
+      {/* Active Session Banner */}
+      {activeSession && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 rounded-xl bg-indigo-900 border border-indigo-800 shadow-sm gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white/10">
+              <BookMarked size={18} className="text-indigo-200" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="font-bold text-white text-base">
+                  Academic Session {activeSession.name}
+                </p>
+                <span className="px-2 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-bold bg-emerald-500 text-white">
+                  ACTIVE
+                </span>
+              </div>
+              <p className="text-sm text-indigo-200">
+                Current Term:{" "}
+                <span className="text-white font-semibold">
+                  {activeSession.term}
+                </span>
+              </p>
+            </div>
+          </div>
+          <Link
+            to={ROUTES.ADMIN.SESSIONS}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-white/10 text-indigo-50 hover:bg-white/20 transition-colors shrink-0"
+          >
+            Manage <ArrowRight size={13} />
+          </Link>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -271,7 +305,7 @@ export function DashboardPage() {
                 Weekly Attendance
               </h3>
               <p className="text-xs mt-0.5 text-slate-500">
-                This week · Mon–Fri
+                This week: Mon - Fri
               </p>
             </div>
             <div className="flex items-center gap-4 text-xs text-slate-500">
@@ -411,14 +445,16 @@ export function DashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50">
-                {["Student", "Grade", "Parents / Guardians", "Status"].map((header) => (
-                  <th
-                    key={header}
-                    className="text-left px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    {header}
-                  </th>
-                ))}
+                {["Student", "Grade", "Parents / Guardians", "Status"].map(
+                  (header) => (
+                    <th
+                      key={header}
+                      className="text-left px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      {header}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>
@@ -456,8 +492,13 @@ export function DashboardPage() {
                       {s.parents && s.parents.length > 0 ? (
                         <div className="flex flex-col gap-1">
                           {s.parents.map((p, idx) => (
-                            <span key={p.id || idx} className="font-medium text-slate-800 flex items-center gap-1.5">
-                              <span>{p.first_name} {p.last_name}</span>
+                            <span
+                              key={p.id || idx}
+                              className="font-medium text-slate-800 flex items-center gap-1.5"
+                            >
+                              <span>
+                                {p.first_name} {p.last_name}
+                              </span>
                               <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wide bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
                                 {p.relationship_type || `P${idx + 1}`}
                               </span>
@@ -465,7 +506,9 @@ export function DashboardPage() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-slate-400 italic">No parent linked</span>
+                        <span className="text-slate-400 italic">
+                          No parent linked
+                        </span>
                       )}
                     </td>
                     <td className="px-5 py-3">
@@ -486,7 +529,6 @@ export function DashboardPage() {
                   </td>
                 </tr>
               )}
-
             </tbody>
           </table>
         </div>

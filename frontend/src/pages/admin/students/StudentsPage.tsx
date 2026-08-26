@@ -1,5 +1,6 @@
 import { ROUTES } from "../../../config/routes";
 import { useEffect, useState } from "react";
+import { useClassStore } from "../../../store/class.store";
 import { Link } from "react-router-dom";
 import { Search, Plus, ChevronRight, CheckCircle } from "lucide-react";
 import {
@@ -9,21 +10,18 @@ import {
 } from "../../../api/students";
 
 export function StudentList() {
+  const { classes, loadClasses } = useClassStore();
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [students, setStudents] = useState<StudentResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const grades = [
-    "All",
-    "JSS 1",
-    "JSS 2",
-    "JSS 3",
-    "SS 1",
-    "SS 2",
-    "SS 3",
-  ];
+  const grades = ["All", ...classes.map((c) => c.name)];
+
+  useEffect(() => {
+    loadClasses().catch(() => {});
+  }, [loadClasses]);
 
   useEffect(() => {
     let isMounted = true;
@@ -135,6 +133,11 @@ export function StudentList() {
                 const initials = (
                   (s.first_name[0] || "") + (s.last_name[0] || "")
                 ).toUpperCase();
+                
+                const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
+                const colorIndex = s.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+                const avatarColor = colors[colorIndex];
+
                 return (
                   <tr
                     key={s.id}
@@ -142,7 +145,7 @@ export function StudentList() {
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs bg-indigo-500">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs ${avatarColor}`}>
                           <span>{initials}</span>
                         </div>
                         <div>
@@ -182,7 +185,7 @@ export function StudentList() {
         )}
         {!loading && filtered.length === 0 && (
           <div className="py-12 text-center text-slate-400 text-sm">
-            No enrolled students match your query.
+            No students records found.
           </div>
         )}
       </div>

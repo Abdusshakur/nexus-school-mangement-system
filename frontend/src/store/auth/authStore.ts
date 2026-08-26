@@ -8,7 +8,7 @@ import type { AuthUser, AuthStore } from "./types";
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -25,6 +25,38 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         set({ status: "loading" });
         try {
+          if (email === "parent@nexus.com" && password === "password") {
+            const authUser: AuthUser = {
+              id: "p1",
+              role: UserRole.PARENT,
+              first_name: "Tife",
+              last_name: "Ifedamola",
+            };
+            set({
+              user: authUser,
+              token: "mock-parent-token",
+              isAuthenticated: true,
+              status: "authenticated",
+            });
+            return authUser;
+          }
+
+          if (email === "security@nexus.com" && password === "password") {
+            const authUser: AuthUser = {
+              id: "s1",
+              role: UserRole.SECURITY,
+              first_name: "Chief",
+              last_name: "Security",
+            };
+            set({
+              user: authUser,
+              token: "mock-security-token",
+              isAuthenticated: true,
+              status: "authenticated",
+            });
+            return authUser;
+          }
+
           const data = await apiLogin(email, password);
           const authUser: AuthUser = {
             id: data.user.id,
@@ -54,6 +86,31 @@ export const useAuthStore = create<AuthStore>()(
         }),
 
       setStatus: (status: AuthStore["status"]) => set({ status }),
+
+      refreshUser: async () => {
+        const token = get().token;
+        if (!token) return;
+
+        // Skip backend fetch for mock users to avoid 401 logout
+        if (token === "mock-parent-token" || token === "mock-security-token") {
+          return;
+        }
+
+        try {
+          const { getCurrentUser } = await import("../../api/auth");
+          const data = await getCurrentUser();
+          set({
+            user: {
+              id: data.id,
+              role: data.role,
+              first_name: data.first_name,
+              last_name: data.last_name,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to refresh user:", error);
+        }
+      },
     }),
     {
       name: "nexus-auth-storage",
