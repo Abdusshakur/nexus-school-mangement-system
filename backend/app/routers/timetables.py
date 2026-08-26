@@ -9,7 +9,7 @@ from backend.app.db.database import get_session
 from backend.app.core.auth_utils import CurrentContext, require_permission
 
 from backend.app.models import (
-    TimetableEntry, Class, Subject, TeacherProfile, 
+    TimetableEntry, SchoolClass, Subject, TeacherProfile, 
     AcademicTerm, TeacherAssignment, AssignmentStatus 
 )
 from backend.app.schemas.timetable import TimetableEntryCreate, TimetableEntryResponse, BulkTimetableRequest
@@ -29,7 +29,7 @@ def create_timetable_entry(
     """Creates a timetable entry with strict overlapping clash detection and Contextual Contract verification."""
     
     # 1. SECURE FETCH: Ensure all referenced entities belong to this specific school
-    db_class = session.exec(select(Class).where(Class.id == request.class_id, Class.school_id == context.school_id)).first()
+    db_class = session.exec(select(SchoolClass).where(SchoolClass.id == request.class_id, SchoolClass.school_id == context.school_id)).first()
     db_subject = session.exec(select(Subject).where(Subject.id == request.subject_id, Subject.school_id == context.school_id)).first()
     db_teacher = session.exec(select(TeacherProfile).where(TeacherProfile.id == request.teacher_id, TeacherProfile.school_id == context.school_id)).first()
     db_term = session.exec(select(AcademicTerm).where(AcademicTerm.id == request.term_id, AcademicTerm.school_id == context.school_id)).first()
@@ -135,7 +135,7 @@ def create_bulk_timetable(
         return {"message": "No entries provided."}
 
     valid_classes = session.exec(
-        select(Class).where(Class.id.in_(unique_class_ids), Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.id.in_(unique_class_ids), SchoolClass.school_id == context.school_id)
     ).all()
     
     if len(valid_classes) != len(unique_class_ids):
@@ -256,7 +256,7 @@ def get_class_timetable(
     
     # 1. 🛡️ VERIFY OWNERSHIP: Ensure the requested class belongs to this school
     db_class = session.exec(
-        select(Class).where(Class.id == class_id, Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.id == class_id, SchoolClass.school_id == context.school_id)
     ).first()
     
     if not db_class:
@@ -264,8 +264,8 @@ def get_class_timetable(
 
     # 2. SECURE FETCH: Run the join query locked to the tenant
     statement = (
-        select(TimetableEntry, Class, Subject, TeacherProfile, AcademicTerm) 
-        .join(Class, TimetableEntry.class_id == Class.id)
+        select(TimetableEntry, SchoolClass, Subject, TeacherProfile, AcademicTerm) 
+        .join(SchoolClass, TimetableEntry.class_id == SchoolClass.id)
         .join(Subject, TimetableEntry.subject_id == Subject.id)
         .join(TeacherProfile, TimetableEntry.teacher_id == TeacherProfile.id)
         .join(AcademicTerm, TimetableEntry.term_id == AcademicTerm.id)
@@ -320,8 +320,8 @@ def get_teacher_schedule(
         
     # 2. SECURE QUERY: Join the timetable engine, explicitly locked to the school_id
     statement = (
-        select(TimetableEntry, Class, Subject, TeacherProfile, AcademicTerm)
-        .join(Class, TimetableEntry.class_id == Class.id)
+        select(TimetableEntry, SchoolClass, Subject, TeacherProfile, AcademicTerm)
+        .join(SchoolClass, TimetableEntry.class_id == SchoolClass.id)
         .join(Subject, TimetableEntry.subject_id == Subject.id)
         .join(TeacherProfile, TimetableEntry.teacher_id == TeacherProfile.id)
         .join(AcademicTerm, TimetableEntry.term_id == AcademicTerm.id)
@@ -423,8 +423,8 @@ def get_student_schedule(
 
     # 4. SECURE QUERY: Join the timetable engine, explicitly locked to the school_id
     statement = (
-        select(TimetableEntry, Class, Subject, TeacherProfile, AcademicTerm)
-        .join(Class, TimetableEntry.class_id == Class.id)
+        select(TimetableEntry, SchoolClass, Subject, TeacherProfile, AcademicTerm)
+        .join(SchoolClass, TimetableEntry.class_id == SchoolClass.id)
         .join(Subject, TimetableEntry.subject_id == Subject.id)
         .join(TeacherProfile, TimetableEntry.teacher_id == TeacherProfile.id)
         .join(AcademicTerm, TimetableEntry.term_id == AcademicTerm.id)

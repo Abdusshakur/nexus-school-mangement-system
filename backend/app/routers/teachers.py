@@ -10,7 +10,7 @@ from backend.app.db.database import get_session
 from backend.app.core.auth_utils import CurrentContext, require_permission, hash_password
 
 from backend.app.models import (
-    User, Role, TeacherProfile, Class, Subject, 
+    User, Role, TeacherProfile, SchoolClass, Subject, 
     TeacherAssignment, AssignmentStatus, AcademicSession, AcademicTerm
 )
 from backend.app.schemas.teacher import (
@@ -40,8 +40,8 @@ def build_teacher_detail_response(
     # Only fetch assignments if we know the temporal context (Year & Term)
     if academic_session_id and academic_term_id:
         assignments_query = (
-            select(Class, Subject)
-            .join(TeacherAssignment, TeacherAssignment.class_id == Class.id)
+            select(SchoolClass, Subject)
+            .join(TeacherAssignment, TeacherAssignment.class_id == SchoolClass.id)
             .join(Subject, TeacherAssignment.subject_id == Subject.id)
             .where(
                 TeacherAssignment.teacher_id == teacher.id,
@@ -224,7 +224,7 @@ def update_teacher_assignments(
     for assignment_pair in payload.assignments:
         # Verify Class belongs to school
         target_class = session.exec(
-            select(Class).where(Class.id == assignment_pair.class_id, Class.school_id == context.school_id)
+            select(SchoolClass).where(SchoolClass.id == assignment_pair.class_id, SchoolClass.school_id == context.school_id)
         ).first()
         # Verify Subject belongs to school
         target_subject = session.exec(

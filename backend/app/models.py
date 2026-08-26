@@ -118,6 +118,8 @@ class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     email: str = Field(index=True, unique=True)
     password_hash: str
+    role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
+    school_id: Optional[UUID] = Field(default=None, foreign_key="school.id")
     
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -230,7 +232,7 @@ class StudentEnrollment(SQLModel, table=True):
     student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
     session_id: UUID = Field(foreign_key="academicsession.id", index=True)
     term_id: UUID = Field(foreign_key="academicterm.id", index=True)
-    class_id: UUID = Field(foreign_key="class.id", index=True)
+    class_id: UUID = Field(foreign_key="classes.id", index=True)
     
     start_date: date = Field(default_factory=lambda: datetime.now(timezone.utc).date())
     end_date: Optional[date] = None
@@ -242,7 +244,7 @@ class StudentEnrollment(SQLModel, table=True):
     student: "StudentProfile" = Relationship(back_populates="enrollments")
     academic_session: "AcademicSession" = Relationship()
     academic_term: "AcademicTerm" = Relationship()
-    enrolled_class: "Class" = Relationship()
+    enrolled_class: "SchoolClass" = Relationship()
 
 
 class TeacherAssignment(SQLModel, table=True):
@@ -253,7 +255,7 @@ class TeacherAssignment(SQLModel, table=True):
     teacher_id: UUID = Field(foreign_key="teacherprofile.id", index=True)
     session_id: UUID = Field(foreign_key="academicsession.id", index=True)
     term_id: UUID = Field(foreign_key="academicterm.id", index=True)
-    class_id: UUID = Field(foreign_key="class.id", index=True)
+    class_id: UUID = Field(foreign_key="classes.id", index=True)
     subject_id: UUID = Field(foreign_key="subject.id", index=True)
     
     start_date: date = Field(default_factory=lambda: datetime.now(timezone.utc).date())
@@ -266,137 +268,111 @@ class TeacherAssignment(SQLModel, table=True):
     teacher: "TeacherProfile" = Relationship(back_populates="assignments")
     academic_session: "AcademicSession" = Relationship()
     academic_term: "AcademicTerm" = Relationship()
-    assigned_class: "Class" = Relationship()
+    assigned_class: "SchoolClass" = Relationship()
     subject: "Subject" = Relationship()
 
 # ==================================================================
 # GRANULAR RBAC PERMISSION MODELS
 # ==================================================================
 
-class Permission(SQLModel, table=True):
-    """Atomic actions a user can perform in the system."""
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    name: str = Field(unique=True, index=True) # e.g., "timetable:write", "student:delete"
-    description: Optional[str] = None
-
 class RolePermissionLink(SQLModel, table=True):
     """Pivot table mapping Roles to Permissions."""
     role_id: UUID = Field(foreign_key="role.id", primary_key=True)
     permission_id: UUID = Field(foreign_key="permission.id", primary_key=True)
 
-class Role(SQLModel, table=True):
-    """A collection of permissions (e.g., 'Principal', 'Class Teacher', 'Parent')."""
+
+class Permission(SQLModel, table=True):
+    """Atomic actions a user can perform."""
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    name: str = Field(unique=True, index=True) 
+    name: str = Field(unique=True, index=True)
     description: Optional[str] = None
-    
-    # Relationship to permissions
-    permissions: List["Permission"] = Relationship(
-        back_populates="roles", link_model=RolePermissionLink)
 
+    roles: List["Role"] = Relationship(
+        back_populates="permissions",
+        link_model=RolePermissionLink,
+    )
+
+
+class Role(SQLModel, table=True):
+    """A collection of permissions."""
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field(unique=True, index=True)
+
+    permissions: List[Permission] = Relationship(
+        back_populates="roles",
+        link_model=RolePermissionLink,
+    )
 
 
 # ==================================================================
-# 3. ACADEMIC INFRASTRUCTURE (Tenant-Scoped)
+# 3. ACADEMIC STRUCTURE & SESSIONS
 # ==================================================================
-
-from sqlalchemy import Index, text
 
 class AcademicSession(SQLModel, table=True):
-    __table_args__ = (
-        UniqueConstraint("name", "school_id", name="uq_session_name_per_school"),
-        # 👇 The Partial Unique Index: Only ONE session can be current per school
-        Index(
-            "ix_unique_current_session_per_school", 
-            "school_id", 
-            unique=True, 
-            postgresql_where=text("is_current = true")
-        ),
-    )
+    """Represents an academic year (e.g., 2025/2026)."""
+    __table_args__ = (UniqueConstraint("school_id", "name", name="uq_session_name_per_school"),)
     
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
-    
-    name: str = Field(index=True) 
+    name: str = Field(index=True) # e.g., "2025/2026"
     start_date: date
     end_date: date
-    
-    # 👇 Replaced the rigid is_active boolean with the dual-state system
     status: PeriodStatus = Field(default=PeriodStatus.DRAFT)
     is_current: bool = Field(default=False)
-    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
-    terms: List["AcademicTerm"] = Relationship(back_populates="session")
 
 
 class AcademicTerm(SQLModel, table=True):
-    __table_args__ = (
-        UniqueConstraint("name", "session_id", "school_id", name="uq_term_name_per_session"),
-        # 👇 The Partial Unique Index: Only ONE term can be current per school at a time
-        Index(
-            "ix_unique_current_term_per_school", 
-            "school_id", 
-            unique=True, 
-            postgresql_where=text("is_current = true")
-        ),
-    )
+    """Represents a term/semester within an academic session (e.g., First Term)."""
+    __table_args__ = (UniqueConstraint("school_id", "session_id", "name", name="uq_term_name_per_session"),)
     
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
-    session_id: UUID = Field(foreign_key="academicsession.id")
-    
-    name: str = Field(index=True)     # "First Term", "Fall Semester"
-    period_type: str                  # "TERM", "SEMESTER", "QUARTER"
-    sequence: int                     # 1, 2, 3 (Ensures chronological sorting)
-    
+    session_id: UUID = Field(foreign_key="academicsession.id", index=True)
+    name: str = Field(index=True) # e.g., "First Term"
+    period_type: str = Field(default="TERM")
+    sequence: int = Field(default=1)
     start_date: date
     end_date: date
-    
-    # 👇 Dual-state system
     status: PeriodStatus = Field(default=PeriodStatus.DRAFT)
     is_current: bool = Field(default=False)
-    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
-    session: AcademicSession = Relationship(back_populates="terms")
-
-class Class(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint("name", "school_id", name="uq_class_name_per_school"),)
-    
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    school_id: UUID = Field(foreign_key="school.id", index=True)
-    
-    name: str = Field(index=True) 
-    form_teacher_id: UUID | None = Field(default=None, foreign_key="teacherprofile.id") 
-    
-    # Optional: If you want a direct relationship or if it's handled strictly via TeacherAssignment/Enrollments
-    # We remove the link_model since the old link table is gone.
 
 
 class Subject(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint("name", "school_id", name="uq_subject_name_per_school"),)
+    """School subjects (e.g., Mathematics, Physics)."""
+    __table_args__ = (UniqueConstraint("school_id", "name", name="uq_subject_name_per_school"),)
     
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
+    name: str = Field(index=True)
+    code: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class SchoolClass(SQLModel, table=True):
+    """Represents a class room/grade level (e.g., JSS 1A, SS 2 Science)."""
+    __tablename__ = "classes"
+    __table_args__ = (UniqueConstraint("school_id", "name", name="uq_class_name_per_school"),)
     
-    name: str = Field(index=True) 
-    # Removed link_model="TeacherSubjectLink" as well!
-
-
-# ==================================================================
-# 4. OPERATIONS (Tenant-Scoped)
-# ==================================================================
-
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    name: str = Field(index=True)
+    # Optional link to a designated form teacher
+    form_teacher_id: Optional[UUID] = Field(default=None, foreign_key="teacherprofile.id", index=True)
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+# Operational models retained for the API routers and integration tests.
 class TimetableEntry(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
+    session_id: UUID = Field(foreign_key="academicsession.id", index=True)
     term_id: UUID = Field(foreign_key="academicterm.id", index=True)
-    
-    class_id: UUID = Field(foreign_key="class.id")
+    class_id: UUID = Field(foreign_key="classes.id")
     subject_id: UUID = Field(foreign_key="subject.id")
     teacher_id: UUID = Field(foreign_key="teacherprofile.id")
-    
     day_of_week: DayOfWeek
     start_time: time
     end_time: time
@@ -404,48 +380,37 @@ class TimetableEntry(SQLModel, table=True):
 
 class AttendanceSession(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("class_id", "attendance_date", "school_id", name="unique_class_date_session_per_school"),)
-    
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
-
     session_id: UUID = Field(foreign_key="academicsession.id", index=True)
     term_id: UUID = Field(foreign_key="academicterm.id", index=True)
-    class_id: UUID = Field(foreign_key="class.id")
+    class_id: UUID = Field(foreign_key="classes.id")
     attendance_date: date = Field(default_factory=lambda: datetime.now(timezone.utc).date())
     status: SessionStatus = Field(default=SessionStatus.SUBMITTED)
-    
-    recorded_by_id: UUID = Field(foreign_key="user.id") 
-    approved_by_id: UUID | None = Field(default=None, foreign_key="user.id")
-    
+    recorded_by_id: UUID = Field(foreign_key="user.id")
+    approved_by_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class AttendanceRecord(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("session_id", "student_id", name="unique_student_per_session"),)
-    
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    school_id: UUID = Field(foreign_key="school.id", index=True)
-    
     session_id: UUID = Field(foreign_key="attendancesession.id", ondelete="CASCADE")
     student_id: UUID = Field(foreign_key="studentprofile.id")
-    
     status: AttendanceStatus
-    remarks: str | None = Field(default=None) 
+    remarks: Optional[str] = None
 
 
 class Announcement(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
-    
     title: str
     content: str
-    category: str 
-    audience: str 
-    
+    category: str
+    audience: str
     priority: PriorityEnum = Field(default=PriorityEnum.MEDIUM)
     status: AnnouncementStatus = Field(default=AnnouncementStatus.DRAFT)
-    
     author_id: UUID = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -454,8 +419,7 @@ class Announcement(SQLModel, table=True):
 class ActivityLog(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
-    
-    activity_type: str 
-    message: str       
+    activity_type: str
+    message: str
     performed_by: UUID = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
