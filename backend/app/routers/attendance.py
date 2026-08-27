@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select, func
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 
 from backend.app.db.database import get_session
 from backend.app.core.auth_utils import CurrentContext, require_permission
@@ -12,14 +12,17 @@ from backend.app.models import (
     TeacherProfile, TeacherAssignment, SchoolClass, StudentEnrollment,
     StudentProfile, AttendanceSession, AttendanceRecord, AssignmentStatus,
     EnrollmentStatus, AcademicSession, AcademicTerm, SessionStatus, AttendanceStatus,
-    ActivityLog
+    ActivityLog, AttendanceQRSession, TeacherAttendanceSettings
 )
 from backend.app.schemas.attendance import (
     ClassRosterResponse, AttendanceBatchSubmit, StudentAttendanceItem,
     DailyAttendanceSummaryResponse, ClassAttendanceSummary, AttendanceSubmitResponse,
-    AttendanceDecisionRequest, AttendanceWorkflowResponse
+    AttendanceDecisionRequest, AttendanceWorkflowResponse, QRGenerateRequest, QRGenerateResponse
 )
 from backend.app.routers.teacher_context import get_current_teacher_profile, get_active_term_and_session
+
+from backend.app.core.qr_utils import generate_secure_qr_token
+
 
 router = APIRouter(
     prefix="/attendance",
@@ -98,18 +101,43 @@ def get_class_roster_for_attendance(
     context: CurrentContext = Depends(require_permission("attendance:read")),
     session: Session = Depends(get_session)
 ):
-    """Returns the student roster and any existing attendance records for a specific date."""
-    teacher, _ = get_current_teacher_profile(context, session)
+    """Return a school-scoped roster for teachers and attendance reviewers."""
     active_session, active_term = get_active_term_and_session(context.school_id, session)
 
-    school_class = verify_teacher_class_access(teacher.id, class_id, context.school_id, session, active_session.id, active_term.id)
+    school_class = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.id == class_id,
+            SchoolClass.school_id == context.school_id,
+        )
+    ).first()
+    if not school_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found.")
 
-    # In your models, ensure it's attendance_date or date based on your schema. Assuming attendance_date from your first block.
+    # Teachers may only review classes assigned to them. Other users with
+    # attendance:read, such as admins, may review any class in their school.
+    teacher = session.exec(
+        select(TeacherProfile).where(
+            TeacherProfile.user_id == context.user_id,
+            TeacherProfile.school_id == context.school_id,
+        )
+    ).first()
+    if teacher:
+        school_class = verify_teacher_class_access(
+            teacher.id,
+            class_id,
+            context.school_id,
+            session,
+            active_session.id,
+            active_term.id,
+        )
+
     att_session = session.exec(
         select(AttendanceSession).where(
             AttendanceSession.class_id == class_id,
             AttendanceSession.school_id == context.school_id,
-            AttendanceSession.attendance_date == target_date
+            AttendanceSession.session_id == active_session.id,
+            AttendanceSession.term_id == active_term.id,
+            AttendanceSession.attendance_date == target_date,
         )
     ).first()
 
@@ -150,6 +178,8 @@ def get_class_roster_for_attendance(
         class_id=class_id,
         class_name=school_class.name,
         date=target_date,
+        attendance_session_id=att_session.id if att_session else None,
+        attendance_status=att_session.status if att_session else None,
         students=students_list
     )
 
@@ -478,3 +508,63 @@ def reopen_attendance(
         "Attendance reopened for editing",
         payload.reason.strip() if payload.reason else None,
     )
+
+
+
+
+@router.post("/qr/generate", response_model=QRGenerateResponse)
+def generate_attendance_qr(
+    payload: QRGenerateRequest,
+    context: CurrentContext = Depends(require_permission("admin:write")),
+    session: Session = Depends(get_session)
+):
+    """Generates a new short-lived QR token and invalidates previous active ones."""
+    today = datetime.now(timezone.utc).date()
+    now = datetime.now(timezone.utc)
+
+    # 1. Deactivate any currently active QR codes of this type for today
+    active_sessions = session.exec(
+        select(AttendanceQRSession).where(
+            AttendanceQRSession.school_id == context.school_id,
+            AttendanceQRSession.attendance_date == today,
+            AttendanceQRSession.qr_type == payload.qr_type,
+            AttendanceQRSession.is_active.is_(True)
+        )
+    ).all()
+    
+    for active_qr in active_sessions:
+        active_qr.is_active = False
+        session.add(active_qr)
+
+    # 2. Get QR rotation settings (default to 5 mins if not set)
+    settings = session.exec(
+        select(TeacherAttendanceSettings).where(TeacherAttendanceSettings.school_id == context.school_id)
+    ).first()
+    rotation_seconds = settings.qr_rotation_seconds if settings else 300
+    
+    # 3. Generate Crypto Token
+    raw_token, token_hash = generate_secure_qr_token()
+    expires_at = now + timedelta(seconds=rotation_seconds)
+
+    # 4. Save to DB
+    new_qr_session = AttendanceQRSession(
+        school_id=context.school_id,
+        attendance_date=today,
+        qr_type=payload.qr_type,
+        token_hash=token_hash,
+        valid_from=now,
+        expires_at=expires_at,
+        is_active=True
+    )
+    session.add(new_qr_session)
+    session.commit()
+
+    # We return the RAW token to the frontend to render the QR code.
+    # It is NEVER returned again by the API after this moment.
+    return QRGenerateResponse(
+        raw_token=raw_token,
+        expires_at=expires_at,
+        qr_type=payload.qr_type
+    )
+
+

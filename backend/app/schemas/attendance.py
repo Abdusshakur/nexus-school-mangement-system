@@ -57,6 +57,8 @@ class ClassRosterResponse(BaseModel):
     class_id: UUID
     class_name: str
     date: date
+    attendance_session_id: Optional[UUID] = None
+    attendance_status: Optional[SessionStatus] = None
     students: List[StudentAttendanceItem]
 
 class AttendanceRecordSubmit(BaseModel):
@@ -78,3 +80,33 @@ class AttendanceWorkflowResponse(BaseModel):
     message: str
     session_id: UUID
     status: SessionStatus
+
+
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime, date
+from backend.app.models import StaffAttendanceStatus, QRType
+
+class QRGenerateRequest(BaseModel):
+    qr_type: QRType
+
+class QRGenerateResponse(BaseModel):
+    raw_token: str
+    expires_at: datetime
+    qr_type: QRType
+
+class AttendanceScanRequest(BaseModel):
+    token: str = Field(min_length=1)
+
+class TeacherTodayStatusResponse(BaseModel):
+    date: date
+    status: StaffAttendanceStatus
+    check_in_at: Optional[datetime] = None
+    check_out_at: Optional[datetime] = None
+
+
+class TeacherAttendanceActionResponse(BaseModel):
+    message: str
+    time: Optional[datetime] = None
+    check_in_at: Optional[datetime] = None
+    check_out_at: Optional[datetime] = None

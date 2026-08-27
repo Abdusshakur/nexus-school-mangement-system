@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 from backend.app.models import PeriodStatus  # 👈 Import the new lifecycle enum
 
@@ -18,6 +18,26 @@ class AcademicEntityUpdate(BaseModel):
 class AcademicEntityResponse(BaseModel):
     id: UUID
     name: str
+
+
+class SubjectCreate(BaseModel):
+    name: str = Field(min_length=1)
+    code: Optional[str] = None
+    description: Optional[str] = None
+
+
+class SubjectUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    code: Optional[str] = None
+    description: Optional[str] = None
+
+
+class SubjectResponse(BaseModel):
+    id: UUID
+    name: str
+    code: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime
 
 class FormTeacherAssignRequest(BaseModel):
     teacher_id: Optional[UUID] = None  # Allows passing null to unassign a teacher
