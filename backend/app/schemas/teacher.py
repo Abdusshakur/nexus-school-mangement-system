@@ -117,3 +117,33 @@ class TeacherDetailResponse(BaseModel):
     assigned_classes: List[AssignedClassItem] = []
     assigned_subjects: List[AssignedSubjectItem] = []
     created_at: datetime
+
+
+class TeacherContextResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    first_name: str
+    last_name: str
+    email: EmailStr
+    department: str
+    phone_number: str
+    is_active: bool
+
+
+class TeacherAssignmentContextResponse(BaseModel):
+    assignment_id: UUID
+    class_id: UUID
+    class_name: str
+    subject_id: UUID
+    subject_name: str
+    status: str
+
+
+class TeacherStudentContextResponse(BaseModel):
+    student_id: UUID
+    admission_number: str
+    first_name: str
+    last_name: str
+    gender: str
+    class_id: UUID
+    class_name: str

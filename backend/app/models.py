@@ -30,6 +30,7 @@ class AttendanceStatus(str, Enum):
 class SessionStatus(str, Enum):
     DRAFT = "DRAFT"
     SUBMITTED = "SUBMITTED"
+    REJECTED = "REJECTED"
     APPROVED = "APPROVED"
 
 class PriorityEnum(str, Enum):
