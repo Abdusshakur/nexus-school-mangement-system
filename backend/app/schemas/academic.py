@@ -46,7 +46,7 @@ class AcademicSessionResponse(AcademicSessionBase):
     id: UUID
     
 # ==========================================
-# ACADEMIC TERM SCHEMAS (The Periods)
+# ACADEMIC TERM SCHEMAS (The Terms)
 # ==========================================
 class AcademicTermBase(BaseModel):
     name: str             # e.g., "First Term", "Fall Semester"
@@ -82,10 +82,13 @@ class ActiveContextSummary(BaseModel):
 class TermWithSessionResponse(BaseModel):
     term_id: UUID
     term_name: str
+    term_type: str
     term_start_date: date
     term_end_date: date
-    is_term_active: bool
+    term_status: PeriodStatus
+    is_term_current: bool
     
     session_id: UUID
     session_name: str
-    is_session_active: bool
+    session_status: PeriodStatus
+    is_session_current: bool

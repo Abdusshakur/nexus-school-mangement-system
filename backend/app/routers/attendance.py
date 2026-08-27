@@ -14,7 +14,7 @@ from backend.app.schemas.attendance import (
 from backend.app.core.auth_utils import CurrentContext, require_permission
 
 from backend.app.models import (
-    Class, TeacherProfile, StudentProfile, 
+    SchoolClass, TeacherProfile, StudentProfile, 
     AttendanceSession, AttendanceRecord, SessionStatus, AcademicSession, AcademicTerm, StudentEnrollment, EnrollmentStatus
 )
 
@@ -35,7 +35,7 @@ def submit_class_attendance(
     
     # 1. SECURE FETCH: Verify the class exists AND belongs to this active school
     db_class = session.exec(
-        select(Class).where(Class.id == request.class_id, Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.id == request.class_id, SchoolClass.school_id == context.school_id)
     ).first()
     
     if not db_class:
@@ -131,9 +131,9 @@ def get_daily_attendance_summary(
 
     # 2. Fetch classes & Form Teachers scoped strictly to this Tenant
     classes_query = (
-        select(Class, TeacherProfile)
-        .join(TeacherProfile, Class.form_teacher_id == TeacherProfile.id, isouter=True)
-        .where(Class.school_id == context.school_id)
+        select(SchoolClass, TeacherProfile)
+        .join(TeacherProfile, SchoolClass.form_teacher_id == TeacherProfile.id, isouter=True)
+        .where(SchoolClass.school_id == context.school_id)
     )
     class_results = session.exec(classes_query).all()
 

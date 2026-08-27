@@ -6,9 +6,9 @@ from uuid import UUID
 from sqlalchemy import func
 
 from backend.app.db.database import get_session
-from backend.app.models import Class, Subject, TeacherProfile, AcademicSession, AcademicTerm, StudentProfile
+from backend.app.models import SchoolClass, Subject, TeacherProfile, AcademicSession, AcademicTerm, StudentProfile
 # 👇 1. Import the new Gatekeeper and RBAC dependencies
-from backend.app.core.auth_utils import CurrentContext, require_permission 
+from backend.app.core.auth_utils import CurrentContext, get_current_context, require_permission 
 
 from backend.app.schemas.academic import (
     AcademicEntityCreate, AcademicEntityResponse, AcademicEntityUpdate,
@@ -35,14 +35,14 @@ def create_class(
     
     # 👇 3. Check for duplicates WITHIN this specific school only
     existing = session.exec(
-        select(Class).where(Class.name == payload.name, Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.name == payload.name, SchoolClass.school_id == context.school_id)
     ).first()
     
     if existing:
         raise HTTPException(status_code=400, detail=f"Class '{payload.name}' already exists in your school.")
     
     # 👇 4. Hard-wire the school_id programmatically
-    new_class = Class(name=payload.name, school_id=context.school_id)
+    new_class = SchoolClass(name=payload.name, school_id=context.school_id)
     
     session.add(new_class)
     session.commit()
@@ -58,11 +58,11 @@ def list_classes(
     """Fetch all available classes along with their assigned form teacher."""
     
     statement = (
-        select(Class, TeacherProfile)
-        .join(TeacherProfile, Class.form_teacher_id == TeacherProfile.id, isouter=True)
+        select(SchoolClass, TeacherProfile)
+        .join(TeacherProfile, SchoolClass.form_teacher_id == TeacherProfile.id, isouter=True)
         # 👇 5. Isolate data so schools cannot see each other's classes
-        .where(Class.school_id == context.school_id)
-        .order_by(Class.name)
+        .where(SchoolClass.school_id == context.school_id)
+        .order_by(SchoolClass.name)
     )
     
     results = session.exec(statement).all()
@@ -93,7 +93,7 @@ def assign_form_teacher(
     
     # 👇 6. SECURE FETCH: Verify the class belongs to the user's school
     db_class = session.exec(
-        select(Class).where(Class.id == class_id, Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.id == class_id, SchoolClass.school_id == context.school_id)
     ).first()
     
     if not db_class:
@@ -109,7 +109,7 @@ def assign_form_teacher(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found in your school.")
             
         existing_assignment = session.exec(
-            select(Class).where(Class.form_teacher_id == request.teacher_id, Class.school_id == context.school_id)
+            select(SchoolClass).where(SchoolClass.form_teacher_id == request.teacher_id, SchoolClass.school_id == context.school_id)
         ).first()
         
         if existing_assignment and existing_assignment.id != class_id:
@@ -141,7 +141,7 @@ def delete_class(
     
     # 👇 8. SECURE FETCH: Ensure they don't delete another school's class
     db_class = session.exec(
-        select(Class).where(Class.id == class_id, Class.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.id == class_id, SchoolClass.school_id == context.school_id)
     ).first()
     
     if not db_class:
@@ -330,14 +330,14 @@ def close_academic_session(
     return target_session
 
 
-@router.post("/sessions/{session_id}/periods", response_model=AcademicTermResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/sessions/{session_id}/terms", response_model=AcademicTermResponse, status_code=status.HTTP_201_CREATED)
 def create_academic_term(
     session_id: UUID,
     request: AcademicTermCreate, 
     context: CurrentContext = Depends(require_permission("calendar:write")),
     db: Session = Depends(get_session)
 ):
-    """Creates a Period inside a Session. Automatically updates the 'current' pointer if set to true."""
+    """Creates a term inside a session. Automatically updates the current pointer if requested."""
     
     # 1. Secure Fetch: Verify Parent Session
     parent_session = db.exec(
@@ -368,7 +368,7 @@ def create_academic_term(
     db.refresh(new_term)
     
     return AcademicTermResponse(
-        **new_term.model_dump(),
+        **new_term.model_dump(exclude={"id", "session_id"}),
         id=new_term.id,
         session_id=new_term.session_id,
         session_name=parent_session.name
@@ -380,7 +380,7 @@ def create_academic_term(
 # TERM STATE MANAGEMENT
 # ------------------------------------------------------------------
 
-@router.post("/periods/{term_id}/open", response_model=AcademicTermResponse)
+@router.post("/terms/{term_id}/open", response_model=AcademicTermResponse)
 def open_academic_term(
     term_id: UUID,
     context: CurrentContext = Depends(require_permission("calendar:write")),
@@ -420,19 +420,19 @@ def open_academic_term(
     db.refresh(target_term)
     
     return AcademicTermResponse(
-        **target_term.model_dump(),
+        **target_term.model_dump(exclude={"id", "session_id"}),
         id=target_term.id,
         session_id=target_term.session_id,
         session_name=parent_session.name if parent_session else "Unknown Session"
     )
 
 
-@router.get("/periods/all") # Optionally keep this flat route for a master dashboard view
+@router.get("/terms/all", response_model=List[TermWithSessionResponse])
 def get_all_terms_and_sessions(
     context: CurrentContext = Depends(require_permission("calendar:read")),
     db: Session = Depends(get_session)
 ):
-    """Fetches a complete list of all periods and their parent sessions, strictly scoped to the tenant."""
+    """Fetches all terms and their parent sessions, strictly scoped to the tenant."""
     
     statement = (
         select(AcademicTerm, AcademicSession)
@@ -463,22 +463,34 @@ def get_all_terms_and_sessions(
     ]
 
 @router.get("/active-summary", response_model=ActiveContextSummary)
-def get_active_school_context(db: Session = Depends(get_session)):
-    """Fetches the active term & session, plus school-wide stats for the Admin Dashboard."""
+def get_active_school_context(
+    context: CurrentContext = Depends(get_current_context),
+    db: Session = Depends(get_session),
+):
+    """Fetches the current term and session, plus tenant-scoped dashboard stats."""
     
-    active_term = db.exec(select(AcademicTerm).where(AcademicTerm.is_active == True)).first()
+    active_term = db.exec(
+        select(AcademicTerm).where(
+            AcademicTerm.school_id == context.school_id,
+            AcademicTerm.is_current == True,
+        )
+    ).first()
     if not active_term:
         raise HTTPException(status_code=404, detail="No active term found in the system.")
+
+    parent_session = db.get(AcademicSession, active_term.session_id)
+    if not parent_session or parent_session.school_id != context.school_id:
+        raise HTTPException(status_code=404, detail="Parent academic session not found.")
         
     # Dynamically calculate stats
-    students = db.exec(select(func.count(StudentProfile.id))).one_or_none() or 0
-    classes = db.exec(select(func.count(Class.id))).one_or_none() or 0
-    teachers = db.exec(select(func.count(TeacherProfile.id))).one_or_none() or 0
-    subjects = db.exec(select(func.count(Subject.id))).one_or_none() or 0
+    students = db.exec(select(func.count(StudentProfile.id)).where(StudentProfile.school_id == context.school_id)).one_or_none() or 0
+    classes = db.exec(select(func.count(SchoolClass.id)).where(SchoolClass.school_id == context.school_id)).one_or_none() or 0
+    teachers = db.exec(select(func.count(TeacherProfile.id)).where(TeacherProfile.school_id == context.school_id)).one_or_none() or 0
+    subjects = db.exec(select(func.count(Subject.id)).where(Subject.school_id == context.school_id)).one_or_none() or 0
 
     return ActiveContextSummary(
-        active_session_name=active_term.session.name,
-        active_term_name=active_term.name.value,
+        active_session_name=parent_session.name,
+        active_term_name=active_term.name,
         term_id=active_term.id,
         session_id=active_term.session_id,
         total_students=students,
