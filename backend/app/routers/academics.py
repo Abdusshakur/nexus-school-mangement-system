@@ -6,12 +6,24 @@ from uuid import UUID
 from sqlalchemy import func
 
 from backend.app.db.database import get_session
-from backend.app.models import SchoolClass, Subject, TeacherProfile, AcademicSession, AcademicTerm, StudentProfile
+from backend.app.models import (
+    AcademicSession,
+    AcademicTerm,
+    AttendanceSession,
+    SchoolClass,
+    StudentEnrollment,
+    Subject,
+    TeacherAssignment,
+    TeacherProfile,
+    TimetableEntry,
+    StudentProfile,
+)
 # 👇 1. Import the new Gatekeeper and RBAC dependencies
 from backend.app.core.auth_utils import CurrentContext, get_current_context, require_permission 
 
 from backend.app.schemas.academic import (
     AcademicEntityCreate, AcademicEntityResponse, AcademicEntityUpdate,
+    SubjectCreate, SubjectUpdate, SubjectResponse,
     FormTeacherAssignRequest, ClassWithTeacherResponse,
     AcademicSessionCreate, AcademicSessionResponse, 
     AcademicTermCreate, AcademicTermResponse, 
@@ -82,6 +94,44 @@ def list_classes(
     return response_data
 
 
+@router.patch("/classes/{class_id}", response_model=AcademicEntityResponse)
+def update_class(
+    class_id: UUID,
+    payload: AcademicEntityUpdate,
+    context: CurrentContext = Depends(require_permission("class:write")),
+    session: Session = Depends(get_session),
+):
+    """Update a class belonging to the active school."""
+    db_class = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.id == class_id,
+            SchoolClass.school_id == context.school_id,
+        )
+    ).first()
+
+    if not db_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found.")
+
+    duplicate = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.school_id == context.school_id,
+            SchoolClass.name == payload.name,
+            SchoolClass.id != class_id,
+        )
+    ).first()
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Class '{payload.name}' already exists in your school.",
+        )
+
+    db_class.name = payload.name
+    session.add(db_class)
+    session.commit()
+    session.refresh(db_class)
+    return db_class
+
+
 @router.patch("/classes/{class_id}/form-teacher")
 def assign_form_teacher(
     class_id: UUID,
@@ -137,7 +187,7 @@ def delete_class(
     context: CurrentContext = Depends(require_permission("class:delete")),
     session: Session = Depends(get_session)
 ):
-    """Delete a class safely."""
+    """Delete an unused class and explain when historical records block it."""
     
     # 👇 8. SECURE FETCH: Ensure they don't delete another school's class
     db_class = session.exec(
@@ -146,6 +196,32 @@ def delete_class(
     
     if not db_class:
         raise HTTPException(status_code=404, detail="Class not found.")
+
+    dependencies = []
+    dependency_queries = [
+        (StudentEnrollment, "student enrollments"),
+        (TeacherAssignment, "teacher assignments"),
+        (TimetableEntry, "timetable entries"),
+        (AttendanceSession, "attendance sessions"),
+    ]
+    for model, label in dependency_queries:
+        if session.exec(
+            select(model.id).where(
+                model.class_id == class_id,
+                model.school_id == context.school_id,
+            )
+        ).first():
+            dependencies.append(label)
+
+    if dependencies:
+        dependency_list = ", ".join(dependencies)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Class cannot be deleted because it has {dependency_list}. "
+                "Edit the class instead or archive it after an archive workflow is added."
+            ),
+        )
     
     session.delete(db_class)
     session.commit()
@@ -156,9 +232,9 @@ def delete_class(
 # SUBJECTS ENDPOINTS
 # ==========================================
 
-@router.post("/subjects", response_model=AcademicEntityResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/subjects", response_model=SubjectResponse, status_code=status.HTTP_201_CREATED)
 def create_subject(
-    payload: AcademicEntityCreate, 
+    payload: SubjectCreate,
     context: CurrentContext = Depends(require_permission("subject:write")), # 👈 RBAC enforced
     session: Session = Depends(get_session)
 ):
@@ -173,7 +249,12 @@ def create_subject(
         raise HTTPException(status_code=400, detail=f"Subject '{payload.name}' already exists in your school.")
     
     #  TENANT INJECTION: Hardwire the school_id programmatically
-    new_subject = Subject(name=payload.name, school_id=context.school_id)
+    new_subject = Subject(
+        name=payload.name.strip(),
+        code=payload.code,
+        description=payload.description,
+        school_id=context.school_id,
+    )
     
     session.add(new_subject)
     session.commit()
@@ -181,7 +262,7 @@ def create_subject(
     return new_subject
 
 
-@router.get("/subjects", response_model=List[AcademicEntityResponse])
+@router.get("/subjects", response_model=List[SubjectResponse])
 def list_subjects(
     context: CurrentContext = Depends(require_permission("subject:read")),
     session: Session = Depends(get_session)
@@ -198,25 +279,49 @@ def list_subjects(
     return subjects
 
 
-@router.delete("/subjects/{subject_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_subject(
-    subject_id: UUID, 
-    context: CurrentContext = Depends(require_permission("subject:delete")),
+@router.patch("/subjects/{subject_id}", response_model=SubjectResponse)
+def update_subject(
+    subject_id: UUID,
+    payload: SubjectUpdate,
+    context: CurrentContext = Depends(require_permission("subject:write")),
     session: Session = Depends(get_session)
 ):
-    """Delete a subject safely within the tenant boundary."""
-    
-    #  SECURE FETCH: Verify ownership before allowing deletion
+    """Update a subject belonging to the active school."""
     db_subject = session.exec(
         select(Subject).where(Subject.id == subject_id, Subject.school_id == context.school_id)
     ).first()
-    
+
     if not db_subject:
-        raise HTTPException(status_code=404, detail="Subject not found or access denied.")
-    
-    session.delete(db_subject)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found.")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one subject field is required.")
+
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        if not update_data["name"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subject name cannot be blank.")
+        duplicate = session.exec(
+            select(Subject).where(
+                Subject.school_id == context.school_id,
+                Subject.name == update_data["name"],
+                Subject.id != subject_id,
+            )
+        ).first()
+        if duplicate:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Subject '{update_data['name']}' already exists in your school.",
+            )
+
+    for field, value in update_data.items():
+        setattr(db_subject, field, value)
+
+    session.add(db_subject)
     session.commit()
-    return
+    session.refresh(db_subject)
+    return db_subject
 
 # ==========================================
 # SESSION & TERM ENDPOINTS (V2)

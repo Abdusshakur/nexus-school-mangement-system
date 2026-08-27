@@ -3,27 +3,32 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
+from datetime import datetime, timezone
 
+
+from backend.app.models import (
+    TeacherDailyAttendance, TeacherAttendanceEvent, AttendanceQRSession, 
+    QRType, StaffAttendanceStatus, AttendanceMethod, StaffAttendanceEventType
+)
 from backend.app.core.auth_utils import CurrentContext, require_permission
 from backend.app.db.database import get_session
 from backend.app.models import (
-    AcademicSession,
-    AcademicTerm,
-    AssignmentStatus,
-    EnrollmentStatus,
-    SchoolClass,
-    StudentEnrollment,
-    StudentProfile,
-    Subject,
-    TeacherAssignment,
-    TeacherProfile,
-    User,
+    AcademicSession, AcademicTerm, AssignmentStatus, EnrollmentStatus,
+    SchoolClass, StudentEnrollment, StudentProfile,  Subject, TeacherAssignment,
+    TeacherProfile,  User, TeacherDailyAttendance, TeacherAttendanceEvent, AttendanceQRSession, 
+    QRType, StaffAttendanceStatus, AttendanceMethod, StaffAttendanceEventType
 )
 from backend.app.schemas.teacher import (
-    TeacherAssignmentContextResponse,
-    TeacherContextResponse,
-    TeacherStudentContextResponse,
+    TeacherAssignmentContextResponse, TeacherContextResponse, TeacherStudentContextResponse,
 )
+from backend.app.core.qr_utils import hash_token, is_token_expired
+from backend.app.schemas.attendance import (
+    AttendanceScanRequest,
+    TeacherAttendanceActionResponse,
+    TeacherTodayStatusResponse,
+)
+
+
 
 router = APIRouter(prefix="/teachers", tags=["Teacher Context"])
 
@@ -199,3 +204,166 @@ def get_my_students(
         )
         for _, student, school_class in session.exec(query).all()
     ]
+
+
+
+def validate_qr_scan(raw_token: str, expected_type: QRType, context: CurrentContext, session: Session):
+    """Core logic to hash the token, find it in DB, and verify validity/tenant."""
+    token_hash = hash_token(raw_token)
+    
+    qr_session = session.exec(
+        select(AttendanceQRSession).where(AttendanceQRSession.token_hash == token_hash)
+    ).first()
+
+    if not qr_session:
+        raise HTTPException(status_code=400, detail="Invalid QR Code.")
+    
+    if qr_session.school_id != context.school_id:
+        raise HTTPException(status_code=403, detail="Security Violation: This QR code belongs to a different school.")
+
+    if qr_session.qr_type != expected_type:
+        raise HTTPException(status_code=400, detail=f"Wrong QR Code type. Expected {expected_type.value}.")
+
+    now = datetime.now(timezone.utc)
+    if qr_session.attendance_date != now.date():
+        raise HTTPException(status_code=400, detail="This QR code is not valid for today.")
+
+    valid_from = qr_session.valid_from
+    if valid_from.tzinfo is None:
+        valid_from = valid_from.replace(tzinfo=timezone.utc)
+    if valid_from > now:
+        raise HTTPException(status_code=400, detail="This QR code is not active yet.")
+
+    if not qr_session.is_active or is_token_expired(qr_session.expires_at):
+        raise HTTPException(status_code=400, detail="This QR code has expired. Please scan the current one.")
+
+    return qr_session
+
+
+@router.get("/me/today", response_model=TeacherTodayStatusResponse)
+def get_my_status_today(
+    context: CurrentContext = Depends(require_permission("teacher:read")),
+    session: Session = Depends(get_session)
+):
+    teacher, _ = get_current_teacher_profile(context, session)
+    today = datetime.now(timezone.utc).date()
+
+    daily_record = session.exec(
+        select(TeacherDailyAttendance).where(
+            TeacherDailyAttendance.school_id == context.school_id,
+            TeacherDailyAttendance.teacher_id == teacher.id,
+            TeacherDailyAttendance.attendance_date == today
+        )
+    ).first()
+
+    if not daily_record:
+        return TeacherTodayStatusResponse(date=today, status=StaffAttendanceStatus.NOT_STARTED)
+
+    return TeacherTodayStatusResponse(
+        date=today,
+        status=daily_record.status,
+        check_in_at=daily_record.check_in_at,
+        check_out_at=daily_record.check_out_at
+    )
+
+
+@router.post("/check-in", response_model=TeacherAttendanceActionResponse)
+def scan_check_in(
+    payload: AttendanceScanRequest,
+    context: CurrentContext = Depends(require_permission("teacher:write")),
+    session: Session = Depends(get_session)
+):
+    teacher, _ = get_current_teacher_profile(context, session)
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    # 1. Validate the Token
+    validate_qr_scan(payload.token, QRType.CHECK_IN, context, session)
+
+    # 2. Prevent Double Check-In
+    daily_record = session.exec(
+        select(TeacherDailyAttendance).where(
+            TeacherDailyAttendance.school_id == context.school_id,
+            TeacherDailyAttendance.teacher_id == teacher.id,
+            TeacherDailyAttendance.attendance_date == today
+        )
+    ).first()
+
+    if daily_record and daily_record.check_in_at:
+        return {"message": "Already checked in.", "check_in_at": daily_record.check_in_at}
+
+    # 3. Create Record
+    if not daily_record:
+        daily_record = TeacherDailyAttendance(
+            school_id=context.school_id,
+            teacher_id=teacher.id,
+            attendance_date=today
+        )
+        session.add(daily_record)
+        session.flush() # Need the ID for the event log
+
+    daily_record.check_in_at = now
+    daily_record.status = StaffAttendanceStatus.CHECKED_IN
+    daily_record.check_in_method = AttendanceMethod.QR
+
+    # 4. Log Immutable Event
+    audit_event = TeacherAttendanceEvent(
+        daily_attendance_id=daily_record.id,
+        school_id=context.school_id,
+        teacher_id=teacher.id,
+        event_type=StaffAttendanceEventType.CHECK_IN,
+        event_time=now,
+        method=AttendanceMethod.QR
+    )
+    session.add(audit_event)
+    session.commit()
+
+    return {"message": "Successfully checked in!", "time": now}
+
+
+@router.post("/check-out", response_model=TeacherAttendanceActionResponse)
+def scan_check_out(
+    payload: AttendanceScanRequest,
+    context: CurrentContext = Depends(require_permission("teacher:write")),
+    session: Session = Depends(get_session)
+):
+    teacher, _ = get_current_teacher_profile(context, session)
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    # 1. Validate Token
+    validate_qr_scan(payload.token, QRType.CHECK_OUT, context, session)
+
+    # 2. Verify they actually checked in today
+    daily_record = session.exec(
+        select(TeacherDailyAttendance).where(
+            TeacherDailyAttendance.school_id == context.school_id,
+            TeacherDailyAttendance.teacher_id == teacher.id,
+            TeacherDailyAttendance.attendance_date == today
+        )
+    ).first()
+
+    if not daily_record or not daily_record.check_in_at:
+        raise HTTPException(status_code=400, detail="You must check in before you can check out.")
+
+    if daily_record.check_out_at:
+        return {"message": "Already checked out.", "check_out_at": daily_record.check_out_at}
+
+    # 3. Update Record
+    daily_record.check_out_at = now
+    daily_record.status = StaffAttendanceStatus.CHECKED_OUT
+    daily_record.check_out_method = AttendanceMethod.QR
+
+    # 4. Log Event
+    audit_event = TeacherAttendanceEvent(
+        daily_attendance_id=daily_record.id,
+        school_id=context.school_id,
+        teacher_id=teacher.id,
+        event_type=StaffAttendanceEventType.CHECK_OUT,
+        event_time=now,
+        method=AttendanceMethod.QR
+    )
+    session.add(audit_event)
+    session.commit()
+
+    return {"message": "Successfully checked out!", "time": now}

@@ -11,7 +11,7 @@ from backend.app.db.database import get_session
 # 👇 1. Import V2 Gatekeeper Auth & Models
 from backend.app.core.auth_utils import CurrentContext, require_permission, hash_password
 from backend.app.models import (
-    User, Role, ParentProfile, StudentProfile, ParentStudentLink, 
+    User, Role, UserSchoolLink, ParentProfile, StudentProfile, ParentStudentLink,
     AcademicSession, AcademicTerm, StudentEnrollment, SchoolClass, EnrollmentStatus
 )
 from backend.app.schemas.parent import (
@@ -39,18 +39,24 @@ def fetch_linked_children_for_parent(
             AcademicSession.school_id == school_id, AcademicSession.is_current == True
         )
     ).first()
-    current_term = session.exec(
-        select(AcademicTerm).where(
-            AcademicTerm.school_id == school_id, AcademicTerm.is_current == True
-        )
-    ).first()
+    current_term = None
+    if current_session:
+        current_term = session.exec(
+            select(AcademicTerm).where(
+                AcademicTerm.school_id == school_id,
+                AcademicTerm.session_id == current_session.id,
+                AcademicTerm.is_current == True,
+            )
+        ).first()
 
     # 2. SECURE FETCH: Get base student profiles scoped to the tenant
     student_query = (
         select(StudentProfile, ParentStudentLink.relationship_type)
         .join(ParentStudentLink, ParentStudentLink.student_id == StudentProfile.id)
+        .join(ParentProfile, ParentStudentLink.parent_id == ParentProfile.id)
         .where(
             ParentStudentLink.parent_id == parent_id,
+            ParentProfile.school_id == school_id,
             StudentProfile.school_id == school_id # 👈 Tenant Isolation
         )
     )
@@ -67,9 +73,11 @@ def fetch_linked_children_for_parent(
                 .join(StudentEnrollment, StudentEnrollment.class_id == SchoolClass.id)
                 .where(
                     StudentEnrollment.student_id == student_profile.id,
+                    StudentEnrollment.school_id == school_id,
                     StudentEnrollment.session_id == current_session.id,
                     StudentEnrollment.term_id == current_term.id,
-                    StudentEnrollment.status == EnrollmentStatus.ACTIVE
+                    StudentEnrollment.status == EnrollmentStatus.ACTIVE,
+                    SchoolClass.school_id == school_id,
                 )
             )
             current_class_name = session.exec(enrollment_query).first() or "Unassigned"
@@ -147,6 +155,14 @@ def create_parent(
     session.add(new_user)
     session.flush()
 
+    session.add(
+        UserSchoolLink(
+            user_id=new_user.id,
+            school_id=context.school_id,
+            role_id=parent_role.id,
+        )
+    )
+
     # 4. Create Parent Profile locked to Tenant
     new_profile = ParentProfile(
         user_id=new_user.id,
@@ -202,7 +218,14 @@ def update_parent_profile(
     session.refresh(profile)
 
     # 4. Fetch associated user to get the email
-    user = session.get(User, profile.user_id)
+    user = session.exec(
+        select(User).where(
+            User.id == profile.user_id,
+            User.school_id == context.school_id,
+        )
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Parent user account not found in your school.")
     
     # 5. Pass the school_id context to our upgraded helper function
     return build_parent_response(profile, user.email, context.school_id, session)
@@ -231,6 +254,7 @@ def get_parent(
             ParentProfile.school_id == context.school_id # 👈 Tenant Isolation
         )
     )
+    query = query.where(User.school_id == context.school_id)
     result = session.exec(query).first()
     
     if not result:
@@ -278,6 +302,8 @@ def list_parents(
         .where(ParentProfile.school_id == context.school_id) # 👈 Tenant Isolation Boundary
     )
     
+    query = query.where(User.school_id == context.school_id)
+
     # 2. Apply Smart Search (Only searches within the tenant)
     if search:
         search_term = f"%{search}%"
