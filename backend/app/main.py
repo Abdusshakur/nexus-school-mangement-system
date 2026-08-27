@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
 from backend.app.db.database import engine
 # Import your existing routers
-from backend.app.routers import (auth, students, parents, teachers, relationships, attendance, announcements, dashboard, 
+from backend.app.routers import (auth, students, parents, teachers, teacher_context, relationships, attendance, announcements, dashboard,
                                 academics, timetables)
 
 # Add these imports to backend/app/main.py
@@ -45,6 +45,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(students.router, prefix="/api/v1")
 app.include_router(parents.router, prefix="/api/v1")
+app.include_router(teacher_context.router, prefix="/api/v1")
 app.include_router(teachers.router, prefix="/api/v1")
 app.include_router(academics.router, prefix="/api/v1")
 app.include_router(timetables.router, prefix="/api/v1")

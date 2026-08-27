@@ -1,99 +1,244 @@
 # backend/app/routers/attendance.py
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select, func
-from datetime import datetime, date, timezone
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, date, timezone
 
 from backend.app.db.database import get_session
-from backend.app.schemas.attendance import ( 
-    AttendanceSubmitRequest, AttendanceSubmitResponse, 
-    DailyAttendanceSummaryResponse, ClassAttendanceSummary, AttendanceStatus
-)
-# 👇 1. Import the V2 Gatekeeper
 from backend.app.core.auth_utils import CurrentContext, require_permission
-
 from backend.app.models import (
-    SchoolClass, TeacherProfile, StudentProfile, 
-    AttendanceSession, AttendanceRecord, SessionStatus, AcademicSession, AcademicTerm, StudentEnrollment, EnrollmentStatus
+    TeacherProfile, TeacherAssignment, SchoolClass, StudentEnrollment,
+    StudentProfile, AttendanceSession, AttendanceRecord, AssignmentStatus,
+    EnrollmentStatus, AcademicSession, AcademicTerm, SessionStatus, AttendanceStatus,
+    ActivityLog
 )
-
+from backend.app.schemas.attendance import (
+    ClassRosterResponse, AttendanceBatchSubmit, StudentAttendanceItem,
+    DailyAttendanceSummaryResponse, ClassAttendanceSummary, AttendanceSubmitResponse,
+    AttendanceDecisionRequest, AttendanceWorkflowResponse
+)
+from backend.app.routers.teacher_context import get_current_teacher_profile, get_active_term_and_session
 
 router = APIRouter(
     prefix="/attendance",
-    tags=["Attendance Management"]
+    tags=["Student Attendance Workflow"]
 )
+
+# ==========================================
+# SECURITY GATEKEEPER
+# ==========================================
+def verify_teacher_class_access(teacher_id: UUID, class_id: UUID, school_id: UUID, session: Session, active_session_id: UUID, active_term_id: UUID):
+    """Validates if a teacher is a form teacher or subject teacher for a given class."""
+    school_class = session.exec(
+        select(SchoolClass).where(SchoolClass.id == class_id, SchoolClass.school_id == school_id)
+    ).first()
+
+    if not school_class:
+        raise HTTPException(status_code=404, detail="Class not found.")
+
+    if school_class.form_teacher_id == teacher_id:
+        return school_class
+
+    assignment = session.exec(
+        select(TeacherAssignment).where(
+            TeacherAssignment.teacher_id == teacher_id,
+            TeacherAssignment.school_id == school_id,
+            TeacherAssignment.class_id == class_id,
+            TeacherAssignment.session_id == active_session_id,
+            TeacherAssignment.term_id == active_term_id,
+            TeacherAssignment.status == AssignmentStatus.ACTIVE
+        )
+    ).first()
+
+    if not assignment:
+        raise HTTPException(status_code=403, detail="You are not authorized to manage attendance for this class.")
+
+    return school_class
+
+# ==========================================
+# TEACHER WORKFLOW ENDPOINTS
+# ==========================================
+@router.get("/my-classes", response_model=list[dict])
+def get_attendance_classes(
+    context: CurrentContext = Depends(require_permission("attendance:read")),
+    session: Session = Depends(get_session)
+):
+    """Returns a unique list of classes the teacher can take attendance for."""
+    teacher, _ = get_current_teacher_profile(context, session)
+    active_session, active_term = get_active_term_and_session(context.school_id, session)
+
+    assignments = session.exec(
+        select(SchoolClass).join(TeacherAssignment, TeacherAssignment.class_id == SchoolClass.id)
+        .where(
+            TeacherAssignment.teacher_id == teacher.id,
+            TeacherAssignment.school_id == context.school_id,
+            TeacherAssignment.session_id == active_session.id,
+            TeacherAssignment.term_id == active_term.id,
+            TeacherAssignment.status == AssignmentStatus.ACTIVE
+        )
+    ).all()
+
+    form_classes = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.form_teacher_id == teacher.id,
+            SchoolClass.school_id == context.school_id,
+        )
+    ).all()
+
+    unique_classes = {cls.id: cls for cls in (assignments + form_classes)}
+    return [{"id": cls.id, "name": cls.name} for cls in unique_classes.values()]
+
+
+@router.get("/classes/{class_id}/students", response_model=ClassRosterResponse)
+def get_class_roster_for_attendance(
+    class_id: UUID,
+    target_date: date = Query(..., alias="date"),
+    context: CurrentContext = Depends(require_permission("attendance:read")),
+    session: Session = Depends(get_session)
+):
+    """Returns the student roster and any existing attendance records for a specific date."""
+    teacher, _ = get_current_teacher_profile(context, session)
+    active_session, active_term = get_active_term_and_session(context.school_id, session)
+
+    school_class = verify_teacher_class_access(teacher.id, class_id, context.school_id, session, active_session.id, active_term.id)
+
+    # In your models, ensure it's attendance_date or date based on your schema. Assuming attendance_date from your first block.
+    att_session = session.exec(
+        select(AttendanceSession).where(
+            AttendanceSession.class_id == class_id,
+            AttendanceSession.school_id == context.school_id,
+            AttendanceSession.attendance_date == target_date
+        )
+    ).first()
+
+    enrollments = session.exec(
+        select(StudentProfile)
+        .join(StudentEnrollment, StudentEnrollment.student_id == StudentProfile.id)
+        .where(
+            StudentEnrollment.class_id == class_id,
+            StudentEnrollment.school_id == context.school_id,
+            StudentEnrollment.session_id == active_session.id,
+            StudentEnrollment.term_id == active_term.id,
+            StudentEnrollment.status == EnrollmentStatus.ACTIVE,
+            StudentProfile.school_id == context.school_id,
+        )
+    ).all()
+
+    attendance_map = {}
+    if att_session:
+        # Assuming foreign key is session_id on AttendanceRecord based on your first block
+        records = session.exec(select(AttendanceRecord).where(AttendanceRecord.session_id == att_session.id)).all()
+        attendance_map = {r.student_id: r for r in records}
+
+    students_list = []
+    for student in enrollments:
+        record = attendance_map.get(student.id)
+        students_list.append(
+            StudentAttendanceItem(
+                student_id=student.id,
+                admission_number=student.admission_number,
+                first_name=student.first_name,
+                last_name=student.last_name,
+                status=record.status if record else None,
+                remarks=record.remarks if record else None
+            )
+        )
+
+    return ClassRosterResponse(
+        class_id=class_id,
+        class_name=school_class.name,
+        date=target_date,
+        students=students_list
+    )
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=AttendanceSubmitResponse)
 def submit_class_attendance(
-    request: AttendanceSubmitRequest, 
-    # 👇 2. Gatekeeper secures the endpoint and provides the school_id
+    payload: AttendanceBatchSubmit,
     context: CurrentContext = Depends(require_permission("attendance:write")),
     session: Session = Depends(get_session)
 ):
-    """Creates a locked daily attendance session bound to a specific academic term and records all students."""
-    
-    # 1. SECURE FETCH: Verify the class exists AND belongs to this active school
-    db_class = session.exec(
-        select(SchoolClass).where(SchoolClass.id == request.class_id, SchoolClass.school_id == context.school_id)
-    ).first()
-    
-    if not db_class:
-        raise HTTPException(status_code=404, detail="Class not found or access denied.")
+    """Submits or updates attendance records (UPSERT) safely."""
+    teacher, teacher_user = get_current_teacher_profile(context, session)
+    active_session, active_term = get_active_term_and_session(context.school_id, session)
 
-    # 2. ENFORCE THE RULE: Only one session per class, per day, per school!
-    existing_session = session.exec(
-        select(AttendanceSession)
-        .where(
-            AttendanceSession.class_id == request.class_id,
-            AttendanceSession.attendance_date == request.attendance_date,
-            AttendanceSession.school_id == context.school_id # 👈 Tenant Isolation
-        )
-    ).first()
+    verify_teacher_class_access(teacher.id, payload.class_id, context.school_id, session, active_session.id, active_term.id)
 
-    if existing_session:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail=f"Attendance for {db_class.name} on {request.attendance_date} has already been submitted."
-        )
-
-    # 3. Create the Master Session (Parent) with Temporal Anchors!
-    new_session = AttendanceSession(
-        school_id=context.school_id,                     # 👈 Tenant anchor
-        session_id=request.academic_session_id,          # 👈 Temporal anchor (Year)
-        term_id=request.academic_term_id,                # 👈 Temporal anchor (Term)
-        class_id=request.class_id,
-        attendance_date=request.attendance_date,
-        status=SessionStatus.SUBMITTED,
-        recorded_by_id=context.user_id                   # 👈 Track who actually submitted it
+    enrolled_student_ids = set(
+        session.exec(
+            select(StudentEnrollment.student_id).where(
+                StudentEnrollment.school_id == context.school_id,
+                StudentEnrollment.class_id == payload.class_id,
+                StudentEnrollment.session_id == active_session.id,
+                StudentEnrollment.term_id == active_term.id,
+                StudentEnrollment.status == EnrollmentStatus.ACTIVE,
+            )
+        ).all()
     )
-    
-    session.add(new_session)
-    session.flush() # Flushes to DB immediately so we can get new_session.id
+    submitted_student_ids = [item.student_id for item in payload.records]
+    if len(submitted_student_ids) != len(set(submitted_student_ids)):
+        raise HTTPException(status_code=400, detail="A student may appear only once per attendance submission.")
+    if not set(submitted_student_ids).issubset(enrolled_student_ids):
+        raise HTTPException(status_code=400, detail="Attendance can only be submitted for active students in this class.")
 
-    # 4. Create the Individual Student Records (Children)
-    # (Note: In a highly strict system, we could query StudentEnrollment here to ensure 
-    # every student_id is actually enrolled in this class_id for this term_id)
-    for record in request.records:
-        new_record = AttendanceRecord(
-            session_id=new_session.id,
-            student_id=record.student_id,
-            status=record.status,
-            remarks=record.remarks
+    att_session = session.exec(
+        select(AttendanceSession).where(
+            AttendanceSession.class_id == payload.class_id,
+            AttendanceSession.school_id == context.school_id,
+            AttendanceSession.attendance_date == payload.date
         )
-        session.add(new_record)
+    ).first()
 
-    # 5. Commit everything together safely
+    if not att_session:
+        att_session = AttendanceSession(
+            school_id=context.school_id,
+            class_id=payload.class_id,
+            session_id=active_session.id,
+            term_id=active_term.id,
+            attendance_date=payload.date,
+            status=SessionStatus.SUBMITTED,
+            recorded_by_id=teacher_user.id
+        )
+        session.add(att_session)
+        session.flush()
+    elif att_session.status == SessionStatus.APPROVED:
+        raise HTTPException(status_code=409, detail="Approved attendance cannot be edited.")
+
+    existing_records = session.exec(
+        select(AttendanceRecord).where(AttendanceRecord.session_id == att_session.id)
+    ).all()
+    record_map = {r.student_id: r for r in existing_records}
+
+    for item in payload.records:
+        if item.student_id in record_map:
+            existing = record_map[item.student_id]
+            existing.status = item.status
+            existing.remarks = item.remarks
+        else:
+            new_record = AttendanceRecord(
+                session_id=att_session.id,
+                student_id=item.student_id,
+                status=item.status,
+                remarks=item.remarks
+            )
+            session.add(new_record)
+
+    att_session.status = SessionStatus.SUBMITTED
+    att_session.recorded_by_id = teacher_user.id
+    att_session.updated_at = datetime.now(timezone.utc)
     session.commit()
 
     return AttendanceSubmitResponse(
-        message=f"Attendance for {db_class.name} successfully submitted!",
-        session_id=new_session.id,
-        records_processed=len(request.records)
+        message="Attendance successfully recorded",
+        session_id=att_session.id,
+        records_processed=len(payload.records)
     )
 
-
-
+# ==========================================
+# DASHBOARD SUMMARY ENDPOINT
+# ==========================================
 @router.get("/classes/summary", response_model=DailyAttendanceSummaryResponse)
 def get_daily_attendance_summary(
     target_date: Optional[date] = Query(None, alias="date", description="Format: YYYY-MM-DD. Defaults to today."),
@@ -215,4 +360,121 @@ def get_daily_attendance_summary(
         academic_session_id=academic_session_id, # 👈 Send temporal anchors back to the frontend
         academic_term_id=academic_term_id,
         classes=summary_list
+    )
+
+
+def get_attendance_session_for_school(
+    attendance_session_id: UUID, school_id: UUID, session: Session
+) -> AttendanceSession:
+    attendance_session = session.exec(
+        select(AttendanceSession).where(
+            AttendanceSession.id == attendance_session_id,
+            AttendanceSession.school_id == school_id,
+        )
+    ).first()
+    if not attendance_session:
+        raise HTTPException(status_code=404, detail="Attendance session not found.")
+    return attendance_session
+
+
+def record_attendance_decision(
+    attendance_session: AttendanceSession,
+    context: CurrentContext,
+    session: Session,
+    new_status: SessionStatus,
+    message: str,
+    reason: Optional[str] = None,
+) -> AttendanceWorkflowResponse:
+    attendance_session.status = new_status
+    attendance_session.approved_by_id = context.user_id if new_status == SessionStatus.APPROVED else None
+    attendance_session.updated_at = datetime.now(timezone.utc)
+    session.add(
+        ActivityLog(
+            school_id=context.school_id,
+            activity_type=f"ATTENDANCE_{new_status.value}",
+            message=message if not reason else f"{message}: {reason}",
+            performed_by=context.user_id,
+        )
+    )
+    session.commit()
+    session.refresh(attendance_session)
+    return AttendanceWorkflowResponse(
+        message=message,
+        session_id=attendance_session.id,
+        status=attendance_session.status,
+    )
+
+
+@router.post(
+    "/{attendance_session_id}/approve",
+    response_model=AttendanceWorkflowResponse,
+)
+def approve_attendance(
+    attendance_session_id: UUID,
+    context: CurrentContext = Depends(require_permission("attendance:approve")),
+    session: Session = Depends(get_session),
+):
+    attendance_session = get_attendance_session_for_school(
+        attendance_session_id, context.school_id, session
+    )
+    if attendance_session.status != SessionStatus.SUBMITTED:
+        raise HTTPException(status_code=409, detail="Only submitted attendance can be approved.")
+    return record_attendance_decision(
+        attendance_session,
+        context,
+        session,
+        SessionStatus.APPROVED,
+        "Attendance approved successfully",
+    )
+
+
+@router.post(
+    "/{attendance_session_id}/reject",
+    response_model=AttendanceWorkflowResponse,
+)
+def reject_attendance(
+    attendance_session_id: UUID,
+    payload: AttendanceDecisionRequest,
+    context: CurrentContext = Depends(require_permission("attendance:approve")),
+    session: Session = Depends(get_session),
+):
+    attendance_session = get_attendance_session_for_school(
+        attendance_session_id, context.school_id, session
+    )
+    if attendance_session.status != SessionStatus.SUBMITTED:
+        raise HTTPException(status_code=409, detail="Only submitted attendance can be rejected.")
+    if not payload.reason or not payload.reason.strip():
+        raise HTTPException(status_code=400, detail="A rejection reason is required.")
+    return record_attendance_decision(
+        attendance_session,
+        context,
+        session,
+        SessionStatus.REJECTED,
+        "Attendance rejected",
+        payload.reason.strip(),
+    )
+
+
+@router.post(
+    "/{attendance_session_id}/reopen",
+    response_model=AttendanceWorkflowResponse,
+)
+def reopen_attendance(
+    attendance_session_id: UUID,
+    payload: AttendanceDecisionRequest,
+    context: CurrentContext = Depends(require_permission("attendance:approve")),
+    session: Session = Depends(get_session),
+):
+    attendance_session = get_attendance_session_for_school(
+        attendance_session_id, context.school_id, session
+    )
+    if attendance_session.status not in {SessionStatus.APPROVED, SessionStatus.REJECTED}:
+        raise HTTPException(status_code=409, detail="Only approved or rejected attendance can be reopened.")
+    return record_attendance_decision(
+        attendance_session,
+        context,
+        session,
+        SessionStatus.DRAFT,
+        "Attendance reopened for editing",
+        payload.reason.strip() if payload.reason else None,
     )
