@@ -82,6 +82,44 @@ def list_classes(
     return response_data
 
 
+@router.patch("/classes/{class_id}", response_model=AcademicEntityResponse)
+def update_class(
+    class_id: UUID,
+    payload: AcademicEntityUpdate,
+    context: CurrentContext = Depends(require_permission("class:write")),
+    session: Session = Depends(get_session),
+):
+    """Update a class belonging to the active school."""
+    db_class = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.id == class_id,
+            SchoolClass.school_id == context.school_id,
+        )
+    ).first()
+
+    if not db_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found.")
+
+    duplicate = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.school_id == context.school_id,
+            SchoolClass.name == payload.name,
+            SchoolClass.id != class_id,
+        )
+    ).first()
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Class '{payload.name}' already exists in your school.",
+        )
+
+    db_class.name = payload.name
+    session.add(db_class)
+    session.commit()
+    session.refresh(db_class)
+    return db_class
+
+
 @router.patch("/classes/{class_id}/form-teacher")
 def assign_form_teacher(
     class_id: UUID,
