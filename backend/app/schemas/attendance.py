@@ -57,6 +57,8 @@ class ClassRosterResponse(BaseModel):
     class_id: UUID
     class_name: str
     date: date
+    attendance_session_id: Optional[UUID] = None
+    attendance_status: Optional[SessionStatus] = None
     students: List[StudentAttendanceItem]
 
 class AttendanceRecordSubmit(BaseModel):
