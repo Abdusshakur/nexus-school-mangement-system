@@ -101,18 +101,43 @@ def get_class_roster_for_attendance(
     context: CurrentContext = Depends(require_permission("attendance:read")),
     session: Session = Depends(get_session)
 ):
-    """Returns the student roster and any existing attendance records for a specific date."""
-    teacher, _ = get_current_teacher_profile(context, session)
+    """Return a school-scoped roster for teachers and attendance reviewers."""
     active_session, active_term = get_active_term_and_session(context.school_id, session)
 
-    school_class = verify_teacher_class_access(teacher.id, class_id, context.school_id, session, active_session.id, active_term.id)
+    school_class = session.exec(
+        select(SchoolClass).where(
+            SchoolClass.id == class_id,
+            SchoolClass.school_id == context.school_id,
+        )
+    ).first()
+    if not school_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found.")
 
-    # In your models, ensure it's attendance_date or date based on your schema. Assuming attendance_date from your first block.
+    # Teachers may only review classes assigned to them. Other users with
+    # attendance:read, such as admins, may review any class in their school.
+    teacher = session.exec(
+        select(TeacherProfile).where(
+            TeacherProfile.user_id == context.user_id,
+            TeacherProfile.school_id == context.school_id,
+        )
+    ).first()
+    if teacher:
+        school_class = verify_teacher_class_access(
+            teacher.id,
+            class_id,
+            context.school_id,
+            session,
+            active_session.id,
+            active_term.id,
+        )
+
     att_session = session.exec(
         select(AttendanceSession).where(
             AttendanceSession.class_id == class_id,
             AttendanceSession.school_id == context.school_id,
-            AttendanceSession.attendance_date == target_date
+            AttendanceSession.session_id == active_session.id,
+            AttendanceSession.term_id == active_term.id,
+            AttendanceSession.attendance_date == target_date,
         )
     ).first()
 
@@ -153,6 +178,8 @@ def get_class_roster_for_attendance(
         class_id=class_id,
         class_name=school_class.name,
         date=target_date,
+        attendance_session_id=att_session.id if att_session else None,
+        attendance_status=att_session.status if att_session else None,
         students=students_list
     )
 
