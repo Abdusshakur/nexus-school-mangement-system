@@ -6,7 +6,7 @@ from sqlmodel import SQLModel
 from backend.app.db.database import engine
 # Import your existing routers
 from backend.app.routers import (auth, students, parents, teachers, teacher_context, relationships, attendance, announcements, dashboard,
-                                academics, timetables)
+                                academics, timetables, results)
 
 # Add these imports to backend/app/main.py
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,6 +53,7 @@ app.include_router(attendance.router, prefix="/api/v1") # Mount bulk attendance 
 app.include_router(announcements.router, prefix="/api/v1") 
 app.include_router(dashboard.router, prefix="/api/v1") # Mount analytics dashboard module 
 app.include_router(relationships.router, prefix="/api/v1")
+app.include_router(results.router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():

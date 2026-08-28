@@ -519,7 +519,7 @@ def generate_attendance_qr(
     session: Session = Depends(get_session)
 ):
     """Generates a new short-lived QR token and invalidates previous active ones."""
-    today = datetime.now(timezone.utc).date()
+    today = date.today()
     now = datetime.now(timezone.utc)
 
     # 1. Deactivate any currently active QR codes of this type for today

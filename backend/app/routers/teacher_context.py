@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 
 from backend.app.models import (
@@ -225,7 +225,7 @@ def validate_qr_scan(raw_token: str, expected_type: QRType, context: CurrentCont
         raise HTTPException(status_code=400, detail=f"Wrong QR Code type. Expected {expected_type.value}.")
 
     now = datetime.now(timezone.utc)
-    if qr_session.attendance_date != now.date():
+    if qr_session.attendance_date != date.today():
         raise HTTPException(status_code=400, detail="This QR code is not valid for today.")
 
     valid_from = qr_session.valid_from
@@ -246,7 +246,7 @@ def get_my_status_today(
     session: Session = Depends(get_session)
 ):
     teacher, _ = get_current_teacher_profile(context, session)
-    today = datetime.now(timezone.utc).date()
+    today = date.today()
 
     daily_record = session.exec(
         select(TeacherDailyAttendance).where(
@@ -275,7 +275,7 @@ def scan_check_in(
 ):
     teacher, _ = get_current_teacher_profile(context, session)
     now = datetime.now(timezone.utc)
-    today = now.date()
+    today = date.today()
 
     # 1. Validate the Token
     validate_qr_scan(payload.token, QRType.CHECK_IN, context, session)
@@ -329,7 +329,7 @@ def scan_check_out(
 ):
     teacher, _ = get_current_teacher_profile(context, session)
     now = datetime.now(timezone.utc)
-    today = now.date()
+    today = date.today()
 
     # 1. Validate Token
     validate_qr_scan(payload.token, QRType.CHECK_OUT, context, session)
