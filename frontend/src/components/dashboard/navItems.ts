@@ -87,9 +87,14 @@ const TEACHER_NAV_ITEMS = [
     icon: CalendarCheck,
   },
   {
-    label: "Attendance",
-    href: ROUTES.TEACHER.ATTENDANCE,
+    label: "My Attendance",
+    href: ROUTES.TEACHER.MY_ATTENDANCE,
     icon: CalendarCheck,
+  },
+  {
+    label: "Student Attendance",
+    href: ROUTES.TEACHER.ATTENDANCE,
+    icon: Users,
   },
   {
     label: "Assignments",

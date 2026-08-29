@@ -138,6 +138,14 @@ export const notifications = [
 
 export const quickActions = [
   {
+    label: "My Attendance",
+    to: ROUTES.TEACHER.MY_ATTENDANCE,
+    icon: CalendarCheck,
+    colorText: "text-teal-600",
+    colorBg: "bg-teal-600/10",
+    hoverBg: "bg-teal-50",
+  },
+  {
     label: "Take Attendance",
     to: ROUTES.TEACHER.ATTENDANCE,
     icon: CalendarCheck,

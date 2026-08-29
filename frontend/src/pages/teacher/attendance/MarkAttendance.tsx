@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export function MarkAttendance() {
   const { 
     teacherClasses, 
-    classRoster, 
+    classRosterData, 
     fetchMyClasses, 
     fetchClassRoster, 
     submitAttendance,
@@ -39,9 +39,10 @@ export function MarkAttendance() {
 
   useEffect(() => {
     // When classRoster from API changes, initialize local roster state
-    if (classRoster && classRoster.length > 0) {
+    const students = classRosterData?.students || [];
+    if (students.length > 0) {
       setRoster(
-        classRoster.map((s) => ({
+        students.map((s: any) => ({
           id: s.id,
           name: `${s.first_name} ${s.last_name}`,
           avatar: `${s.first_name?.[0] || ""}${s.last_name?.[0] || ""}`.toUpperCase(),
@@ -51,7 +52,7 @@ export function MarkAttendance() {
     } else {
       setRoster([]);
     }
-  }, [classRoster]);
+  }, [classRosterData]);
 
   const updateStatus = (id: string, status: "Present" | "Absent" | "Late") => {
     const updated = roster.map((s) => (s.id === id ? { ...s, status } : s));

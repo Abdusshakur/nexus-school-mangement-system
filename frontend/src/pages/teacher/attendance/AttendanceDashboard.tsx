@@ -62,7 +62,7 @@ export default function TeacherAttendance() {
   } = useTeacherAttendanceStore();
 
   const { user } = useAuthStore();
-  const { teachers, fetchTeachers } = useTeacherStore();
+  const { fetchTeachers } = useTeacherStore();
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -204,10 +204,10 @@ export default function TeacherAttendance() {
   if ((submitted || alreadySubmitted) && !isEditing) {
     const subData = typeof alreadySubmitted === "object" ? alreadySubmitted : null;
     const presentCount = subData
-      ? subData.entries.filter((e) => e.status === "P").length
+      ? subData.entries.filter((e: any) => e.status === "P").length
       : counts.present;
     const absentCount = subData
-      ? subData.entries.filter((e) => e.status === "A").length
+      ? subData.entries.filter((e: any) => e.status === "A").length
       : counts.absent;
     const displayTime =
       submissionTime ||
@@ -289,10 +289,10 @@ export default function TeacherAttendance() {
             </div>
             <div className="divide-y divide-slate-100">
               {students.map((student) => {
-                const rec = subData?.entries.find(
-                  (e) => e.studentId === student.id,
+                const studentEntry = subData?.entries.find(
+                  (e: any) => e.studentId === student.id,
                 );
-                const status = rec?.status ?? marks[student.id];
+                const status = studentEntry?.status ?? marks[student.id];
                 const isPresent = status === "P";
                 return (
                   <div
