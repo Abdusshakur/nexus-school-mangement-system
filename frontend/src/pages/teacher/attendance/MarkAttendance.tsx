@@ -1,68 +1,59 @@
 import { useEffect, useState } from "react";
 import { Check, X, Clock, CheckCircle, Save } from "lucide-react";
-import type { StudentAttendance } from "./data";
-import { DEFAULT_ROSTER } from "./data";
-import { useAttendanceStore } from "../../../store/attendance.store";
-import { fetchStudentsList } from "../../../api/students";
-import { submitClassAttendance } from "../../../api/attendance";
-import { useClassStore } from "../../../store/class.store";
+import { useTeacherAttendanceStore } from "../../../store/teacherAttendance.store";
 import { toast } from "sonner";
 
-const CLASS_MAPPING: Record<string, string> = {
-  "Advanced Mathematics III": "SS 3",
-  "Physics & Thermodynamics": "SS 1",
-  "Computer Programming II": "SS 2",
-};
-
 export function MarkAttendance() {
-  const [selectedClass, setSelectedClass] = useState(
-    "Physics & Thermodynamics",
-  );
+  const { 
+    teacherClasses, 
+    classRoster, 
+    fetchMyClasses, 
+    fetchClassRoster, 
+    submitAttendance,
+    
+  } = useTeacherAttendanceStore();
+
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
   );
-  const [roster, setRoster] = useState<StudentAttendance[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Note: using local state to track status changes before submitting
+  const [roster, setRoster] = useState<any[]>([]);
   const [isSaved, setIsSaved] = useState(false);
 
-  const { saveHistory } = useAttendanceStore();
-  const { classes } = useClassStore();
+  useEffect(() => {
+    fetchMyClasses();
+  }, [fetchMyClasses]);
 
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    const dbClass = CLASS_MAPPING[selectedClass] || "SS 1";
-    fetchStudentsList(undefined, dbClass)
-      .then((data) => {
-        if (!isMounted) return;
-        if (data && data.length > 0) {
-          const initial = data.map((s) => ({
-            id: s.id,
-            name: `${s.first_name} ${s.last_name}`,
-            avatar: `${s.first_name[0]}${s.last_name[0]}`.toUpperCase(),
-            status: "Present" as const,
-          }));
-          setRoster(initial);
-        } else {
-          setRoster(DEFAULT_ROSTER.map((s) => ({ ...s, status: "Present" as const })));
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        if (isMounted) {
-          setRoster(DEFAULT_ROSTER.map((s) => ({ ...s, status: "Present" as const })));
-        }
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
+    if (teacherClasses.length > 0 && !selectedClassId) {
+      setSelectedClassId(teacherClasses[0].id);
+    }
+  }, [teacherClasses, selectedClassId]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedClass, selectedDate]);
+  useEffect(() => {
+    if (selectedClassId) {
+      fetchClassRoster(selectedClassId, "");
+    }
+  }, [selectedClassId, selectedDate, fetchClassRoster]);
 
-  const updateStatus = (id: string, status: StudentAttendance["status"]) => {
+  useEffect(() => {
+    // When classRoster from API changes, initialize local roster state
+    if (classRoster && classRoster.length > 0) {
+      setRoster(
+        classRoster.map((s) => ({
+          id: s.id,
+          name: `${s.first_name} ${s.last_name}`,
+          avatar: `${s.first_name?.[0] || ""}${s.last_name?.[0] || ""}`.toUpperCase(),
+          status: "Present",
+        }))
+      );
+    } else {
+      setRoster([]);
+    }
+  }, [classRoster]);
+
+  const updateStatus = (id: string, status: "Present" | "Absent" | "Late") => {
     const updated = roster.map((s) => (s.id === id ? { ...s, status } : s));
     setRoster(updated);
     setIsSaved(false);
@@ -70,50 +61,32 @@ export function MarkAttendance() {
 
   const handleSave = async () => {
     setIsSaved(false);
-    const dbClass = CLASS_MAPPING[selectedClass] || "SS 1";
     
-    const classRecord = classes.find((c) => c.name === dbClass);
-    if (!classRecord) {
-      toast.error(`Class ${dbClass} not found in database.`);
+    if (!selectedClassId) {
+      toast.error("Please select a class.");
       return;
     }
 
-    const payload = {
-      attendance_date: selectedDate,
-      class_id: classRecord.id,
-      records: roster.map((r) => ({
-        student_id: r.id,
-        status: (r.status === "Present"
-          ? "PRESENT"
-          : r.status === "Absent"
-            ? "ABSENT"
-            : "LATE") as "PRESENT" | "ABSENT" | "LATE",
-      })),
-    };
-
     try {
-      await submitClassAttendance(payload);
-
-      const presentCount = roster.filter(
-        (s) => s.status === "Present" || s.status === "Late",
-      ).length;
-      const rate = Math.round((presentCount / roster.length) * 100);
-
-      saveHistory({
-        class: selectedClass,
+      await submitAttendance({
+        teacherId: "", // Backend uses auth context
+        teacherName: "",
+        classId: selectedClassId,
+        className: teacherClasses.find(c => c.id === selectedClassId)?.name || "",
+        subject: "",
         date: selectedDate,
-        rate,
-        present: presentCount,
-        total: roster.length,
+        entries: roster.map((r) => ({
+          studentId: r.id,
+          studentName: r.name,
+          status: r.status === "Present" ? "P" : r.status === "Absent" ? "A" : "L",
+        })),
       });
 
       setIsSaved(true);
-      toast.success(`Attendance for ${selectedClass} saved successfully!`);
-      setTimeout(() => {
-        setIsSaved(false);
-      }, 3000);
+      toast.success(`Attendance saved successfully!`);
+      setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {
-      toast.error(err.message || "Failed to submit attendance logs.");
+      toast.error(err.message || "Failed to submit attendance. Ensure you have the correct permissions.");
     }
   };
 
@@ -130,19 +103,19 @@ export function MarkAttendance() {
             Assigned Class
           </label>
           <select
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
+            value={selectedClassId}
+            onChange={(e) => setSelectedClassId(e.target.value)}
             className="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 h-12"
           >
-            <option value="Advanced Mathematics III">
-              Advanced Mathematics III
-            </option>
-            <option value="Physics & Thermodynamics">
-              Physics & Thermodynamics
-            </option>
-            <option value="Computer Programming II">
-              Computer Programming II
-            </option>
+            {teacherClasses.length === 0 ? (
+              <option value="">No classes found</option>
+            ) : (
+              teacherClasses.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
@@ -201,7 +174,7 @@ export function MarkAttendance() {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {loading ? (
+          {false ? (
             <div className="p-12 text-center text-slate-500 font-medium animate-pulse text-sm">
               Loading class roster from database...
             </div>

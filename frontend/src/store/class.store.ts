@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
 import type { AcademicClass } from "../api/academics";
 import { fetchClasses, createClass, deleteClass, assignFormTeacher } from "../api/academics";
 
@@ -36,7 +36,7 @@ function sortClasses(classes: AcademicClass[]): AcademicClass[] {
 
 interface ClassState {
   classes: AcademicClass[];
-  classTeacherAssignments: Record<string, string>;
+
   loading: boolean;
   error: string | null;
 
@@ -48,10 +48,9 @@ interface ClassState {
 }
 
 export const useClassStore = create<ClassState>()(
-  persist(
-    (set, get) => ({
-      classes: [],
-      classTeacherAssignments: {},
+  (set, get) => ({
+    classes: [],
+
       loading: false,
       error: null,
 
@@ -89,13 +88,7 @@ export const useClassStore = create<ClassState>()(
         set({ loading: true, error: null });
         try {
           const data = await fetchClasses();
-          const newAssignments: Record<string, string> = {};
-          data.forEach(c => {
-             if (c.form_teacher_id) {
-                newAssignments[c.id] = c.form_teacher_id;
-             }
-          });
-          set({ classes: sortClasses(data), classTeacherAssignments: newAssignments, loading: false });
+          set({ classes: sortClasses(data), loading: false });
         } catch (error: any) {
           set({ error: error.message, loading: false });
         }
@@ -128,9 +121,5 @@ export const useClassStore = create<ClassState>()(
           throw error;
         }
       },
-    }),
-    {
-      name: "nexus-class-store",
-    }
-  )
+  })
 );

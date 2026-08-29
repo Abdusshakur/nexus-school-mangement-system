@@ -8,7 +8,7 @@ export interface AttendanceRecordPayload {
 
 export interface AttendanceSubmitRequest {
   class_id: string;
-  attendance_date: string;
+  date: string;
   records: AttendanceRecordPayload[];
 }
 
@@ -42,4 +42,45 @@ export async function submitClassAttendance(payload: AttendanceSubmitRequest): P
 export async function fetchDailyAttendanceSummary(date?: string): Promise<DailyAttendanceSummaryResponse> {
   const query = date ? `?date=${date}` : "";
   return apiClient.get(`/attendance/classes/summary${query}`);
+}
+
+export async function getMyAttendanceClasses(): Promise<any[]> {
+  return apiClient.get("/attendance/my-classes");
+}
+
+export interface ClassRosterResponse {
+  class_id: string;
+  class_name: string;
+  date: string;
+  attendance_session_id: string;
+  attendance_status: string;
+  students: any[];
+}
+
+export async function getClassRosterForAttendance(classId: string, date: string): Promise<ClassRosterResponse> {
+  return apiClient.get(`/attendance/classes/${classId}/students?date=${date}`);
+}
+
+export async function approveAttendance(sessionId: string, reason?: string): Promise<any> {
+  return apiClient.post(`/attendance/${sessionId}/approve`, { reason });
+}
+
+export async function rejectAttendance(sessionId: string, reason?: string): Promise<any> {
+  return apiClient.post(`/attendance/${sessionId}/reject`, { reason });
+}
+
+export async function reopenAttendance(sessionId: string, reason?: string): Promise<any> {
+  return apiClient.post(`/attendance/${sessionId}/reopen`, { reason });
+}
+
+export async function teacherCheckIn(token: string): Promise<any> {
+  return apiClient.post("/teachers/check-in", { token });
+}
+
+export async function teacherCheckOut(token: string): Promise<any> {
+  return apiClient.post("/teachers/check-out", { token });
+}
+
+export async function getTeacherTodayStatus(): Promise<any> {
+  return apiClient.get("/teachers/me/today");
 }

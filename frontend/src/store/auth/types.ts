@@ -5,6 +5,7 @@ export interface AuthUser {
   role: UserRole;
   first_name?: string;
   last_name?: string;
+  school_id?: string;
 }
 
 export interface AuthState {

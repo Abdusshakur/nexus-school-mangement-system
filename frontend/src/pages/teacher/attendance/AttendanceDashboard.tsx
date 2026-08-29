@@ -4,13 +4,13 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useTeacherAttendanceStore } from "../../../store/teacherAttendance.store";
 import { type RollStudent, AVATAR_COLORS } from "./teacherData";
-import { useClassStore } from "../../../store/class.store";
+
 import { useAuthStore } from "../../../store/auth/authStore";
 import { useTeacherStore } from "../../../store/teacher.store";
 import { useEffect } from "react";
-import { fetchStudentsList } from "../../../api/students";
 
-type MarkStatus = "P" | "A" | "";
+
+type MarkStatus = "P" | "A" | "L" | "";
 
 function NotClassTeacher() {
   const navigate = useNavigate();
@@ -51,56 +51,76 @@ const TODAY = new Date().toLocaleDateString("en-NG", {
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 
 export default function TeacherAttendance() {
-  const { submitAttendance, attendanceSubmissions } =
-    useTeacherAttendanceStore();
-  const { classTeacherAssignments, classes, loadClasses } = useClassStore();
+  const {
+    submitAttendance,
+    attendanceSubmissions,
+    teacherClasses,
+    fetchMyClasses,
+    classRosterData,
+    fetchClassRoster,
+    loading
+  } = useTeacherAttendanceStore();
+
   const { user } = useAuthStore();
   const { teachers, fetchTeachers } = useTeacherStore();
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadClasses().catch(() => {});
-    fetchTeachers().catch(() => {});
-  }, [loadClasses, fetchTeachers]);
+    fetchTeachers().catch(() => { });
+    fetchMyClasses().catch(() => { });
+  }, [fetchTeachers, fetchMyClasses]);
 
-  const myTeacherProfile = teachers.find(t => t.user_id === user?.id);
-  const myTeacherProfileId = myTeacherProfile?.id;
+  useEffect(() => {
+    if (teacherClasses.length > 0 && !selectedClassId) {
+      setSelectedClassId(teacherClasses[0].id);
+    }
+  }, [teacherClasses, selectedClassId]);
 
-  const myClassId = Object.keys(classTeacherAssignments).find(
-    (classId) => classTeacherAssignments[classId] === myTeacherProfileId,
-  );
+  const cls = teacherClasses.find(c => c.id === selectedClassId) || null;
+  const myClassId = cls?.id;
 
-  const realClass = classes.find((c) => c.id === myClassId);
-  const cls = realClass ? { id: realClass.id, name: realClass.name } : null;
+
 
   const [students, setStudents] = useState<RollStudent[]>([]);
 
   useEffect(() => {
-    let isMounted = true;
-    if (cls?.name) {
-      fetchStudentsList(undefined, cls.name, undefined).then(data => {
-        if (!isMounted) return;
-        const mapped = data.map((d, i) => ({
-          id: d.id,
-          name: `${d.first_name} ${d.last_name}`,
-          admNo: d.admission_number,
-          initials: `${d.first_name[0] || ""}${d.last_name[0] || ""}`,
-          color: AVATAR_COLORS[i % AVATAR_COLORS.length]
-        }));
-        setStudents(mapped);
-      }).catch(err => {
-         console.error("Failed to fetch students", err);
-      });
+    if (myClassId) {
+      fetchClassRoster(myClassId, TODAY_ISO);
     }
-    return () => { isMounted = false; };
-  }, [cls?.name]);
+  }, [myClassId, fetchClassRoster]);
+
+  useEffect(() => {
+    if (classRosterData?.students) {
+      const mapped = classRosterData.students.map((d: any, i: number) => ({
+        id: d.student_id || d.id,
+        name: `${d.first_name} ${d.last_name}`,
+        admNo: d.admission_number,
+        initials: `${d.first_name?.[0] || ""}${d.last_name?.[0] || ""}`,
+        color: AVATAR_COLORS[i % AVATAR_COLORS.length]
+      }));
+      setStudents(mapped);
+      
+      const newMarks: Record<string, MarkStatus> = {};
+      classRosterData.students.forEach((d: any) => {
+        if (d.status === "PRESENT") newMarks[d.student_id || d.id] = "P";
+        else if (d.status === "ABSENT") newMarks[d.student_id || d.id] = "A";
+        else if (d.status === "LATE") newMarks[d.student_id || d.id] = "L";
+      });
+      setMarks(newMarks);
+    }
+  }, [classRosterData]);
 
   const [marks, setMarks] = useState<Record<string, MarkStatus>>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submissionTime, setSubmissionTime] = useState("");
-
-  const alreadySubmitted = attendanceSubmissions.find(
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Use backend status if available, otherwise check local optimistic updates
+  const backendSubmitted = classRosterData?.attendance_status && classRosterData.attendance_status !== "PENDING";
+  
+  const alreadySubmitted = backendSubmitted || attendanceSubmissions.find(
     (s) =>
       s.teacherId === user?.id &&
       s.date === TODAY_ISO &&
@@ -127,8 +147,8 @@ export default function TeacherAttendance() {
   const completion =
     students.length > 0
       ? Math.round(
-          ((students.length - counts.remaining) / students.length) * 100,
-        )
+        ((students.length - counts.remaining) / students.length) * 100,
+      )
       : 0;
   const allMarked = counts.remaining === 0 && students.length > 0;
 
@@ -157,6 +177,7 @@ export default function TeacherAttendance() {
       });
       setSubmitting(false);
       setSubmitted(true);
+      setIsEditing(false);
       toast.success("Attendance Submitted Successfully", {
         description: "Pending admin approval",
       });
@@ -169,10 +190,19 @@ export default function TeacherAttendance() {
     }
   };
 
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center h-full bg-slate-50">
+      <div className="flex flex-col items-center">
+        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-500 font-medium">Loading classes...</p>
+      </div>
+    </div>
+  );
+
   if (!myClassId || !cls) return <NotClassTeacher />;
 
-  if (submitted || alreadySubmitted) {
-    const subData = alreadySubmitted;
+  if ((submitted || alreadySubmitted) && !isEditing) {
+    const subData = typeof alreadySubmitted === "object" ? alreadySubmitted : null;
     const presentCount = subData
       ? subData.entries.filter((e) => e.status === "P").length
       : counts.present;
@@ -183,26 +213,53 @@ export default function TeacherAttendance() {
       submissionTime ||
       (subData
         ? new Date(subData.submittedAt).toLocaleTimeString("en-NG", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+          hour: "2-digit",
+          minute: "2-digit",
+        })
         : "");
+
+    const classSelector = (
+      <select
+        className="ml-3 bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold text-slate-700"
+        value={selectedClassId || ""}
+        onChange={(e) => setSelectedClassId(e.target.value)}
+        disabled={teacherClasses.length <= 1}
+      >
+        {teacherClasses.map(c => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+    );
 
     return (
       <div className="flex-1 flex bg-slate-50 min-h-0 overflow-y-auto">
         <main className="flex-1 p-8 w-full space-y-5">
           <header className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
-                Attendance Register
+              <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight flex items-center">
+                Attendance Register {classSelector}
               </h1>
               <p className="text-slate-500 text-sm mt-0.5">
-                {cls.name} · {TODAY}
+                {TODAY}
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-              Submitted
-            </span>
+            <div className="flex items-center gap-3">
+              {classRosterData?.attendance_status !== "APPROVED" && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Edit Attendance
+                </button>
+              )}
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                classRosterData?.attendance_status === "APPROVED" ? "bg-indigo-100 text-indigo-800" :
+                classRosterData?.attendance_status === "REJECTED" ? "bg-red-100 text-red-800" :
+                "bg-emerald-100 text-emerald-800"
+              }`}>
+                {classRosterData?.attendance_status || "SUBMITTED"}
+              </span>
+            </div>
           </header>
 
           <div className="grid grid-cols-3 gap-4">
@@ -272,12 +329,25 @@ export default function TeacherAttendance() {
     );
   }
 
+  const classSelector = (
+    <select
+      className="ml-3 bg-slate-50 border border-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold text-slate-700"
+      value={selectedClassId || ""}
+      onChange={(e) => setSelectedClassId(e.target.value)}
+      disabled={teacherClasses.length <= 1}
+    >
+      {teacherClasses.map(c => (
+        <option key={c.id} value={c.id}>{c.name}</option>
+      ))}
+    </select>
+  );
+
   return (
     <div className="flex-1 flex flex-col bg-slate-50 min-h-0 overflow-y-auto">
       <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between">
         <div>
-          <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
-            Mark Attendance
+          <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight flex items-center">
+            Mark Attendance {classSelector}
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">{TODAY}</p>
         </div>

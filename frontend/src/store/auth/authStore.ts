@@ -31,6 +31,7 @@ export const useAuthStore = create<AuthStore>()(
               role: UserRole.PARENT,
               first_name: "Tife",
               last_name: "Ifedamola",
+              school_id: "mock-school-id",
             };
             set({
               user: authUser,
@@ -47,6 +48,7 @@ export const useAuthStore = create<AuthStore>()(
               role: UserRole.SECURITY,
               first_name: "Chief",
               last_name: "Security",
+              school_id: "mock-school-id",
             };
             set({
               user: authUser,
@@ -63,6 +65,7 @@ export const useAuthStore = create<AuthStore>()(
             role: data.user.role as UserRole,
             first_name: data.user.first_name,
             last_name: data.user.last_name,
+            school_id: data.user.school_id,
           };
           set({
             user: authUser,
@@ -105,6 +108,7 @@ export const useAuthStore = create<AuthStore>()(
               role: data.role,
               first_name: data.first_name,
               last_name: data.last_name,
+              school_id: data.school_id,
             },
           });
         } catch (error) {

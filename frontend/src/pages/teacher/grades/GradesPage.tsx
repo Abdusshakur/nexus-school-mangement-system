@@ -7,6 +7,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useGradeStore } from "../../../store/grade.store";
+import { ReportCardsTab } from "./ReportCardsTab";
 
 function getNigerianGradeShort(pct: number) {
   if (pct >= 75)
@@ -154,6 +155,7 @@ type GradeMap = Record<string, number | "">;
 
 export default function TeacherGrades() {
   const { gradeRecords, saveGrades } = useGradeStore();
+  const [activeTab, setActiveTab] = useState<"grading" | "report_cards">("grading");
   const [step, setStep] = useState<"select" | "enter">("select");
   const [classId, setClassId] = useState("SS2SCI");
   const [subject, setSubject] = useState("Biology");
@@ -224,13 +226,36 @@ export default function TeacherGrades() {
   return (
     <div className="space-y-5 p-6 max-w-5xl ">
       <div>
-        <h1 className="font-bold text-2xl text-slate-900">Grade Entry</h1>
+        <h1 className="font-bold text-2xl text-slate-900">Academics & Results</h1>
         <p className="text-sm mt-0.5 text-slate-500">
-          Upload student's assessment scores into the system
+          Manage subject grading and class report cards.
         </p>
       </div>
 
-      {step === "select" && (
+      <div className="flex items-center gap-6 border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab("grading")}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "grading"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Subject Grading
+        </button>
+        <button
+          onClick={() => setActiveTab("report_cards")}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "report_cards"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Class Report Cards
+        </button>
+      </div>
+
+      {activeTab === "grading" && step === "select" && (
         <>
           <div className="bg-white rounded-xl p-6 border border-slate-200">
             <h2 className="font-semibold mb-5 text-slate-900">
@@ -395,7 +420,7 @@ export default function TeacherGrades() {
         </>
       )}
 
-      {step === "enter" && (
+      {activeTab === "grading" && step === "enter" && (
         <div className="space-y-5">
           <div className="flex items-center gap-3 flex-wrap bg-white p-3 rounded-xl border border-slate-200">
             <button
@@ -589,6 +614,8 @@ export default function TeacherGrades() {
           </p>
         </div>
       )}
+
+      {activeTab === "report_cards" && <ReportCardsTab />}
     </div>
   );
 }

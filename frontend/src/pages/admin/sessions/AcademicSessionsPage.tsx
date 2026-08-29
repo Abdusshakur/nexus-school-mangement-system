@@ -24,9 +24,11 @@ function fmtDate(iso: string) {
 
 export function AcademicSessionsPage() {
   const { academicSessions, fetchSessions, startNewSession } = useSessionStore();
+  const [activeSummary, setActiveSummary] = useState<any>(null);
 
   useEffect(() => {
     fetchSessions();
+    import("../../../api/academics").then(m => m.fetchActiveSummary().then(setActiveSummary).catch(() => {}));
   }, [fetchSessions]);
   const [showModal, setShowModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -128,10 +130,10 @@ export function AcademicSessionsPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
               {[
-                { label: "Total Students", value: "568" },
-                { label: "Total Classes", value: "18" },
-                { label: "Active Teachers", value: "5" },
-                { label: "Subjects", value: "26" },
+                { label: "Total Students", value: activeSummary?.total_students || 0 },
+                { label: "Total Classes", value: activeSummary?.total_classes || 0 },
+                { label: "Active Teachers", value: activeSummary?.active_teachers || 0 },
+                { label: "Subjects", value: activeSummary?.total_subjects || 0 },
               ].map(({ label, value }) => (
                 <div
                   key={label}

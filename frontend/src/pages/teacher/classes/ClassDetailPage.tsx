@@ -16,7 +16,7 @@ import { useEffect } from "react";
 export default function ClassDetail() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("students");
-  const { classTeacherAssignments } = useClassStore();
+  const { classes } = useClassStore();
   const { user } = useAuthStore();
   const { teachers, fetchTeachers } = useTeacherStore();
 
@@ -25,7 +25,7 @@ export default function ClassDetail() {
   }, [fetchTeachers]);
 
   const myTeacherProfile = teachers.find(t => t.user_id === user?.id);
-  const isClassTeacher = classTeacherAssignments[id!] === myTeacherProfile?.id;
+  const isClassTeacher = classes.find(c => c.id === id)?.form_teacher_id === myTeacherProfile?.id;
 
   const classData = CLASSES_DATA.find((c) => c.id === id) || CLASSES_DATA[0];
 

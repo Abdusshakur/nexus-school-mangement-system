@@ -28,7 +28,7 @@ export interface StudentCreatePayload {
   date_of_birth: string;
   address: string;
   phone_number: string | null;
-  class_name: string;
+  class_id: string;
   parent?: ParentOnboardingDetails;
   parents?: ParentOnboardingDetails[];
 }
@@ -107,7 +107,7 @@ export function formatClassName(name?: string): string {
 export const getStudentByAdmissionNumber = async (
   admissionNumber: string,
 ): Promise<StudentResponse> => {
-  return apiClient.get(`/students/${admissionNumber}`);
+  return apiClient.get(`/students/${encodeURIComponent(admissionNumber)}`);
 };
 
 export const updateStudentProfile = async (
@@ -116,3 +116,13 @@ export const updateStudentProfile = async (
 ): Promise<StudentResponse> => {
   return apiClient.patch(`/students/${studentId}`, payload);
 };
+
+export async function bulkTransferStudents(payload: {
+  student_ids: string[];
+  class_id: string;
+  session_id: string;
+  term_id: string;
+}): Promise<any> {
+  const { default: apiClient } = await import('./client');
+  return apiClient.post(`/students/bulk-transfer`, payload);
+}

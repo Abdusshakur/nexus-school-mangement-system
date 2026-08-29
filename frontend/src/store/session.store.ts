@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
 import {
   fetchAllTermsAndSessions,
   createSession,
@@ -60,8 +60,7 @@ interface SessionState {
 }
 
 export const useSessionStore = create<SessionState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       academicSessions: [],
       sessionAccessRequests: [],
       loading: false,
@@ -183,9 +182,5 @@ export const useSessionStore = create<SessionState>()(
             r.id === id ? { ...r, status: "rejected" } : r,
           ),
         })),
-    }),
-    {
-      name: "nexus-session-store",
-    },
-  ),
+  })
 );

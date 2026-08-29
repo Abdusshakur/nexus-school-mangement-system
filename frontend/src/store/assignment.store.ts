@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
 import type { Assignment, Submission } from "../pages/teacher/assignments/data";
 import {
   DEFAULT_ASSIGNMENTS,
@@ -21,8 +21,7 @@ interface AssignmentState {
 }
 
 export const useAssignmentStore = create<AssignmentState>()(
-  persist(
-    (set) => ({
+  (set) => ({
       assignments: DEFAULT_ASSIGNMENTS,
       submissions: DEFAULT_SUBMISSIONS,
 
@@ -73,9 +72,5 @@ export const useAssignmentStore = create<AssignmentState>()(
             assignments: updatedAs,
           };
         }),
-    }),
-    {
-      name: "nexus_assignments_store",
-    },
-  ),
+  })
 );

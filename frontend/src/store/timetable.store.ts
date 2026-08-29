@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
 import {
   getClassTimetable,
   createTimetableEntry,
@@ -44,8 +44,7 @@ interface TimetableState {
 }
 
 export const useTimetableStore = create<TimetableState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       timetableGrid: {},
       myTimetableGrid: {},
       terms: [],
@@ -187,9 +186,22 @@ export const useTimetableStore = create<TimetableState>()(
           let grid: Record<string, TimetableCell | undefined> = {};
           if (Array.isArray(data)) {
             data.forEach((entry: any) => {
-              const key = `${entry.day_of_week}-${entry.period_id}`;
+              const time = entry.start_time;
+              let pIndex = 1;
+              if (time === "08:00:00") pIndex = 1;
+              else if (time === "09:00:00") pIndex = 2;
+              else if (time === "10:00:00") pIndex = 3;
+              else if (time === "11:00:00") pIndex = 4;
+              else if (time === "11:30:00") pIndex = 5;
+              else if (time === "12:30:00") pIndex = 6;
+              else if (time === "13:20:00") pIndex = 7;
+              else if (time === "14:00:00") pIndex = 8;
+              else if (time === "15:00:00") pIndex = 9;
+
+              const key = `${entry.day_of_week}-${pIndex}`;
               grid[key] = {
-                subject: entry.subject_id,
+                subject: entry.subject_name || entry.subject_id,
+                subjectId: entry.subject_id,
                 teacherId: entry.teacher_id,
                 teacherName: entry.teacher_name || "Assigned Teacher",
                 className: entry.class_name || "Class",
@@ -245,9 +257,5 @@ export const useTimetableStore = create<TimetableState>()(
           throw error;
         }
       },
-    }),
-    {
-      name: "nexus-timetable-store",
-    },
-  ),
+    })
 );

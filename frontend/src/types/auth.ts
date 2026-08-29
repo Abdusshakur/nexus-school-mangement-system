@@ -6,5 +6,6 @@ export interface LoginResponse {
     role: string;
     first_name?: string;
     last_name?: string;
+    school_id?: string;
   };
 }

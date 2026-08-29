@@ -2,7 +2,7 @@ import { ROUTES } from "../../../config/routes";
 import { useEffect, useState } from "react";
 import { useClassStore } from "../../../store/class.store";
 import { Link } from "react-router-dom";
-import { Search, Plus, ChevronRight, CheckCircle } from "lucide-react";
+import { Search, Plus, ChevronRight, CheckCircle,  } from "lucide-react";
 import {
   fetchStudentsList,
   formatClassName,
@@ -50,7 +50,10 @@ export function StudentList() {
     };
   }, [search, gradeFilter]);
 
-  const filtered = students;
+  const filtered = students.filter(() => {
+    if (statusFilter === "Active") return true; // assuming all are active for now
+    return true;
+  });
 
   return (
     <div className="space-y-5">
@@ -61,12 +64,14 @@ export function StudentList() {
             {students.length} enrolled students
           </p>
         </div>
-        <Link
-          to={ROUTES.ADMIN.STUDENT_ADD}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors shadow-sm"
-        >
-          <Plus size={16} /> Add Student
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to={ROUTES.ADMIN.STUDENT_ADD}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors shadow-sm"
+          >
+            <Plus size={16} /> Add Student
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -139,11 +144,8 @@ export function StudentList() {
                 const avatarColor = colors[colorIndex];
 
                 return (
-                  <tr
-                    key={s.id}
-                    className="border-t border-slate-100 hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-5 py-3.5">
+                  <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-semibold text-xs ${avatarColor}`}>
                           <span>{initials}</span>

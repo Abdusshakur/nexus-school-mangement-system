@@ -14,7 +14,7 @@ import { useTeacherStore } from "../../../store/teacher.store";
 import { useEffect } from "react";
 
 export default function TeacherClasses() {
-  const { classTeacherAssignments } = useClassStore();
+  const { classes } = useClassStore();
   const { user } = useAuthStore();
   const { teachers, fetchTeachers } = useTeacherStore();
 
@@ -71,7 +71,7 @@ export default function TeacherClasses() {
               </div>
 
               {/* Attendance Bar */}
-              {classTeacherAssignments[cls.id] === myTeacherProfileId && (
+              {classes.find(c => c.id === cls.id)?.form_teacher_id === myTeacherProfileId && (
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-1.5">
                     <p className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
