@@ -13,11 +13,7 @@ import {
 import { toast } from "sonner";
 import { ROUTES } from "../../../config/routes";
 import { useTeacherStore, type Teacher } from "../../../store/teacher.store";
-import {
-  fetchTeacherById,
-  assignTeacherClasses,
-  assignTeacherSubjects,
-} from "../../../api/teachers";
+import { fetchTeacherById, assignTeacherContexts } from "../../../api/teachers";
 import {
   formatPhoneNumber,
   formatParentInitials,
@@ -81,8 +77,7 @@ export function TeacherDetailPage() {
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<Teacher | null>(null);
-  const [showEditClasses, setShowEditClasses] = useState(false);
-  const [showEditSubjects, setShowEditSubjects] = useState(false);
+  const [showEditAssignments, setShowEditAssignments] = useState(false);
 
   if (loading) {
     return (
@@ -116,12 +111,24 @@ export function TeacherDetailPage() {
     setEditing(true);
   };
 
+  const syncGlobalStore = (t: Teacher) => {
+    updateTeacher({
+      ...t,
+      classes: t.classes.map(
+        (id) => classes.find((c) => c.id === id)?.name || id,
+      ),
+      subjects: t.subjects.map(
+        (id) => subjects.find((s) => s.id === id)?.name || id,
+      ),
+    });
+  };
+
   const handleSaveProfile = async () => {
     if (!editForm || !id) return;
 
     try {
       toast.info("Updating profile....");
-      updateTeacher(editForm);
+      syncGlobalStore(editForm);
       setTeacher(editForm);
       setEditing(false);
     } catch {
@@ -129,27 +136,33 @@ export function TeacherDetailPage() {
     }
   };
 
-  const handleSaveClasses = async () => {
+  const handleSaveAssignments = async () => {
     if (!id || !teacher) return;
-    try {
-      await assignTeacherClasses(id, teacher.classes);
-      toast.success("Classes assigned successfully");
-      updateTeacher(teacher);
-      setShowEditClasses(false);
-    } catch {
-      toast.error("Failed to assign classes");
-    }
-  };
 
-  const handleSaveSubjects = async () => {
-    if (!id || !teacher) return;
+    // Create cross-product of selected classes and subjects
+    const assignments = [];
+    for (const classId of teacher.classes) {
+      for (const subjectId of teacher.subjects) {
+        assignments.push({ class_id: classId, subject_id: subjectId });
+      }
+    }
+
+    if (teacher.classes.length > 0 && teacher.subjects.length === 0) {
+      toast.error("Please select at least one subject to assign classes.");
+      return;
+    }
+    if (teacher.subjects.length > 0 && teacher.classes.length === 0) {
+      toast.error("Please select at least one class to assign subjects.");
+      return;
+    }
+
     try {
-      await assignTeacherSubjects(id, teacher.subjects);
-      toast.success("Subjects assigned successfully");
-      updateTeacher(teacher);
-      setShowEditSubjects(false);
+      await assignTeacherContexts(id, assignments);
+      toast.success("Assignments updated successfully");
+      syncGlobalStore(teacher);
+      setShowEditAssignments(false);
     } catch {
-      toast.error("Failed to assign subjects");
+      toast.error("Failed to update assignments");
     }
   };
 
@@ -263,10 +276,10 @@ export function TeacherDetailPage() {
                 Assigned Classrooms ({teacher.classes.length})
               </h3>
               <button
-                onClick={() => setShowEditClasses(true)}
-                className="text-xs font-bold text-indigo-650 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
+                onClick={() => setShowEditAssignments(true)}
+                className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                <Edit3 size={12} /> Edit Assignments
+                <Edit3 size={12} /> Edit Classes
               </button>
             </div>
             {teacher.classes.length > 0 ? (
@@ -301,10 +314,10 @@ export function TeacherDetailPage() {
                 Assigned Subjects ({teacher.subjects.length})
               </h3>
               <button
-                onClick={() => setShowEditSubjects(true)}
-                className="text-xs font-bold text-indigo-650 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
+                onClick={() => setShowEditAssignments(true)}
+                className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                <Edit3 size={12} /> Edit Assignments
+                <Edit3 size={12} /> Edit Subjects
               </button>
             </div>
             {teacher.subjects.length > 0 ? (
@@ -408,58 +421,57 @@ export function TeacherDetailPage() {
         </Modal>
       )}
 
-      {/* Edit Assigned Classes Modal */}
-      {showEditClasses && (
+      {/* Edit Assignments Modal */}
+      {showEditAssignments && (
         <Modal
-          title="Edit Class Assignments"
-          onClose={() => setShowEditClasses(false)}
+          title="Edit Classes and Subjects"
+          onClose={() => setShowEditAssignments(false)}
           wide
         >
-          <div className="space-y-4">
-            <ClassSelector
-              selected={teacher.classes}
-              onToggle={(classId) =>
-                setTeacher({
-                  ...teacher,
-                  classes: toggleTag(teacher.classes, classId),
-                })
-              }
-            />
-            <button
-              onClick={handleSaveClasses}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm"
-            >
-              Done
-            </button>
-          </div>
-        </Modal>
-      )}
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-slate-800">
+                1. Select Classes
+              </h3>
+              <p className="text-xs text-slate-500 mb-2">
+                Choose the classes this teacher is assigned to.
+              </p>
+              <ClassSelector
+                selected={teacher.classes}
+                onToggle={(classId) =>
+                  setTeacher({
+                    ...teacher,
+                    classes: toggleTag(teacher.classes, classId),
+                  })
+                }
+              />
+            </div>
 
-      {/* Edit Assigned Subjects Modal */}
-      {showEditSubjects && (
-        <Modal
-          title="Edit Subject Assignments"
-          onClose={() => setShowEditSubjects(false)}
-          wide
-        >
-          <div className="space-y-4">
-            <TagSelector
-              label="Available subjects based on assigned class streams"
-              options={availSubjects}
-              selected={teacher.subjects}
-              onToggle={(sName) =>
-                setTeacher({
-                  ...teacher,
-                  subjects: toggleTag(teacher.subjects, sName),
-                })
-              }
-              searchable
-            />
+            <div className="space-y-1 border-t border-slate-100 pt-4">
+              <h3 className="text-sm font-semibold text-slate-800">
+                2. Select Subjects
+              </h3>
+              <p className="text-xs text-slate-500 mb-2">
+                Choose the subjects taught in the selected classes.
+              </p>
+              <TagSelector
+                label=""
+                options={availSubjects}
+                selected={teacher.subjects}
+                onToggle={(sName) =>
+                  setTeacher({
+                    ...teacher,
+                    subjects: toggleTag(teacher.subjects, sName),
+                  })
+                }
+                searchable
+              />
+            </div>
             <button
-              onClick={handleSaveSubjects}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm"
+              onClick={handleSaveAssignments}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm mt-4"
             >
-              Done
+              Save
             </button>
           </div>
         </Modal>

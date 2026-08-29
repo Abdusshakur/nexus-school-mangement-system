@@ -1,6 +1,10 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { fetchAllTermsAndSessions, createSession, createTerm } from "../api/academics";
+
+import {
+  fetchAllTermsAndSessions,
+  createSession,
+  createTerm,
+} from "../api/academics";
 
 export interface AcademicTerm {
   id: string;
@@ -39,15 +43,24 @@ interface SessionState {
   loading: boolean;
   error: string | null;
   fetchSessions: () => Promise<void>;
-  startNewSession: (data: Omit<AcademicSession, "id" | "status" | "createdAt" | "terms">) => Promise<void>;
-  addNewTerm: (sessionId: string, data: { name: string; startDate: string; endDate: string; isActive: boolean }) => Promise<void>;
+  startNewSession: (
+    data: Omit<AcademicSession, "id" | "status" | "createdAt" | "terms">,
+  ) => Promise<void>;
+  addNewTerm: (
+    sessionId: string,
+    data: {
+      name: string;
+      startDate: string;
+      endDate: string;
+      isActive: boolean;
+    },
+  ) => Promise<void>;
   approveAccessRequest: (id: string) => void;
   rejectAccessRequest: (id: string) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       academicSessions: [],
       sessionAccessRequests: [],
       loading: false,
@@ -57,10 +70,11 @@ export const useSessionStore = create<SessionState>()(
         set({ loading: true, error: null });
         try {
           const data = await fetchAllTermsAndSessions();
-          
+
           let rawData: any[] = [];
           if (Array.isArray(data)) rawData = data;
-          else if (data?.items && Array.isArray(data.items)) rawData = data.items;
+          else if (data?.items && Array.isArray(data.items))
+            rawData = data.items;
 
           const sessionMap = new Map<string, AcademicSession>();
 
@@ -71,13 +85,12 @@ export const useSessionStore = create<SessionState>()(
               name: item.term_name,
               startDate: item.term_start_date,
               endDate: item.term_end_date,
-              status: item.is_term_active ? "active" : "archived"
+              status: item.is_term_active ? "active" : "archived",
             };
 
             if (sessionMap.has(sessionId)) {
               sessionMap.get(sessionId)!.terms.push(term);
               if (item.is_term_active) {
-                // update session's active term info if this term is active
                 const s = sessionMap.get(sessionId)!;
                 s.term = item.term_name;
                 s.termId = item.term_id;
@@ -99,7 +112,10 @@ export const useSessionStore = create<SessionState>()(
             }
           });
 
-          set({ academicSessions: Array.from(sessionMap.values()), loading: false });
+          set({
+            academicSessions: Array.from(sessionMap.values()),
+            loading: false,
+          });
         } catch (error: any) {
           set({ error: error.message, loading: false });
         }
@@ -138,7 +154,7 @@ export const useSessionStore = create<SessionState>()(
             name: data.name,
             start_date: data.startDate,
             end_date: data.endDate,
-            is_active: data.isActive, 
+            is_active: data.isActive,
           });
           await get().fetchSessions();
         } catch (error: any) {
@@ -151,20 +167,20 @@ export const useSessionStore = create<SessionState>()(
         set((state) => ({
           sessionAccessRequests: state.sessionAccessRequests.map((r) =>
             r.id === id
-              ? { ...r, status: "approved", approvedAt: new Date().toISOString() }
-              : r
+              ? {
+                  ...r,
+                  status: "approved",
+                  approvedAt: new Date().toISOString(),
+                }
+              : r,
           ),
         })),
 
       rejectAccessRequest: (id) =>
         set((state) => ({
           sessionAccessRequests: state.sessionAccessRequests.map((r) =>
-            r.id === id ? { ...r, status: "rejected" } : r
+            r.id === id ? { ...r, status: "rejected" } : r,
           ),
         })),
-    }),
-    {
-      name: "nexus-session-store",
-    }
-  )
+  })
 );

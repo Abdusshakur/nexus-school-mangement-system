@@ -32,14 +32,8 @@ const getValidUntilTime = () => {
   return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 };
 
-// Initial mock check-ins
-const MOCK_CHECKINS: TeacherCheckIn[] = [
-  { id: "c1", teacherId: "t1", date: new Date().toISOString().slice(0, 10), checkInTime: "07:15 AM", status: "present" },
-  { id: "c2", teacherId: "t2", date: new Date().toISOString().slice(0, 10), checkInTime: "07:35 AM", status: "late" },
-];
-
 export const useQRAttendanceStore = create<TeacherAttendanceState>((set) => ({
-  teacherCheckIns: MOCK_CHECKINS,
+  teacherCheckIns: [],
   currentQRSession: {
     token: generateRandomToken(),
     date: new Date().toISOString().slice(0, 10),

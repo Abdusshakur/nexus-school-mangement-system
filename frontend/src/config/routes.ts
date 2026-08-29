@@ -33,6 +33,7 @@ export const ROUTES = {
     CLASS_DETAIL: (id: string) => `/teacher/classes/${id}`,
     ASSIGNMENTS: "/teacher/assignments",
     ATTENDANCE: "/teacher/attendance",
+    MY_ATTENDANCE: "/teacher/my-attendance",
     ANNOUNCEMENTS: "/teacher/announcements",
     GRADES: "/teacher/grades",
     STUDENTS: "/teacher/students",

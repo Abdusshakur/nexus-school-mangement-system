@@ -32,6 +32,7 @@ import {
 } from "../../../api/dashboard";
 import {
   fetchStudentsList,
+  getStudentByAdmissionNumber,
   formatClassName,
   type StudentResponse,
 } from "../../../api/students";
@@ -83,14 +84,6 @@ function StatCard({
     </div>
   );
 }
-
-const MOCK_ATTENDANCE_TRENDS: DailyAttendance[] = [
-  { day: "Mon", date: "2026-07-14", present: 210, absent: 15, late: 5 },
-  { day: "Tue", date: "2026-07-15", present: 225, absent: 10, late: 2 },
-  { day: "Wed", date: "2026-07-16", present: 205, absent: 20, late: 8 },
-  { day: "Thu", date: "2026-07-17", present: 230, absent: 8, late: 4 },
-  { day: "Fri", date: "2026-07-18", present: 220, absent: 15, late: 3 },
-];
 
 const quickActions = [
   {
@@ -148,29 +141,74 @@ export function DashboardPage() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
+      // 1. Try to load from local storage first
+      const cachedMetrics = localStorage.getItem("dash_metrics");
+      const cachedStudents = localStorage.getItem("dash_students");
+      const cachedTrends = localStorage.getItem("dash_trends");
+
+      if (cachedMetrics) setMetrics(JSON.parse(cachedMetrics));
+      if (cachedStudents) setRecentStudents(JSON.parse(cachedStudents));
+      if (cachedTrends) setAttendanceTrends(JSON.parse(cachedTrends));
+
+      // 2. Fetch fresh data from API
       try {
-        await Promise.all([
-          getDashboardSummary().then(setMetrics),
-          fetchStudentsList().then((studentsData) => {
-            const sorted = [...studentsData]
-              .sort(
-                (a, b) =>
-                  new Date(b.created_at).getTime() -
-                  new Date(a.created_at).getTime(),
-              )
-              .slice(0, 5);
-            setRecentStudents(sorted);
-          }),
+        await Promise.allSettled([
+          getDashboardSummary()
+            .then((data) => {
+              setMetrics(data);
+              localStorage.setItem("dash_metrics", JSON.stringify(data));
+            })
+            .catch((err) => {
+              console.error("Failed to load dashboard summary:", err);
+              // We don't throw here so allSettled continues smoothly
+            }),
+          fetchStudentsList()
+            .then(async (studentsData) => {
+              const sorted = [...studentsData]
+                .sort(
+                  (a, b) =>
+                    new Date(b.created_at).getTime() -
+                    new Date(a.created_at).getTime(),
+                )
+                .slice(0, 5);
+
+              const detailedStudents = await Promise.all(
+                sorted.map((s) =>
+                  getStudentByAdmissionNumber(s.admission_number).catch(
+                    () => s,
+                  ),
+                ),
+              );
+
+              setRecentStudents(detailedStudents);
+              localStorage.setItem(
+                "dash_students",
+                JSON.stringify(detailedStudents),
+              );
+            })
+            .catch((err) =>
+              console.error("Failed to load recent students:", err),
+            ),
           fetchAttendanceTrends()
-            .then(setAttendanceTrends)
-            .catch(() => []),
-          fetchAnnouncements(),
+            .then((data) => {
+              setAttendanceTrends(data);
+              localStorage.setItem("dash_trends", JSON.stringify(data));
+            })
+            .catch((err) =>
+              console.error("Failed to load attendance trends:", err),
+            ),
+          fetchAnnouncements().catch((err) =>
+            console.error("Failed to load announcements:", err),
+          ),
         ]);
       } catch (err: unknown) {
         if (err instanceof Error) {
           toast.error(err.message);
 
-          if (err.message.includes("Session expired")) {
+          if (
+            err.message.includes("Session expired") ||
+            err.message.includes("401")
+          ) {
             navigate("/login");
           }
         }
@@ -320,11 +358,7 @@ export function DashboardPage() {
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart
-              data={
-                attendanceTrends.length > 0
-                  ? attendanceTrends
-                  : MOCK_ATTENDANCE_TRENDS
-              }
+              data={attendanceTrends.length > 0 ? attendanceTrends : []}
               margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
             >
               <defs>
@@ -445,16 +479,14 @@ export function DashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50">
-                {["Student", "Grade", "Parents / Guardians", "Status"].map(
-                  (header) => (
-                    <th
-                      key={header}
-                      className="text-left px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
-                    >
-                      {header}
-                    </th>
-                  ),
-                )}
+                {["Student", "Grade", "Guardian", "Status"].map((header) => (
+                  <th
+                    key={header}
+                    className="text-left px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    {header}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -498,9 +530,6 @@ export function DashboardPage() {
                             >
                               <span>
                                 {p.first_name} {p.last_name}
-                              </span>
-                              <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wide bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
-                                {p.relationship_type || `P${idx + 1}`}
                               </span>
                             </span>
                           ))}

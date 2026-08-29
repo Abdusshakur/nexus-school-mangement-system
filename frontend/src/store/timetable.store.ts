@@ -1,6 +1,10 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { getClassTimetable, createTimetableEntry, getTeacherSchedule } from "../api/timetable";
+
+import {
+  getClassTimetable,
+  createTimetableEntry,
+  getTeacherSchedule,
+} from "../api/timetable";
 import { fetchAllTermsAndSessions } from "../api/academics";
 
 export type TimetableKey = string; // format: classId-day-periodId
@@ -35,13 +39,12 @@ interface TimetableState {
     startTime: string,
     endTime: string,
     periodId: number,
-    cell: TimetableCell | undefined
+    cell: TimetableCell | undefined,
   ) => Promise<void>;
 }
 
 export const useTimetableStore = create<TimetableState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       timetableGrid: {},
       myTimetableGrid: {},
       terms: [],
@@ -53,8 +56,10 @@ export const useTimetableStore = create<TimetableState>()(
         try {
           const data = await fetchAllTermsAndSessions();
           // Extract term_id to match the backend expectation
-          const fetchedTerms = Array.isArray(data) ? data.map((item: any) => item.term_id) : [];
-          
+          const fetchedTerms = Array.isArray(data)
+            ? data.map((item: any) => item.term_id)
+            : [];
+
           if (fetchedTerms.length > 0) {
             set({ terms: fetchedTerms, loading: false });
           } else {
@@ -72,12 +77,18 @@ export const useTimetableStore = create<TimetableState>()(
           let grid = { ...get().timetableGrid };
           if (Array.isArray(data)) {
             data.forEach((entry: any) => {
-              // Convert day string to index for frontend UI
+              // Convert day string to index
               const dayStr = entry.day_of_week || "MONDAY";
-              const dayMap: Record<string, number> = { "MONDAY": 0, "TUESDAY": 1, "WEDNESDAY": 2, "THURSDAY": 3, "FRIDAY": 4 };
+              const dayMap: Record<string, number> = {
+                MONDAY: 0,
+                TUESDAY: 1,
+                WEDNESDAY: 2,
+                THURSDAY: 3,
+                FRIDAY: 4,
+              };
               const dIndex = dayMap[dayStr] ?? 0;
 
-              // Convert start_time to period
+              // Convert start time to period
 
               const time = entry.start_time;
               let pIndex = 1;
@@ -114,7 +125,9 @@ export const useTimetableStore = create<TimetableState>()(
       fetchAllTimetables: async (classIds: string[], termId: string) => {
         set({ loading: true, error: null });
         try {
-          const promises = classIds.map(id => getClassTimetable(id, termId).catch(() => []));
+          const promises = classIds.map((id) =>
+            getClassTimetable(id, termId).catch(() => []),
+          );
           const results = await Promise.all(promises);
 
           let grid: Record<string, TimetableCell | undefined> = {};
@@ -124,7 +137,13 @@ export const useTimetableStore = create<TimetableState>()(
             if (Array.isArray(data)) {
               data.forEach((entry: any) => {
                 const dayStr = entry.day_of_week || "MONDAY";
-                const dayMap: Record<string, number> = { "MONDAY": 0, "TUESDAY": 1, "WEDNESDAY": 2, "THURSDAY": 3, "FRIDAY": 4 };
+                const dayMap: Record<string, number> = {
+                  MONDAY: 0,
+                  TUESDAY: 1,
+                  WEDNESDAY: 2,
+                  THURSDAY: 3,
+                  FRIDAY: 4,
+                };
                 const dIndex = dayMap[dayStr] ?? 0;
 
                 const time = entry.start_time;
@@ -167,10 +186,22 @@ export const useTimetableStore = create<TimetableState>()(
           let grid: Record<string, TimetableCell | undefined> = {};
           if (Array.isArray(data)) {
             data.forEach((entry: any) => {
-              // Day and period only key for my schedule
-              const key = `${entry.day_of_week}-${entry.period_id}`;
+              const time = entry.start_time;
+              let pIndex = 1;
+              if (time === "08:00:00") pIndex = 1;
+              else if (time === "09:00:00") pIndex = 2;
+              else if (time === "10:00:00") pIndex = 3;
+              else if (time === "11:00:00") pIndex = 4;
+              else if (time === "11:30:00") pIndex = 5;
+              else if (time === "12:30:00") pIndex = 6;
+              else if (time === "13:20:00") pIndex = 7;
+              else if (time === "14:00:00") pIndex = 8;
+              else if (time === "15:00:00") pIndex = 9;
+
+              const key = `${entry.day_of_week}-${pIndex}`;
               grid[key] = {
-                subject: entry.subject_id,
+                subject: entry.subject_name || entry.subject_id,
+                subjectId: entry.subject_id,
                 teacherId: entry.teacher_id,
                 teacherName: entry.teacher_name || "Assigned Teacher",
                 className: entry.class_name || "Class",
@@ -188,7 +219,16 @@ export const useTimetableStore = create<TimetableState>()(
         }
       },
 
-      saveTimetableCell: async (termId, classId, day, dayString, startTime, endTime, periodId, cell) => {
+      saveTimetableCell: async (
+        termId,
+        classId,
+        day,
+        dayString,
+        startTime,
+        endTime,
+        periodId,
+        cell,
+      ) => {
         set({ loading: true, error: null });
         try {
           if (cell) {
@@ -200,11 +240,8 @@ export const useTimetableStore = create<TimetableState>()(
               teacher_id: cell.teacherId,
               day_of_week: dayString,
               start_time: startTime,
-              end_time: endTime
+              end_time: endTime,
             });
-          } else {
-            // We don't have a specific delete endpoint, so we might need one or send empty to createTimetableEntry
-            // This is an assumption that the endpoint handles clears.
           }
 
           const key = `${classId}-${day}-${periodId}`;
@@ -220,9 +257,5 @@ export const useTimetableStore = create<TimetableState>()(
           throw error;
         }
       },
-    }),
-    {
-      name: "nexus-timetable-store",
-    }
-  )
+    })
 );

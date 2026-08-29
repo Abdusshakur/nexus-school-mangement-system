@@ -82,16 +82,9 @@ export const updateTeacherProfile = async (
   return apiClient.patch(`/teachers/${id}`, payload);
 };
 
-export const assignTeacherClasses = async (
+export const assignTeacherContexts = async (
   id: string,
-  classIds: string[]
+  assignments: { class_id: string; subject_id: string }[]
 ): Promise<any> => {
-  return apiClient.put(`/teachers/${id}/classes`, { class_ids: classIds });
-};
-
-export const assignTeacherSubjects = async (
-  id: string,
-  subjectIds: string[]
-): Promise<any> => {
-  return apiClient.put(`/teachers/${id}/subjects`, { subject_ids: subjectIds });
+  return apiClient.put(`/teachers/${id}/assignments`, { assignments });
 };

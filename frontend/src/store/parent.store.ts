@@ -16,8 +16,13 @@ interface ParentState {
   error: string | null;
   fetchParents: (force?: boolean) => Promise<ParentResponse[]>;
   addParent: (payload: ParentCreatePayload) => Promise<ParentResponse>;
-  linkParent: (payload: RelationshipCreatePayload) => Promise<RelationshipResponse>;
-  updateParent: (id: string, payload: Partial<ParentCreatePayload>) => Promise<any>;
+  linkParent: (
+    payload: RelationshipCreatePayload,
+  ) => Promise<RelationshipResponse>;
+  updateParent: (
+    id: string,
+    payload: Partial<ParentCreatePayload>,
+  ) => Promise<any>;
 }
 
 export const useParentStore = create<ParentState>((set, get) => ({
@@ -35,7 +40,8 @@ export const useParentStore = create<ParentState>((set, get) => ({
       set({ parents: data, loading: false });
       return data;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to fetch parents list.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to fetch parents list.";
       set({ error: msg, loading: false });
       throw err;
     }
@@ -52,7 +58,8 @@ export const useParentStore = create<ParentState>((set, get) => ({
       }));
       return newParent;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to create parent profile.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to create parent profile.";
       set({ error: msg, loading: false });
       throw err;
     }
@@ -62,12 +69,15 @@ export const useParentStore = create<ParentState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const result = await linkParentToStudent(payload);
-      // Fetch fresh parent-student list to update mapped children arrays in state
+      // Fetch parent-student list to update mapped children
       const data = await fetchParentsList();
       set({ parents: data, loading: false });
       return result;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to link parent to student.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to link parent to student.";
       set({ error: msg, loading: false });
       throw err;
     }
@@ -77,12 +87,13 @@ export const useParentStore = create<ParentState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       await updateParentProfile(id, payload);
-      // Fetch fresh parent list to update mapped arrays in state
+      // Fetch parent list to update mapped array
       const data = await fetchParentsList();
       set({ parents: data, loading: false });
       return true;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to update parent profile.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to update parent profile.";
       set({ error: msg, loading: false });
       throw err;
     }

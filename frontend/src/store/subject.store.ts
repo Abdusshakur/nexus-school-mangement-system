@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
 import type { AcademicSubject } from "../api/academics";
-import { fetchSubjects, createSubject, deleteSubject } from "../api/academics";
+import { fetchSubjects, createSubject, updateSubject, deleteSubject,  } from "../api/academics";
 
 interface SubjectState {
   subjects: AcademicSubject[];
@@ -10,12 +10,12 @@ interface SubjectState {
 
   loadSubjects: (force?: boolean) => Promise<void>;
   addSubject: (name: string) => Promise<void>;
+  editSubject: (subjectId: string, name: string) => Promise<void>;
   removeSubject: (subjectId: string) => Promise<void>;
 }
 
 export const useSubjectStore = create<SubjectState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       subjects: [],
       loading: false,
       error: null,
@@ -48,6 +48,20 @@ export const useSubjectStore = create<SubjectState>()(
         }
       },
 
+      editSubject: async (subjectId, name) => {
+        set({ loading: true, error: null });
+        try {
+          const updatedSubject = await updateSubject(subjectId, { name });
+          set((state) => ({
+            subjects: state.subjects.map((s) => (s.id === subjectId ? updatedSubject : s)),
+            loading: false,
+          }));
+        } catch (error: any) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
       removeSubject: async (subjectId) => {
         set({ loading: true, error: null });
         try {
@@ -61,9 +75,5 @@ export const useSubjectStore = create<SubjectState>()(
           throw error;
         }
       },
-    }),
-    {
-      name: "nexus-subject-store",
-    }
-  )
+  })
 );

@@ -12,12 +12,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { createStudent } from "../../../api/students";
+import { useClassStore } from "../../../store/class.store";
 
 interface CombinedStudentForm {
   email: string;
   password: string;
   admission_number: string;
-  class_name: string;
+  class_id: string;
   first_name: string;
   last_name: string;
   dob: string;
@@ -45,7 +46,7 @@ interface FieldProps {
   set: (key: keyof CombinedStudentForm, val: string) => void;
   type?: string;
   required?: boolean;
-  options?: string[];
+  options?: (string | { label: string; value: string })[];
   placeholder?: string;
 }
 
@@ -71,11 +72,15 @@ const Field = ({
         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-all cursor-pointer"
       >
         <option value="">Select…</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
+        {options.map((o) => {
+          const val = typeof o === "string" ? o : o.value;
+          const label = typeof o === "string" ? o : o.label;
+          return (
+            <option key={val} value={val}>
+              {label}
+            </option>
+          );
+        })}
       </select>
     ) : (
       <input
@@ -95,12 +100,17 @@ const Field = ({
 export function AddStudent() {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const { classes, loadClasses } = useClassStore();
+
+  React.useEffect(() => {
+    loadClasses();
+  }, [loadClasses]);
 
   const [form, setForm] = useState<CombinedStudentForm>({
     email: "",
     password: "",
     admission_number: "",
-    class_name: "",
+    class_id: "",
     first_name: "",
     last_name: "",
     dob: "",
@@ -159,7 +169,7 @@ export function AddStudent() {
       !form.password ||
       !form.first_name ||
       !form.last_name ||
-      !form.class_name ||
+      !form.class_id ||
       !form.gender ||
       !form.address ||
       !form.p1_first_name ||
@@ -219,7 +229,7 @@ export function AddStudent() {
         date_of_birth: form.dob || new Date().toISOString().split("T")[0],
         address: form.address,
         phone_number: form.phone || null,
-        class_name: form.class_name,
+        class_id: form.class_id,
         parents: parentsArray,
       };
 
@@ -308,10 +318,10 @@ export function AddStudent() {
 
             <Field
               label="Class / Grade Stream"
-              id="class_name"
+              id="class_id"
               form={form}
               set={set}
-              options={["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"]}
+              options={classes.map(c => ({ label: c.name, value: c.id }))}
               required
             />
             <Field

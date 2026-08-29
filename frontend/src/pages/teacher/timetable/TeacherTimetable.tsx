@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from "../../../store/auth/authStore";
 import { useClassStore } from "../../../store/class.store";
 import { useSessionStore } from "../../../store/session.store";
+import { getSubjectColors } from "../../../utils/colors";
 
 // ─── Period / day structure ────────────────────────────────────────────────────
 
@@ -31,95 +32,8 @@ function ttKey(d: number, p: number): TimetableKey {
   return `${d}-${p}` as TimetableKey;
 }
 
-const SUBJECT_COLORS: Record<
-  string,
-  { bg: string; text: string; border: string }
-> = {
-  Biology: {
-    bg: "bg-emerald-100",
-    text: "text-emerald-800",
-    border: "border-emerald-300",
-  },
-  "Basic Science": {
-    bg: "bg-teal-100",
-    text: "text-teal-900",
-    border: "border-teal-300",
-  },
-  Mathematics: {
-    bg: "bg-indigo-50",
-    text: "text-indigo-800",
-    border: "border-indigo-300",
-  },
-  "Further Mathematics": {
-    bg: "bg-violet-100",
-    text: "text-violet-900",
-    border: "border-violet-300",
-  },
-  Physics: {
-    bg: "bg-amber-100",
-    text: "text-amber-800",
-    border: "border-amber-300",
-  },
-  Chemistry: {
-    bg: "bg-pink-100",
-    text: "text-pink-900",
-    border: "border-pink-300",
-  },
-  "English Language": {
-    bg: "bg-blue-100",
-    text: "text-blue-900",
-    border: "border-blue-300",
-  },
-  "Literature in English": {
-    bg: "bg-orange-50",
-    text: "text-orange-900",
-    border: "border-orange-300",
-  },
-  History: {
-    bg: "bg-purple-100",
-    text: "text-purple-900",
-    border: "border-purple-300",
-  },
-  Geography: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-900",
-    border: "border-emerald-300",
-  },
-  "Social Studies": {
-    bg: "bg-slate-100",
-    text: "text-slate-800",
-    border: "border-slate-300",
-  },
-  Government: {
-    bg: "bg-sky-100",
-    text: "text-sky-900",
-    border: "border-sky-300",
-  },
-  Economics: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-900",
-    border: "border-yellow-300",
-  },
-  "Computer Science": {
-    bg: "bg-green-100",
-    text: "text-green-900",
-    border: "border-green-300",
-  },
-  "Agricultural Science": {
-    bg: "bg-yellow-50",
-    text: "text-yellow-900",
-    border: "border-yellow-300",
-  },
-};
-
 function cellColor(sub: string) {
-  return (
-    SUBJECT_COLORS[sub] ?? {
-      bg: "bg-slate-50",
-      text: "text-slate-700",
-      border: "border-slate-200",
-    }
-  );
+  return getSubjectColors(sub);
 }
 
 function TimetableGrid({
@@ -443,14 +357,23 @@ export default function TeacherTimetable() {
           Subject Color Guide
         </p>
         <div className="flex flex-wrap gap-2">
-          {Object.entries(SUBJECT_COLORS).map(([sub, cs]) => (
-            <span
-              key={sub}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cs.bg} ${cs.text} border ${cs.border}`}
-            >
-              {sub}
-            </span>
-          ))}
+          {Array.from(
+            new Set(
+              Object.values(timetableGrid)
+                .filter((c) => c && c.teacherId === user?.id)
+                .map((c) => c!.subject)
+            )
+          ).map((sub) => {
+            const cs = cellColor(sub);
+            return (
+              <span
+                key={sub}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cs.bg} ${cs.text} border ${cs.border}`}
+              >
+                {sub}
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>

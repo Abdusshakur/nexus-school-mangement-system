@@ -33,7 +33,6 @@ function Modal({
 export function TeacherAssignment() {
   const {
     classes,
-    classTeacherAssignments,
     assignClassTeacher,
     removeClassTeacher,
     loadClasses,
@@ -88,8 +87,8 @@ export function TeacherAssignment() {
     }
   };
 
-  const assigned = classes.filter((c) => classTeacherAssignments[c.id]);
-  const unassigned = classes.filter((c) => !classTeacherAssignments[c.id]);
+  const assigned = classes.filter((c) => c.form_teacher_id);
+  const unassigned = classes.filter((c) => !c.form_teacher_id);
 
   return (
     <div className="space-y-5">
@@ -149,7 +148,7 @@ export function TeacherAssignment() {
           </thead>
           <tbody>
             {classes.map((cls) => {
-              const tid = classTeacherAssignments[cls.id];
+              const tid = cls.form_teacher_id;
               const teacher = tid ? teachers.find((t) => t.id === tid) : null;
               return (
                 <tr
@@ -177,6 +176,22 @@ export function TeacherAssignment() {
                           </p>
                           <p className="text-xs text-slate-400">
                             {teacher.dept}
+                          </p>
+                        </div>
+                      </div>
+                    ) : cls.form_teacher_name ? (
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-indigo-500">
+                          <span className="text-white font-bold text-[10px]">
+                            {cls.form_teacher_name.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">
+                            {cls.form_teacher_name}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Teacher
                           </p>
                         </div>
                       </div>
@@ -278,9 +293,9 @@ export function TeacherAssignment() {
               </div>
             )}
             {(() => {
-              const alreadyAssignedClassId = Object.entries(classTeacherAssignments).find(
-                ([cid, tid]) => tid === selectedTeacher && cid !== assignModal?.classId
-              )?.[0];
+              const alreadyAssignedClassId = classes.find(
+                (c) => c.form_teacher_id === selectedTeacher && c.id !== assignModal?.classId
+              )?.id;
               
               if (alreadyAssignedClassId) {
                 const alreadyAssignedClassName = classes.find((c) => c.id === alreadyAssignedClassId)?.name;

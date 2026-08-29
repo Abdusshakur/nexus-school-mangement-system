@@ -25,6 +25,28 @@ export async function login(
   }
 }
 
+export async function registerSchoolAdmin(payload: {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  school_id: string; // From the user input or a generated UUID
+  phone_number?: string;
+}): Promise<any> {
+  try {
+    const response = await axios.post(`${API_BASE}/auth/register`, {
+      ...payload,
+      role_name: "admin", // They are registering a school, so they get admin role
+    });
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.detail ?? "Registration failed");
+    }
+    throw new Error("A network error occurred during registration.");
+  }
+}
+
 export async function getCurrentUser(): Promise<any> {
   const { default: apiClient } = await import('./client');
   return apiClient.get('/auth/me');
