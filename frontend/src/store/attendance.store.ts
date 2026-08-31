@@ -98,7 +98,7 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({ loading: true, error: null });
         try {
           await approveAttendance(sessionId, reason);
-          set({ loading: false });
+          set({ loading: false, activeSessionStatus: "APPROVED" });
           // Re-fetch the daily summary to update the status
           const state = get();
           if (state.dailySummary?.date) {
@@ -115,7 +115,7 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({ loading: true, error: null });
         try {
           await rejectAttendance(sessionId, reason);
-          set({ loading: false });
+          set({ loading: false, activeSessionStatus: "REJECTED" });
           const state = get();
           if (state.dailySummary?.date) {
             await state.fetchDailySummary(state.dailySummary.date);
@@ -131,7 +131,7 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({ loading: true, error: null });
         try {
           await reopenAttendance(sessionId, reason);
-          set({ loading: false });
+          set({ loading: false, activeSessionStatus: "DRAFT" });
           const state = get();
           if (state.dailySummary?.date) {
             await state.fetchDailySummary(state.dailySummary.date);

@@ -9,17 +9,20 @@ export function ResultsTab({
   studentId,
   grade: _grade,
   session,
+  allowedSubjects,
 }: {
   studentId: string;
   grade: string;
   session: string;
+  allowedSubjects?: string[];
 }) {
   const { subjects } = useSubjectStore();
   const subjectNames = subjects.map((s: AcademicSubject) => s.name);
-  const results = generateResults(studentId, subjectNames, session);
-  const avg = Math.round(
+  const rawResults = generateResults(studentId, subjectNames, session);
+  const results = allowedSubjects ? rawResults.filter(r => allowedSubjects.includes(r.subject)) : rawResults;
+  const avg = results.length > 0 ? Math.round(
     results.reduce((a, r) => a + r.total, 0) / (results.length || 1),
-  );
+  ) : 0;
   const totalSubjects = results.length;
   const distinctions = results.filter((r) => r.total >= 165).length;
   const passes = results.filter((r) => r.total >= 120).length;

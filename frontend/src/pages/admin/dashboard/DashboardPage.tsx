@@ -124,7 +124,7 @@ export function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardSummaryResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { announcements, fetchAnnouncements } = useAnnouncementStore();
-  const { academicSessions } = useSessionStore();
+  const { academicSessions, fetchSessions } = useSessionStore();
   const activeSession = academicSessions.find((s) => s.status === "active");
 
   const currentDateString = new Intl.DateTimeFormat("en-US", {
@@ -200,6 +200,9 @@ export function DashboardPage() {
           fetchAnnouncements().catch((err) =>
             console.error("Failed to load announcements:", err),
           ),
+          fetchSessions().catch((err) =>
+            console.error("Failed to load sessions:", err),
+          ),
         ]);
       } catch (err: unknown) {
         if (err instanceof Error) {
@@ -217,7 +220,7 @@ export function DashboardPage() {
       }
     };
     loadDashboardData();
-  }, [navigate, fetchAnnouncements]);
+  }, [navigate, fetchAnnouncements, fetchSessions]);
 
   const dashboardAnnouncements = announcements.slice(0, 3).map((ann) => ({
     id: ann.id,

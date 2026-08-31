@@ -82,7 +82,19 @@ export async function createSession(payload: AcademicSessionCreate): Promise<any
 }
 
 export async function createTerm(payload: AcademicTermCreate): Promise<any> {
-  return apiClient.post("/academics/terms", payload);
+  return apiClient.post(`/academics/sessions/${payload.session_id}/terms`, payload);
+}
+
+export async function activateSession(sessionId: string): Promise<any> {
+  return apiClient.post(`/academics/sessions/${sessionId}/activate`);
+}
+
+export async function closeSession(sessionId: string): Promise<any> {
+  return apiClient.post(`/academics/sessions/${sessionId}/close`);
+}
+
+export async function openTerm(termId: string): Promise<any> {
+  return apiClient.post(`/academics/terms/${termId}/open`);
 }
 
 export async function fetchAllTermsAndSessions(): Promise<any> {

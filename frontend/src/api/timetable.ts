@@ -5,14 +5,14 @@ export interface TimetableCreatePayload {
   class_id: string;
   subject_id: string;
   teacher_id: string;
-  day_of_week: string; // e.g., "Monday"
+  day_of_week: string;
   start_time: string;
   end_time: string;
 }
 
 export interface TimetableBulkCreatePayload {
-  class_id: string;
-  entries: TimetableCreatePayload[];
+  term_id: string;
+  entries: Omit<TimetableCreatePayload, "term_id">[];
 }
 
 export async function createTimetableEntry(payload: TimetableCreatePayload): Promise<any> {

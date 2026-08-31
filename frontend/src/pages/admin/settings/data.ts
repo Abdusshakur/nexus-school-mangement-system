@@ -1,7 +1,8 @@
-import { School, Users, Bell, Shield } from "lucide-react";
+import { School, Users, Bell, Shield, CalendarCheck } from "lucide-react";
 
 export const tabs = [
   { id: "school", label: "School Settings", icon: School },
+  { id: "attendance", label: "Attendance Settings", icon: CalendarCheck },
   { id: "users", label: "User Management", icon: Users },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "security", label: "Security", icon: Shield },

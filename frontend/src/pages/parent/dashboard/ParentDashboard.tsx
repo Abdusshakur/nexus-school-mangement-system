@@ -192,7 +192,7 @@ export function ParentDashboard() {
         </div>
       </div>
 
-      {/* Row: Recent Assignments + Notifications */}
+      {/* Recent Assignments Notification */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Assignments */}
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">

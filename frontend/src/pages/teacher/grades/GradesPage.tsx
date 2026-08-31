@@ -394,9 +394,22 @@ export default function TeacherGrades() {
                   .reverse()
                   .slice(0, 5)
                   .map((r) => (
-                    <div
+                    <button
                       key={r.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100"
+                      onClick={() => {
+                        setClassId(r.classId);
+                        setSubject(r.subject);
+                        setTerm(r.term);
+                        setSession(r.session);
+                        setAssessmentId("ca1");
+                        const loadedGrades: GradeMap = {};
+                        r.grades.forEach((g) => {
+                          loadedGrades[g.studentId] = g.ca1 !== 0 ? g.ca1 : "";
+                        });
+                        setGrades(loadedGrades);
+                        setStep("enter");
+                      }}
+                      className="w-full text-left flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all"
                     >
                       <div>
                         <p className="text-sm font-medium text-slate-900">
@@ -412,7 +425,7 @@ export default function TeacherGrades() {
                       >
                         {r.submitted ? "Submitted" : "Draft"}
                       </span>
-                    </div>
+                    </button>
                   ))}
               </div>
             </div>

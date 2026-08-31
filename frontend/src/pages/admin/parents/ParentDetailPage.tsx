@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ROUTES } from "../../../config/routes";
 import { Link, useParams } from "react-router-dom";
-import { Phone, Mail, MapPin, ArrowLeft, ChevronRight } from "lucide-react";
+import { Phone, Mail, MapPin, ArrowLeft, ChevronRight, Pencil, Link as LinkIcon } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
+import { EditParentModal } from "./EditParentModal";
+import { LinkStudentModal } from "./LinkStudentModal";
 import {
   formatParentName,
   formatParentInitials,
@@ -11,6 +13,8 @@ import {
 
 export function ParentDetail() {
   const { id } = useParams();
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
   const { parents: dbParents, loading, fetchParents } = useParentStore();
 
   useEffect(() => {
@@ -30,16 +34,16 @@ export function ParentDetail() {
       : found.students || []
     : [];
 
-  const isInvalidPhone =
-    found &&
-    (!found.phone_number ||
-      found.phone_number.toLowerCase().startsWith("string") ||
-      found.phone_number.toLowerCase() === "null");
+  const isInvalidPhone = found && !found.phone_number;
   const phoneDisplay = found
     ? isInvalidPhone
       ? "No phone registered"
       : found.phone_number
     : "";
+
+  const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
+  const colorIndex = found ? found.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length : 0;
+  const avatarColor = colors[colorIndex];
 
   const parent = found
     ? {
@@ -49,7 +53,7 @@ export function ParentDetail() {
         email: found.email,
         phone: phoneDisplay,
         address: "Address not provided",
-        avatarColor: "bg-purple-500",
+        avatarColor: avatarColor,
         avatar: initials,
         children: childrenList.map((c) => {
           const childName = formatParentName(c.first_name, c.last_name, "");
@@ -97,19 +101,25 @@ export function ParentDetail() {
         >
           <ArrowLeft size={20} />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
             {parent.name}
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">{parent.occupation}</p>
         </div>
+        <button
+          onClick={() => setEditModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-sm"
+        >
+          <Pencil size={16} />
+          Edit Profile
+        </button>
       </header>
 
       <main className="flex-1 p-8 max-w-5xl w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className=" rounded-2xl bg-white border border-slate-200 p-6 text-center shadow-sm h-fit">
           <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md"
-            style={{ background: parent.avatarColor }}
+            className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md ${parent.avatarColor}`}
           >
             <span className="text-white font-bold text-2xl">
               {parent.avatar}
@@ -137,9 +147,23 @@ export function ParentDetail() {
 
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="font-bold text-slate-900 text-lg mb-4">Children</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-900 text-lg">Children</h3>
+              <button
+                onClick={() => setLinkModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100"
+              >
+                <LinkIcon size={14} />
+                Link Student
+              </button>
+            </div>
             <div className="space-y-3">
-              {parent.children.map((child, i) => (
+              {parent.children.length === 0 ? (
+                <div className="text-center py-10 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                  <p className="text-sm font-medium text-slate-500">No children linked to this profile.</p>
+                </div>
+              ) : (
+                parent.children.map((child, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-xl border border-slate-100"
@@ -167,7 +191,8 @@ export function ParentDetail() {
                     Profile <ChevronRight size={14} />
                   </Link>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -214,6 +239,30 @@ export function ParentDetail() {
           </div>
         </div>
       </main>
+      
+      {found && (
+        <EditParentModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          onSuccess={() => {
+            setEditModalOpen(false);
+            fetchParents(true);
+          }}
+          parent={found as any}
+        />
+      )}
+
+      {found && (
+        <LinkStudentModal
+          isOpen={linkModalOpen}
+          onClose={() => setLinkModalOpen(false)}
+          onSuccess={() => {
+            setLinkModalOpen(false);
+            fetchParents(true);
+          }}
+          parentId={found.id}
+        />
+      )}
     </div>
   );
 }

@@ -66,7 +66,7 @@ export const useTeacherStore = create<TeacherState>((set) => ({
           gender: d.gender,
           qualification: d.qualification,
           dept: d.department,
-          title: `${d.qualification || "Teacher"}`,
+          title: d.qualification,
           address: d.address,
           classes: detail ? detail.assigned_classes.map(c => c.name) : [],
           subjects: detail ? detail.assigned_subjects.map(s => s.name) : [],

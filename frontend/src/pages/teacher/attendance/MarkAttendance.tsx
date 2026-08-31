@@ -4,20 +4,20 @@ import { useTeacherAttendanceStore } from "../../../store/teacherAttendance.stor
 import { toast } from "sonner";
 
 export function MarkAttendance() {
-  const { 
-    teacherClasses, 
-    classRosterData, 
-    fetchMyClasses, 
-    fetchClassRoster, 
+  const {
+    teacherClasses,
+    classRosterData,
+    fetchMyClasses,
+    fetchClassRoster,
     submitAttendance,
-    
+
   } = useTeacherAttendanceStore();
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
   );
-  // Note: using local state to track status changes before submitting
+  // using local state to track status changes before submitting
   const [roster, setRoster] = useState<any[]>([]);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -62,7 +62,7 @@ export function MarkAttendance() {
 
   const handleSave = async () => {
     setIsSaved(false);
-    
+
     if (!selectedClassId) {
       toast.error("Please select a class.");
       return;
@@ -208,8 +208,8 @@ export function MarkAttendance() {
                   <button
                     onClick={() => updateStatus(student.id, "Present")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${student.status === "Present"
-                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                        : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                       }`}
                   >
                     <Check size={14} /> Present
@@ -217,8 +217,8 @@ export function MarkAttendance() {
                   <button
                     onClick={() => updateStatus(student.id, "Absent")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${student.status === "Absent"
-                        ? "bg-rose-600 text-white shadow-md shadow-rose-600/10"
-                        : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                      ? "bg-rose-600 text-white shadow-md shadow-rose-600/10"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                       }`}
                   >
                     <X size={14} /> Absent
@@ -226,8 +226,8 @@ export function MarkAttendance() {
                   <button
                     onClick={() => updateStatus(student.id, "Late")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${student.status === "Late"
-                        ? "bg-amber-500 text-white shadow-md shadow-amber-500/10"
-                        : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                      ? "bg-amber-500 text-white shadow-md shadow-amber-500/10"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                       }`}
                   >
                     <Clock size={14} /> Late
@@ -246,8 +246,8 @@ export function MarkAttendance() {
           <button
             onClick={handleSave}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md cursor-pointer ${isSaved
-                ? "bg-indigo-600 text-white shadow-indigo-600/10"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/10"
+              ? "bg-indigo-600 text-white shadow-indigo-600/10"
+              : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/10"
               }`}
           >
             {isSaved ? <CheckCircle size={16} /> : <Save size={16} />}

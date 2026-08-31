@@ -10,6 +10,7 @@ import TeacherAttendance from "../pages/teacher/attendance/AttendanceDashboard";
 import TeacherAnnouncements from "../pages/teacher/announcements/AnnouncementsPage";
 import TeacherGrades from "../pages/teacher/grades/GradesPage";
 import TeacherStudents from "../pages/teacher/students/StudentsPage";
+import { StudentDetailPage } from "../pages/admin/dashboard/Students";
 import TeacherMyAttendancePage from "../pages/teacher/attendance/MyAttendancePage";
 
 import TeacherProfile from "../pages/teacher/profile/ProfilePage";
@@ -31,6 +32,7 @@ export const teacherRoutes = (
     <Route path="announcements" element={<TeacherAnnouncements />} />
     <Route path="grades" element={<TeacherGrades />} />
     <Route path="students" element={<TeacherStudents />} />
+    <Route path="students/:id" element={<StudentDetailPage />} />
     <Route path="timetable" element={<TeacherTimetable />} />
 
     <Route path="profile" element={<TeacherProfile />} />

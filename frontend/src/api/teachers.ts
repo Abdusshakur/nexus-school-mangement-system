@@ -62,7 +62,7 @@ export interface TeacherDetailResponse {
 }
 
 export const fetchTeachersList = async (): Promise<TeacherCreateResponse[]> => {
-  return apiClient.get("/teachers");
+  return apiClient.get("/teachers/");
 };
 
 export const fetchTeacherById = async (id: string): Promise<TeacherDetailResponse> => {
@@ -72,7 +72,7 @@ export const fetchTeacherById = async (id: string): Promise<TeacherDetailRespons
 export const createTeacher = async (
   payload: TeacherCreatePayload
 ): Promise<TeacherCreateResponse> => {
-  return apiClient.post("/teachers", payload);
+  return apiClient.post("/teachers/", payload);
 };
 
 export const updateTeacherProfile = async (

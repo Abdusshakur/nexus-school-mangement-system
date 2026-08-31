@@ -7,11 +7,17 @@ import { useAnnouncementStore } from "../../../store/announcement.store";
 export function CreateAnnouncement() {
   const navigate = useNavigate();
   const { postAnnouncement } = useAnnouncementStore();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    title: string;
+    body: string;
+    audience: string;
+    priority: "LOW" | "MEDIUM" | "HIGH";
+    category: string;
+  }>({
     title: "",
     body: "",
     audience: "",
-    priority: "medium",
+    priority: "MEDIUM",
     category: "",
   });
   const [saving, setSaving] = useState(false);
@@ -123,12 +129,12 @@ export function CreateAnnouncement() {
                 </label>
                 <select
                   value={form.priority}
-                  onChange={(e) => set("priority", e.target.value)}
+                  onChange={(e) => set("priority", e.target.value as "LOW" | "MEDIUM" | "HIGH")}
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
                 </select>
               </div>
               <div>
@@ -170,7 +176,7 @@ export function CreateAnnouncement() {
               ) : (
                 <Save size={16} />
               )}
-              {saving ? "Publishing…" : "Publish Announcement"}
+              {saving ? "Posting…" : "Post Announcement"}
             </button>
             <Link
               to={ROUTES.ADMIN.ANNOUNCEMENTS}

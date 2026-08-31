@@ -10,10 +10,11 @@ import {
 
 import { toast } from "sonner";
 import { type Teacher } from "../../../store/teacher.store";
-import { createTeacher } from "../../../api/teachers";
+import { createTeacher, assignTeacherContexts } from "../../../api/teachers";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { DEPARTMENTS, QUALIFICATIONS } from "./data";
+import { formatParentInitials } from "../../../utils/formatters";
 
 interface ModalProps {
   title: string;
@@ -252,6 +253,21 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
         address: form.address || "Address not provided",
       });
 
+      // 2. Assign classes and subjects to the newly created teacher
+      const assignments = [];
+      for (const classId of form.classes) {
+        for (const subjectId of form.subjects) {
+          assignments.push({ class_id: classId, subject_id: subjectId });
+        }
+      }
+      
+      if (assignments.length > 0) {
+        await assignTeacherContexts(teacherData.id, assignments);
+      }
+
+      const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
+      const colorIndex = teacherData.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+
       // Construct a mapped teacher object for the confirm screen
       const newTeacher: Teacher = {
         id: teacherData.id,
@@ -263,14 +279,14 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
         gender: teacherData.gender,
         qualification: teacherData.qualification,
         dept: teacherData.department,
-        title: `${teacherData.qualification} Instructor`,
+        title: teacherData.qualification,
         address: teacherData.address,
         classes: form.classes,
         subjects: form.subjects,
         status: "Active",
         defaultPassword: "Teacher@Nexus2026",
-        avatar: "",
-        avatarColor: "bg-indigo-500",
+        avatar: formatParentInitials(`${teacherData.first_name} ${teacherData.last_name}`),
+        avatarColor: colors[colorIndex],
         experience: "0 Years",
         classrooms: form.classes.length,
         created_at: teacherData.created_at,
@@ -344,7 +360,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
         })}
       </div>
 
-      {/* Step: Personal Info */}
+      {/* Personal Info */}
       {step === "info" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -473,7 +489,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
         </div>
       )}
 
-      {/* Step: Classes & Subjects */}
+      {/* Classes & Subjects */}
       {step === "assign" && (
         <div className="space-y-5">
           <ClassSelector selected={form.classes} onToggle={toggleClass} />
@@ -519,7 +535,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
         </div>
       )}
 
-      {/* Step: Credentials */}
+      {/* Credentials */}
       {step === "confirm" && created && (
         <div className="space-y-4">
           <div className="text-center py-4 border-b border-slate-100">

@@ -1,33 +1,15 @@
 export function formatParentName(firstName?: string, lastName?: string, email?: string): string {
-  const isInvalid = (val?: string) =>
-    !val ||
-    val.trim() === "" ||
-    val.toLowerCase() === "unknown" ||
-    val.toLowerCase().startsWith("string") ||
-    val.toLowerCase() === "null";
-
-  const firstValid = !isInvalid(firstName);
-  const lastValid = !isInvalid(lastName);
-
-  if (firstValid && lastValid) {
-    return `${firstName!.trim()} ${lastName!.trim()}`;
+  if (firstName && lastName) {
+    return `${firstName.trim()} ${lastName.trim()}`;
   }
-  if (firstValid) return firstName!.trim();
-  if (lastValid) return lastName!.trim();
-
-  if (email && email.includes("@")) {
-    const handle = email.split("@")[0].replace(/[._-]/g, " ");
-    return handle
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  }
-
-  return "Parent / Guardian";
+  if (firstName) return firstName.trim();
+  if (lastName) return lastName.trim();
+  if (email) return email;
+  return "";
 }
 
 export function formatParentInitials(name: string): string {
-  const parts = name.trim().split(" ").filter(Boolean);
+  const parts = name.trim().split(" ").filter((p) => p && p !== "/");
   if (parts.length >= 2) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }

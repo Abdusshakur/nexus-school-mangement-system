@@ -11,44 +11,42 @@ export interface TeacherCheckIn {
 export interface QRSession {
   token: string;
   date: string;
-  validUntil: string;
+  expiresAt: string;
 }
 
 interface TeacherAttendanceState {
   teacherCheckIns: TeacherCheckIn[];
   currentQRSession: QRSession | null;
   loading: boolean;
-  generateQRSession: () => void;
+  generateQRSession: (qrType?: "CHECK_IN" | "CHECK_OUT") => Promise<void>;
   markAttendance: (teacherId: string, status: "present" | "late") => void;
 }
 
-const generateRandomToken = () => {
-  return "NEXUS-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-};
+// Cleaned up mock utilities
 
-const getValidUntilTime = () => {
-  const now = new Date();
-  now.setSeconds(now.getSeconds() + 30);
-  return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-};
+import { generateAttendanceQR } from "../api/attendance";
 
 export const useQRAttendanceStore = create<TeacherAttendanceState>((set) => ({
   teacherCheckIns: [],
-  currentQRSession: {
-    token: generateRandomToken(),
-    date: new Date().toISOString().slice(0, 10),
-    validUntil: getValidUntilTime(),
-  },
+  currentQRSession: null,
   loading: false,
 
-  generateQRSession: () => {
-    set({
-      currentQRSession: {
-        token: generateRandomToken(),
-        date: new Date().toISOString().slice(0, 10),
-        validUntil: getValidUntilTime(),
-      },
-    });
+  generateQRSession: async (qrType = "CHECK_IN") => {
+    try {
+      set({ loading: true });
+      const response = await generateAttendanceQR(qrType);
+      set({
+        currentQRSession: {
+          token: response.raw_token,
+          date: new Date().toISOString().slice(0, 10),
+          expiresAt: response.expires_at,
+        },
+        loading: false,
+      });
+    } catch (err) {
+      console.error("Failed to generate QR token", err);
+      set({ loading: false });
+    }
   },
 
   markAttendance: (teacherId, status) => {

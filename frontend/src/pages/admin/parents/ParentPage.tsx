@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
-import { Search, Phone, Mail, MapPin, ChevronRight, Users } from "lucide-react";
+import { Search, Phone, Mail, MapPin, ChevronRight, Users, Plus } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
+import { AddParentModal } from "./AddParentModal";
 
 import {
   formatParentName,
@@ -12,6 +13,7 @@ import {
 
 export function ParentList() {
   const [search, setSearch] = useState("");
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const { parents: dbParents, loading, fetchParents } = useParentStore();
 
   useEffect(() => {
@@ -34,10 +36,7 @@ export function ParentList() {
       };
     });
 
-    const isInvalidPhone =
-      !p.phone_number ||
-      p.phone_number.toLowerCase().startsWith("string") ||
-      p.phone_number.toLowerCase() === "null";
+    const isInvalidPhone = !p.phone_number;
     const phoneDisplay = isInvalidPhone
       ? "No phone registered"
       : formatPhoneNumber(p.phone_number);
@@ -75,6 +74,13 @@ export function ParentList() {
             {dbParents.length} registered parents & guardians
           </p>
         </div>
+        <button
+          onClick={() => setAddModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm text-sm"
+        >
+          <Plus size={18} />
+          Add Parent
+        </button>
       </header>
 
       <main className="flex-1 py-8 space-y-6 max-w-full w-full ">
@@ -190,6 +196,15 @@ export function ParentList() {
           </div>
         )}
       </main>
+      
+      <AddParentModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={() => {
+          setAddModalOpen(false);
+          fetchParents(true);
+        }}
+      />
     </div>
   );
 }

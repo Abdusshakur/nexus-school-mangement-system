@@ -55,11 +55,23 @@ export interface PaginatedStudentsResponse {
   total: number;
 }
 
+export interface StudentEnrollmentHistoryResponse {
+  id: string;
+  class_id: string;
+  class_name: string;
+  session_id: string;
+  session_name: string;
+  term_id: string;
+  term_name: string;
+  status: string;
+  created_at: string;
+}
+
 // POST: Saves new student profile to the db
 export const createStudent = async (
   payload: StudentCreatePayload,
 ): Promise<StudentResponse> => {
-  return apiClient.post("/students", payload);
+  return apiClient.post("/students/", payload);
 };
 
 // GET: Fetch student profile from the db
@@ -68,7 +80,7 @@ export const fetchStudentsList = async (
   className?: string,
   name?: string,
 ): Promise<StudentResponse[]> => {
-  let path = "/students";
+  let path = "/students/";
   const params = new URLSearchParams();
   if (search) params.append("search", search);
   if (className && className !== "All") params.append("class", className);
@@ -126,3 +138,22 @@ export async function bulkTransferStudents(payload: {
   const { default: apiClient } = await import('./client');
   return apiClient.post(`/students/bulk-transfer`, payload);
 }
+
+export const transferStudent = async (
+  studentId: string,
+  payload: {
+    class_id: string;
+    session_id: string;
+    term_id: string;
+  },
+): Promise<any> => {
+  const { default: apiClient } = await import('./client');
+  return apiClient.post(`/students/${studentId}/transfer`, payload);
+};
+
+export const getStudentEnrollments = async (
+  studentId: string,
+): Promise<StudentEnrollmentHistoryResponse[]> => {
+  const { default: apiClient } = await import('./client');
+  return apiClient.get(`/students/${studentId}/enrollments`);
+};

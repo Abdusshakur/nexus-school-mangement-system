@@ -46,8 +46,8 @@ export const fetchParentsList = async (
   search?: string,
 ): Promise<ParentResponse[]> => {
   const path = search
-    ? `/parents?search=${encodeURIComponent(search)}`
-    : "/parents";
+    ? `/parents/?search=${encodeURIComponent(search)}`
+    : "/parents/";
   return apiClient.get(path);
 };
 
@@ -70,10 +70,9 @@ export const createParent = async (
     first_name: payload.first_name,
     last_name: payload.last_name,
     email: payload.email,
-    password: payload.password,
     phone_number: payload.phone_number,
   };
-  return apiClient.post("/parents", data);
+  return apiClient.post("/parents/", data);
 };
 
 export const updateParentProfile = async (

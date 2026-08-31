@@ -63,7 +63,7 @@ export function Topbar() {
         {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
       </button>
 
-      {/* School name + current page */}
+      {/* School name and current page */}
       <div>
         <p className="font-semibold text-slate-900 text-sm leading-none font-sans">
           Nexus Academy
@@ -103,7 +103,7 @@ export function Topbar() {
 
         <div className="h-8 w-px bg-slate-200" />
 
-        {/* Profile Dropdown (static for now) */}
+        {/* Profile Dropdown */}
         <div className="flex items-center gap-3 pl-1 cursor-pointer group">
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white bg-indigo-600`}
