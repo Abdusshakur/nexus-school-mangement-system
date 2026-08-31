@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { ROUTES } from "../../../config/routes";
 import { useTeacherStore, type Teacher } from "../../../store/teacher.store";
-import { fetchTeacherById, assignTeacherContexts } from "../../../api/teachers";
+import { fetchTeacherById, assignTeacherContexts, updateTeacherProfile } from "../../../api/teachers";
 import {
   formatPhoneNumber,
   formatParentInitials,
@@ -55,7 +55,7 @@ export function TeacherDetailPage() {
           gender: data.gender,
           qualification: data.qualification,
           dept: data.department,
-          title: `${data.qualification || "Teacher"}`,
+          title: data.qualification,
           address: data.address,
           classes: data.assigned_classes.map((c) => c.id),
           subjects: data.assigned_subjects.map((s) => s.id),
@@ -128,9 +128,21 @@ export function TeacherDetailPage() {
 
     try {
       toast.info("Updating profile....");
+      
+      await updateTeacherProfile(id, {
+        first_name: editForm.name.split(" ")[0] || "",
+        last_name: editForm.name.split(" ").slice(1).join(" ") || " ",
+        phone_number: editForm.phone,
+        gender: editForm.gender,
+        address: editForm.address,
+        department: editForm.dept,
+        qualification: editForm.qualification
+      });
+
       syncGlobalStore(editForm);
       setTeacher(editForm);
       setEditing(false);
+      toast.success("Profile updated successfully.");
     } catch {
       toast.error("Failed to update profile.");
     }
@@ -267,7 +279,7 @@ export function TeacherDetailPage() {
           </div>
         </div>
 
-        {/* Right Side Class & Schedule Details */}
+        {/*  Schedule Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Class Assignments */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">

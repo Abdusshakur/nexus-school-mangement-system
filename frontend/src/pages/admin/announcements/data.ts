@@ -1,17 +1,17 @@
 import { AlertCircle, Info, CheckCircle } from "lucide-react";
 
 export const priorityConfig = {
-  high: {
+  HIGH: {
     label: "High",
     className: "text-red-500 bg-red-100",
     icon: AlertCircle,
   },
-  medium: {
+  MEDIUM: {
     label: "Medium",
     className: "text-amber-500 bg-amber-100",
     icon: Info,
   },
-  low: {
+  LOW: {
     label: "Low",
     className: "text-indigo-500 bg-indigo-100",
     icon: CheckCircle,

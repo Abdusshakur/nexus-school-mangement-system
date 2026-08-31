@@ -19,6 +19,7 @@ import {
 import { useAuthStore } from "../../../store/auth";
 import { useTimetableStore } from "../../../store/timetable.store";
 import { useSessionStore } from "../../../store/session.store";
+import { useTeacherContextStore } from "../../../store/teacherContext.store";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getTeacherTodayStatus, teacherCheckIn, teacherCheckOut } from "../../../api/attendance";
@@ -72,11 +73,13 @@ export default function TeacherDashboard() {
 
   const { academicSessions, fetchSessions } = useSessionStore();
   const { myTimetableGrid, fetchMyTimetable } = useTimetableStore();
+  const { myAssignments, myStudents, fetchAllContext } = useTeacherContextStore();
 
   useEffect(() => {
     fetchSessions();
     fetchTodayStatus();
-  }, [fetchSessions]);
+    fetchAllContext();
+  }, [fetchSessions, fetchAllContext]);
 
   const [todayStatus, setTodayStatus] = useState<any>(null);
   const [scannerAction, setScannerAction] = useState<"CHECK_IN" | "CHECK_OUT" | null>(null);
@@ -167,7 +170,7 @@ export default function TeacherDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
           label="Classes Assigned"
-          value={4}
+          value={new Set(myAssignments.map(a => a.class_id)).size}
           icon={BookOpen}
           iconColor="text-indigo-600"
           iconBg="bg-indigo-50"
@@ -175,7 +178,7 @@ export default function TeacherDashboard() {
         />
         <StatCard
           label="My Students"
-          value={148}
+          value={myStudents.length}
           icon={Users}
           iconColor="text-indigo-500"
           iconBg="bg-indigo-50"

@@ -23,12 +23,18 @@ function fmtDate(iso: string) {
 }
 
 export function AcademicSessionsPage() {
-  const { academicSessions, fetchSessions, startNewSession } = useSessionStore();
+  const { academicSessions, fetchSessions, startNewSession } =
+    useSessionStore();
   const [activeSummary, setActiveSummary] = useState<any>(null);
 
   useEffect(() => {
     fetchSessions();
-    import("../../../api/academics").then(m => m.fetchActiveSummary().then(setActiveSummary).catch(() => {}));
+    import("../../../api/academics").then((m) =>
+      m
+        .fetchActiveSummary()
+        .then(setActiveSummary)
+        .catch(() => {}),
+    );
   }, [fetchSessions]);
   const [showModal, setShowModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -130,10 +136,22 @@ export function AcademicSessionsPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
               {[
-                { label: "Total Students", value: activeSummary?.total_students || 0 },
-                { label: "Total Classes", value: activeSummary?.total_classes || 0 },
-                { label: "Active Teachers", value: activeSummary?.active_teachers || 0 },
-                { label: "Subjects", value: activeSummary?.total_subjects || 0 },
+                {
+                  label: "Total Students",
+                  value: activeSummary?.total_students || 0,
+                },
+                {
+                  label: "Total Classes",
+                  value: activeSummary?.total_classes || 0,
+                },
+                {
+                  label: "Active Teachers",
+                  value: activeSummary?.active_teachers || 0,
+                },
+                {
+                  label: "Subjects",
+                  value: activeSummary?.total_subjects || 0,
+                },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -159,7 +177,7 @@ export function AcademicSessionsPage() {
         </div>
       )}
 
-      {/* Archived sessions accordion */}
+      {/* Archived sessions  */}
       {archived.length > 0 && (
         <div>
           <h2 className="font-semibold mb-3 text-[15px] text-slate-700">
@@ -252,14 +270,14 @@ export function AcademicSessionsPage() {
         </div>
       )}
 
-      {/* Sessions table (All Sessions view) */}
-      <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm mt-8">
+      {/* Sessions table  */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm mt-8">
         <div className="px-5 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-900">
             All Sessions Directory
           </h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="">
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-slate-50">

@@ -272,7 +272,7 @@ export function AddStudent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* SECTION 1: Student Demographics */}
+        {/*  Student Demographics and Details */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5 shadow-sm">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -321,7 +321,7 @@ export function AddStudent() {
               id="class_id"
               form={form}
               set={set}
-              options={classes.map(c => ({ label: c.name, value: c.id }))}
+              options={classes.map((c) => ({ label: c.name, value: c.id }))}
               required
             />
             <Field
@@ -362,7 +362,7 @@ export function AddStudent() {
           </div>
         </div>
 
-        {/*  Parent & Guardian Details */}
+        {/*  Parent and Guardian Details */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5 shadow-sm">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -379,7 +379,7 @@ export function AddStudent() {
           </div>
 
           <div className="space-y-5">
-            {/* Parent / Guardian 1 */}
+            {/* Guardian 1 */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-700 ">
                 Parent / Guardian 1
@@ -431,7 +431,7 @@ export function AddStudent() {
               </div>
             </div>
 
-            {/* Parent / Guardian 2 */}
+            {/* Guardian 2 */}
             <div className="space-y-3 pt-4 border-t border-slate-100">
               <h3 className="text-xs font-bold text-slate-500 uppercase ">
                 Parent / Guardian 2

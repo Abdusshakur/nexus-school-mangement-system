@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Save, Plus, Trash2, Check, Lock } from "lucide-react";
 import { tabs, initialUsers, roleColors } from "./data";
+import { toast } from "sonner";
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState("school");
@@ -24,6 +25,14 @@ export function Settings() {
   });
   const [showAddUser, setShowAddUser] = useState(false);
 
+  const [attendanceForm, setAttendanceForm] = useState({
+    expected_check_in_time: "07:30",
+    late_threshold: "08:00",
+    check_in_end: "11:00",
+    expected_check_out_time: "15:30",
+    qr_rotation_seconds: "300",
+  });
+
   // Notification states
   const [notifications, setNotifications] = useState({
     emailAlerts: true,
@@ -45,6 +54,7 @@ export function Settings() {
 
   const handleSave = () => {
     setSaved(true);
+    toast.success("Settings saved successfully!");
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -157,7 +167,7 @@ export function Settings() {
                     className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
                   >
                     {saved ? <Check size={16} /> : <Save size={16} />}
-                    {saved ? "Changes Saved!" : "Save Profile"}
+                    {saved ? "Changes Saved!" : "Save"}
                   </button>
                 </div>
               </div>
@@ -197,6 +207,75 @@ export function Settings() {
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all bg-slate-50"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "attendance" && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <h2 className="font-extrabold text-slate-900 text-lg mb-5">
+                  Teacher Attendance Configuration
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Expected Arrival Time
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.expected_check_in_time}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          expected_check_in_time: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Late Threshold (Marked Late After)
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.late_threshold}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          late_threshold: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Expected Departure Time
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.expected_check_out_time}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          expected_check_out_time: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 pt-2">
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
+                  >
+                    {saved ? <Check size={16} /> : <Save size={16} />}
+                    {saved ? "Changes Saved!" : "Save"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -309,7 +388,8 @@ export function Settings() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {usersList.map((user) => {
-                      const badgeClasses = roleColors[user.role] || "bg-slate-100 text-slate-600";
+                      const badgeClasses =
+                        roleColors[user.role] || "bg-slate-100 text-slate-600";
                       return (
                         <tr
                           key={user.id}

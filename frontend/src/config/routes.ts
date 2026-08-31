@@ -37,6 +37,7 @@ export const ROUTES = {
     ANNOUNCEMENTS: "/teacher/announcements",
     GRADES: "/teacher/grades",
     STUDENTS: "/teacher/students",
+    STUDENT_DETAIL: (id: string) => `/teacher/students/${id}`,
     // MESSAGES: '/teacher/messages',
     TIMETABLE: "/teacher/timetable",
     PROFILE: "/teacher/profile",

@@ -61,7 +61,6 @@ export default function TeacherAssignments() {
       </header>
 
       <main className="flex-1 p-8 max-w-7xl w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Form or List */}
         <div className="lg:col-span-2 space-y-6">
           {isCreating ? (
             <CreateAssignment
@@ -77,7 +76,7 @@ export default function TeacherAssignments() {
           )}
         </div>
 
-        {/* Right Column: Submission Review & Grading */}
+        {/*  Submission Grading */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-fit">
           <GradeSubmissions
             key={activeAssignment?.id || "empty"}

@@ -64,7 +64,7 @@ export default function Hero() {
               </Link>
             </div>
 
-            {/* Social Proof rating and Avatars */}
+            {/* Social rating and Avatars */}
             <div
               className="mt-10 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-8 w-full"
               id="hero-rating-block"

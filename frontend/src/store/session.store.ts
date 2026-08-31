@@ -4,6 +4,9 @@ import {
   fetchAllTermsAndSessions,
   createSession,
   createTerm,
+  activateSession,
+  closeSession,
+  openTerm,
 } from "../api/academics";
 
 export interface AcademicTerm {
@@ -57,6 +60,10 @@ interface SessionState {
   ) => Promise<void>;
   approveAccessRequest: (id: string) => void;
   rejectAccessRequest: (id: string) => void;
+  
+  activateAcademicSession: (sessionId: string) => Promise<void>;
+  closeAcademicSession: (sessionId: string) => Promise<void>;
+  openAcademicTerm: (termId: string) => Promise<void>;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -85,12 +92,12 @@ export const useSessionStore = create<SessionState>()(
               name: item.term_name,
               startDate: item.term_start_date,
               endDate: item.term_end_date,
-              status: item.is_term_active ? "active" : "archived",
+              status: item.is_term_current ? "active" : "archived",
             };
 
             if (sessionMap.has(sessionId)) {
               sessionMap.get(sessionId)!.terms.push(term);
-              if (item.is_term_active) {
+              if (item.is_term_current) {
                 const s = sessionMap.get(sessionId)!;
                 s.term = item.term_name;
                 s.termId = item.term_id;
@@ -105,7 +112,7 @@ export const useSessionStore = create<SessionState>()(
                 endDate: item.term_end_date,
                 term: item.term_name,
                 termId: item.term_id,
-                status: item.is_session_active ? "active" : "archived",
+                status: item.is_session_current ? "active" : "archived",
                 createdAt: new Date().toISOString(),
                 terms: [term],
               });
@@ -156,6 +163,39 @@ export const useSessionStore = create<SessionState>()(
             end_date: data.endDate,
             is_active: data.isActive,
           });
+          await get().fetchSessions();
+        } catch (error: any) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      activateAcademicSession: async (sessionId) => {
+        set({ loading: true, error: null });
+        try {
+          await activateSession(sessionId);
+          await get().fetchSessions();
+        } catch (error: any) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      closeAcademicSession: async (sessionId) => {
+        set({ loading: true, error: null });
+        try {
+          await closeSession(sessionId);
+          await get().fetchSessions();
+        } catch (error: any) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      openAcademicTerm: async (termId) => {
+        set({ loading: true, error: null });
+        try {
+          await openTerm(termId);
           await get().fetchSessions();
         } catch (error: any) {
           set({ error: error.message, loading: false });

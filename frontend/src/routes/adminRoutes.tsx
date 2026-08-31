@@ -14,6 +14,7 @@ import { TeacherDetailPage } from "../pages/admin/teachers/TeacherDetailPage";
 import { TeachersPage } from "../pages/admin/teachers/TeachersPage";
 import { AttendanceDashboard } from "../pages/admin/attendance/AttendanceDashboard";
 import { ClassAttendanceView } from "../pages/admin/attendance/ClassAttendanceView";
+import { AttendanceReport } from "../pages/admin/attendance/AttendanceReport";
 import { TeacherAssignment } from "../pages/admin/attendance/TeacherAssignment";
 import { AdminTeacherAttendance } from "../pages/admin/attendance/AdminTeacherAttendance";
 import { AnnouncementList } from "../pages/admin/announcements/AnnoncementList";
@@ -37,6 +38,7 @@ export const adminRoutes = (
     <Route path="parents/:id" element={<ParentDetail />} />
     <Route path="attendance" element={<AttendanceDashboard />} />
     <Route path="attendance/classes" element={<ClassAttendanceView />} />
+    <Route path="attendance/report" element={<AttendanceReport />} />
     <Route path="attendance/teachers" element={<TeacherAssignment />} />
     <Route path="attendance/teacher-records" element={<AdminTeacherAttendance />} />
     <Route path="announcements" element={<AnnouncementList />} />

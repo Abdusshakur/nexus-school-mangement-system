@@ -16,47 +16,24 @@ export interface StoreAnnouncement {
   authorName: string;
   authorRole: string;
   date: string;
-  priority: "low" | "medium" | "high";
+  priority: "LOW" | "MEDIUM" | "HIGH";
   category: string;
   audience: string;
-}
-
-export function serializeAnnouncementContent(
-  body: string,
-  meta: { priority: string; category: string; audience: string },
-) {
-  return `[META:priority=${meta.priority};category=${meta.category};audience=${meta.audience}]${body}`;
-}
-
-export function deserializeAnnouncementContent(content: string) {
-  const match = content.match(
-    /^\[META:priority=(.*?);category=(.*?);audience=(.*?)\](.*)/s,
-  );
-  if (match) {
-    return {
-      priority: match[1] as "low" | "medium" | "high",
-      category: match[2],
-      audience: match[3],
-      body: match[4].trim(),
-    };
-  }
-  return {
-    priority: "medium" as const,
-    category: "General",
-    audience: "All School",
-    body: content,
-  };
 }
 
 interface AnnouncementState {
   announcements: StoreAnnouncement[];
   loading: boolean;
   error: string | null;
-  fetchAnnouncements: () => Promise<StoreAnnouncement[]>;
+  fetchAnnouncements: (
+    status?: "DRAFT" | "PUBLISHED" | "ARCHIVED",
+    priority?: "LOW" | "MEDIUM" | "HIGH",
+    audience?: string
+  ) => Promise<StoreAnnouncement[]>;
   postAnnouncement: (ann: {
     title: string;
     content: string;
-    priority?: string;
+    priority?: "LOW" | "MEDIUM" | "HIGH";
     category?: string;
     audience?: string;
   }) => Promise<void>;
@@ -66,38 +43,37 @@ interface AnnouncementState {
     updates: Partial<{
       title: string;
       content: string;
-      priority: string;
+      priority: "LOW" | "MEDIUM" | "HIGH";
       category: string;
       audience: string;
+      status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
     }>,
   ) => Promise<void>;
 }
 
-export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
+export const useAnnouncementStore = create<AnnouncementState>((set) => ({
   announcements: [],
   loading: false,
   error: null,
 
-  fetchAnnouncements: async () => {
+  fetchAnnouncements: async (status = "PUBLISHED", priority, audience) => {
     set({ loading: true, error: null });
     try {
-      const data = await fetchAnnouncements("PUBLISHED");
+      const data = await fetchAnnouncements(status, priority, audience);
       const mapped = data.map((a: AnnouncementResponse) => {
         const name = a.author_name || "Administrator";
         const role = a.author_role
           ? a.author_role.charAt(0).toUpperCase() + a.author_role.slice(1)
           : "Admin";
 
-        const meta = deserializeAnnouncementContent(a.content);
-
         return {
           id: a.id,
           title: a.title,
-          content: meta.body,
-          target: meta.audience,
-          priority: meta.priority,
-          category: meta.category,
-          audience: meta.audience,
+          content: a.content,
+          target: a.audience,
+          priority: a.priority,
+          category: a.category,
+          audience: a.audience,
           author: role ? `${name} (${role})`.trim() : name,
           authorName: name,
           authorRole: role,
@@ -120,32 +96,29 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
   postAnnouncement: async (ann) => {
     set({ loading: true, error: null });
     try {
-      const metaContent = serializeAnnouncementContent(ann.content, {
-        priority: ann.priority || "medium",
-        category: ann.category || "General",
-        audience: ann.audience || "All School",
-      });
-
       const result = await createAnnouncement({
         title: ann.title,
-        content: metaContent,
+        content: ann.content,
+        priority: ann.priority || "MEDIUM",
+        category: ann.category || "General",
+        audience: ann.audience || "All School",
         status: "PUBLISHED",
       });
 
-      const name = result.author_name || "";
+      const name = result.author_name || "Administrator";
       const role = result.author_role
         ? result.author_role.charAt(0).toUpperCase() +
           result.author_role.slice(1)
-        : "";
+        : "Admin";
 
       const newAnn: StoreAnnouncement = {
         id: result.id,
         title: result.title,
-        content: ann.content,
-        target: ann.audience || "All School",
-        priority: (ann.priority as "low" | "medium" | "high") || "medium",
-        category: ann.category || "General",
-        audience: ann.audience || "All School",
+        content: result.content,
+        target: result.audience || "All School",
+        priority: result.priority || "MEDIUM",
+        category: result.category || "General",
+        audience: result.audience || "All School",
         author: role ? `${name} (${role})`.trim() : name,
         authorName: name,
         authorRole: role,
@@ -177,51 +150,29 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
 
   updateAnnouncement: async (id, updates) => {
     try {
-      // Find the current announcement
-      const current = get().announcements.find(
-        (a: StoreAnnouncement) => a.id === id,
-      );
-      if (!current) throw new Error("Announcement not found");
+      const apiUpdates = {
+        title: updates.title,
+        content: updates.content,
+        priority: updates.priority,
+        category: updates.category,
+        audience: updates.audience,
+        status: updates.status,
+      };
 
-      let metaContent = current.content;
-
-      if (
-        updates.content ||
-        updates.priority ||
-        updates.category ||
-        updates.audience
-      ) {
-        metaContent = serializeAnnouncementContent(
-          updates.content !== undefined ? updates.content : current.content,
-          {
-            priority: updates.priority || current.priority,
-            category: updates.category || current.category,
-            audience: updates.audience || current.audience,
-          },
-        );
-      }
-
-      const apiPayload: any = {};
-      if (updates.title) apiPayload.title = updates.title;
-      if (
-        updates.content ||
-        updates.priority ||
-        updates.category ||
-        updates.audience
-      ) {
-        apiPayload.content = metaContent;
-      }
-
-      await apiUpdateAnnouncement(id, apiPayload);
+      const result = await apiUpdateAnnouncement(id, apiUpdates);
 
       set((state) => ({
         announcements: state.announcements.map((a) =>
           a.id === id
-            ? ({
+            ? {
                 ...a,
-                ...updates,
-                target: updates.audience || a.audience,
-              } as StoreAnnouncement)
+                title: result.title,
+                content: result.content,
+                priority: result.priority,
+                category: result.category,
+                audience: result.audience,
+                target: result.audience,
+              }
             : a,
         ),
       }));

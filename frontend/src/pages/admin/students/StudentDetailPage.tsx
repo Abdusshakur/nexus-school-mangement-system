@@ -1,16 +1,39 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ROUTES } from "../../../config/routes";
-import { ArrowLeft, Calendar, ChevronDown, Users, Pencil, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronDown,
+  Users,
+  Pencil,
+  X,
+} from "lucide-react";
 import { SESSIONS, type Student } from "./data";
-import { fetchStudentById, fetchStudentsList, formatClassName, updateStudentProfile } from "../../../api/students";
+import {
+  fetchStudentById,
+  fetchStudentsList,
+  formatClassName,
+  updateStudentProfile,
+} from "../../../api/students";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { ResultsTab } from "./tabs/ResultsTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
 import { CoursesTab } from "./tabs/CoursesTab";
+import { EnrollmentsTab } from "./tabs/EnrollmentsTab";
+import { TransferStudentModal } from "./TransferStudentModal";
 import { toast } from "sonner";
+import { useAuthStore } from "../../../store/auth";
+import { UserRole } from "../../../types/roles";
+import { useTeacherContextStore } from "../../../store/teacherContext.store";
+import { useClassStore } from "../../../store/class.store";
 
-type ProfileTab = "profile" | "results" | "attendance" | "courses";
+type ProfileTab =
+  | "profile"
+  | "results"
+  | "attendance"
+  | "courses"
+  | "enrollments";
 
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,8 +43,33 @@ export function StudentDetailPage() {
   const [session, setSession] = useState(SESSIONS[0]);
   const [sessionOpen, setSessionOpen] = useState(false);
   const [dbUuid, setDbUuid] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const { myProfile, myAssignments } = useTeacherContextStore();
+  const { classes } = useClassStore();
+  const backLink = user?.role === UserRole.TEACHER ? ROUTES.TEACHER.STUDENTS : ROUTES.ADMIN.STUDENTS;
+
+  const studentClass = student ? classes.find(c => formatClassName(c.name) === student.grade) : null;
+  
+  const isClassTeacher = Boolean(
+    user?.role === UserRole.TEACHER &&
+    studentClass?.form_teacher_id &&
+    myProfile?.id &&
+    studentClass.form_teacher_id === myProfile.id
+  );
+  
+  const isSubjectTeacherOnly = user?.role === UserRole.TEACHER && !isClassTeacher;
+  const allowedSubjects = isSubjectTeacherOnly
+    ? myAssignments.filter(a => formatClassName(a.class_name) === student?.grade).map(a => a.subject_name)
+    : undefined;
+
+  useEffect(() => {
+    if (isSubjectTeacherOnly && tab !== "results") {
+      setTab("results");
+    }
+  }, [isSubjectTeacherOnly, tab]);
 
   const [editOpen, setEditOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     firstName: "",
     lastName: "",
@@ -117,7 +165,8 @@ export function StudentDetailPage() {
             (found.first_name[0] || "") + (found.last_name[0] || "")
           ).toUpperCase();
 
-          const firstParent = found.parents && found.parents.length > 0 ? found.parents[0] : null;
+          const firstParent =
+            found.parents && found.parents.length > 0 ? found.parents[0] : null;
 
           const mapped: Student = {
             id: found.admission_number || found.id,
@@ -130,7 +179,9 @@ export function StudentDetailPage() {
             phone: found.phone_number,
             email: found.email,
             address: found.address,
-            parentName: firstParent ? `${firstParent.first_name} ${firstParent.last_name}` : "Parent / Guardian",
+            parentName: firstParent
+              ? `${firstParent.first_name} ${firstParent.last_name}`
+              : "Parent / Guardian",
             parentPhone: firstParent ? firstParent.phone_number : "N/A",
             parentEmail: firstParent ? firstParent.email : "N/A",
             parentsList: found.parents || [],
@@ -176,7 +227,7 @@ export function StudentDetailPage() {
         <Users size={40} className="mb-3 opacity-40" />
         <p className="mb-4 text-sm">Student not found.</p>
         <Link
-          to={ROUTES.ADMIN.STUDENTS}
+          to={backLink}
           className="font-medium text-sm text-indigo-500 hover:text-indigo-600 transition-colors flex gap-2"
         >
           <ArrowLeft size={18} />
@@ -191,6 +242,7 @@ export function StudentDetailPage() {
     { id: "results", label: "Results" },
     { id: "attendance", label: "Attendance" },
     { id: "courses", label: "Courses" },
+    { id: "enrollments", label: "Enrollments" },
   ];
 
   return (
@@ -198,7 +250,7 @@ export function StudentDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <Link
-          to={ROUTES.ADMIN.STUDENTS}
+          to={backLink}
           className="p-2 rounded-lg transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-900"
         >
           <ArrowLeft size={20} />
@@ -214,14 +266,22 @@ export function StudentDetailPage() {
 
         {/* Session selector */}
         <div className="flex gap-2">
-          {dbUuid && (
-            <button
-              onClick={handleOpenEdit}
-              className="flex gap-2 justify-center items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all border-slate-300 text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
-            >
-              Edit Profile
-              <Pencil size={12} />
-            </button>
+          {dbUuid && user?.role === UserRole.ADMIN && (
+            <>
+              <button
+                onClick={() => setTransferOpen(true)}
+                className="flex gap-2 justify-center items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all border-slate-300 text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+              >
+                Transfer
+              </button>
+              <button
+                onClick={handleOpenEdit}
+                className="flex gap-2 justify-center items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all border-slate-300 text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+              >
+                Edit Profile
+                <Pencil size={12} />
+              </button>
+            </>
           )}
           <button
             onClick={() => setSessionOpen((v) => !v)}
@@ -258,10 +318,11 @@ export function StudentDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-slate-100">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
+      {!isSubjectTeacherOnly && (
+        <div className="flex gap-1 p-1 rounded-xl bg-slate-100">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
               tab === t.id
@@ -273,26 +334,42 @@ export function StudentDetailPage() {
           </button>
         ))}
       </div>
+      )}
 
-      {tab === "profile" && <ProfileTab s={student} />}
-      {tab === "results" && (
+      {/* Content */}
+      {isSubjectTeacherOnly ? (
         <ResultsTab
           studentId={student.id}
           grade={student.grade}
           session={session}
+          allowedSubjects={allowedSubjects}
         />
+      ) : (
+        <>
+          {tab === "profile" && <ProfileTab s={student} />}
+          {tab === "results" && (
+            <ResultsTab
+              studentId={student.id}
+              grade={student.grade}
+              session={session}
+            />
+          )}
+          {tab === "attendance" && (
+            <AttendanceTab studentId={student.id} session={session} />
+          )}
+          {tab === "courses" && <CoursesTab grade={student.grade} />}
+          {tab === "enrollments" && dbUuid && <EnrollmentsTab studentId={dbUuid} />}
+        </>
       )}
-      {tab === "attendance" && (
-        <AttendanceTab studentId={student.id} session={session} />
-      )}
-      {tab === "courses" && <CoursesTab grade={student.grade} />}
 
       {/* Edit Modal */}
       {editOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-lg">Edit Student Profile</h3>
+              <h3 className="font-bold text-slate-900 text-lg">
+                Edit Student Profile
+              </h3>
               <button
                 type="button"
                 onClick={() => setEditOpen(false)}
@@ -305,22 +382,36 @@ export function StudentDetailPage() {
             <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">First Name</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    First Name
+                  </label>
                   <input
                     type="text"
                     required
                     value={editForm.firstName}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Last Name</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Last Name
+                  </label>
                   <input
                     type="text"
                     required
                     value={editForm.lastName}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
                 </div>
@@ -328,10 +419,17 @@ export function StudentDetailPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Gender</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Gender
+                  </label>
                   <select
                     value={editForm.gender}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, gender: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        gender: e.target.value,
+                      }))
+                    }
                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white h-11"
                   >
                     <option value="MALE">Male</option>
@@ -339,10 +437,17 @@ export function StudentDetailPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Class/Grade</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Class/Grade
+                  </label>
                   <select
                     value={editForm.className}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, className: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        className: e.target.value,
+                      }))
+                    }
                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white h-11"
                   >
                     <option value="JSS 1">JSS 1</option>
@@ -356,23 +461,37 @@ export function StudentDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Phone Number</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Phone Number
+                </label>
                 <input
                   type="text"
                   required
                   value={editForm.phoneNumber}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      phoneNumber: e.target.value,
+                    }))
+                  }
                   className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Address</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Address
+                </label>
                 <textarea
                   required
                   rows={2}
                   value={editForm.address}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
+                  }
                   className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
                 />
               </div>
@@ -395,6 +514,18 @@ export function StudentDetailPage() {
             </form>
           </div>
         </div>
+      )}
+      {dbUuid && student && (
+        <TransferStudentModal
+          isOpen={transferOpen}
+          onClose={() => setTransferOpen(false)}
+          studentId={dbUuid}
+          studentName={student.name}
+          onSuccess={() => {
+            setTransferOpen(false);
+            window.location.reload();
+          }}
+        />
       )}
     </div>
   );

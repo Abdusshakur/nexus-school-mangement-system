@@ -36,18 +36,28 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   }, [fetchTeachers]);
 
   useEffect(() => {
+    if (!currentQRSession && isAdmin) {
+      generateQRSession();
+    }
+  }, [currentQRSession, isAdmin, generateQRSession]);
+
+  useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          generateQRSession();
-          return 30;
-        }
-        return prev - 1;
-      });
+      if (!currentQRSession?.expiresAt) return;
+
+      const now = Date.now();
+      const expires = new Date(currentQRSession.expiresAt).getTime();
+      const remainingSeconds = Math.max(0, Math.floor((expires - now) / 1000));
+
+      setTimeLeft(remainingSeconds);
+
+      if (remainingSeconds <= 0 && isAdmin) {
+        generateQRSession();
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [generateQRSession]);
+  }, [currentQRSession, isAdmin, generateQRSession]);
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const totalTeachers = teachers.length;
@@ -80,7 +90,7 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   ).length;
   const absentToday = totalTeachers - checkedInCount;
 
-  const qrToken = currentQRSession?.token ?? "NEXUS-QR-DEFAULT";
+  const qrToken = currentQRSession?.token;
   const displayDate = currentQRSession?.date
     ? formatDate(currentQRSession.date)
     : formatDate(todayISO);
@@ -124,8 +134,15 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
       <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
         <div className="flex flex-col md:flex-row items-start gap-8">
           {/* QR Code */}
-          <div className="bg-white p-3 border-2 border-slate-900 rounded-xl inline-block shadow-sm shrink-0">
-            <QRCodeSVG value={qrToken} size={220} level="H" />
+          <div className="bg-white p-3 border-2 border-slate-900 rounded-xl flex items-center justify-center shadow-sm shrink-0 w-[248px] h-[248px]">
+            {qrToken ? (
+              <QRCodeSVG value={qrToken} size={220} level="H" />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-slate-400 gap-3">
+                <RefreshCw size={24} className="animate-spin text-indigo-500" />
+                <span className="text-xs font-semibold">Generating...</span>
+              </div>
+            )}
           </div>
 
           <div className="flex-1">
@@ -137,7 +154,7 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
             <div className="mb-6">
               <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
                 <Clock size={14} />
-                Resets in {timeLeft}s
+                Resets in {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
               </div>
             </div>
 
@@ -151,7 +168,6 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
               <button
                 onClick={() => {
                   generateQRSession();
-                  setTimeLeft(30);
                 }}
                 className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer transition-colors"
               >

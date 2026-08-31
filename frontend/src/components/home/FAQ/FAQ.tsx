@@ -75,7 +75,7 @@ export default function FAQ() {
           </p>
         </div>
 
-        {/* Stateful Accordion List */}
+        {/* Accordion List */}
         <div className="space-y-4 max-w-3xl mx-auto" id="faq-accordion-list">
           {faqItems.map((item, idx) => {
             const isOpen = openAccordion === idx;
@@ -100,7 +100,6 @@ export default function FAQ() {
                   </div>
                 </button>
 
-                {/* Animated Accordion body details */}
                 <div
                   className={`transition-all duration-300 ease-in-out overflow-hidden ${
                     isOpen ? "max-h-[300px] " : "max-h-0"

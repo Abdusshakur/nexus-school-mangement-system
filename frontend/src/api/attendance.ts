@@ -32,6 +32,8 @@ export interface ClassAttendanceSummary {
 
 export interface DailyAttendanceSummaryResponse {
   date: string;
+  academic_session_id?: string;
+  academic_term_id?: string;
   classes: ClassAttendanceSummary[];
 }
 
@@ -54,7 +56,17 @@ export interface ClassRosterResponse {
   date: string;
   attendance_session_id: string;
   attendance_status: string;
-  students: any[];
+  submitted_at?: string;
+  students: {
+    student_id: string;
+    admission_number: string;
+    first_name: string;
+    last_name: string;
+    status: string;
+    remarks: string;
+    parent_name?: string;
+    parent_phone?: string;
+  }[];
 }
 
 export async function getClassRosterForAttendance(classId: string, date: string): Promise<ClassRosterResponse> {
@@ -83,4 +95,8 @@ export async function teacherCheckOut(token: string): Promise<any> {
 
 export async function getTeacherTodayStatus(): Promise<any> {
   return apiClient.get("/teachers/me/today");
+}
+
+export async function generateAttendanceQR(qrType: "CHECK_IN" | "CHECK_OUT"): Promise<{ raw_token: string, expires_at: string, qr_type: string }> {
+  return apiClient.post("/attendance/qr/generate", { qr_type: qrType });
 }

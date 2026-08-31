@@ -27,7 +27,7 @@ export function AnnouncementList() {
   const filtered =
     filter === "All"
       ? listToRender
-      : listToRender.filter((a) => a.priority === filter.toLowerCase());
+      : listToRender.filter((a) => a.priority === filter.toUpperCase());
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -84,7 +84,7 @@ export function AnnouncementList() {
             {filtered.map((ann) => {
               const p =
                 priorityConfig[ann.priority as keyof typeof priorityConfig] ||
-                priorityConfig.medium;
+                priorityConfig.MEDIUM;
               return (
                 <div
                   key={ann.id}

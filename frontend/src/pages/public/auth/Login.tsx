@@ -83,7 +83,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Dashboard preview image*/}
         <div className="relative scale-90 origin-bottom-left -mb-6  overflow-hidden">
           <img src={Dashboard} alt="Dashboard preview" />
         </div>

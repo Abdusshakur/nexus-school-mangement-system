@@ -2,7 +2,7 @@ import { ROUTES } from "../../../config/routes";
 import { useEffect, useState } from "react";
 import { useClassStore } from "../../../store/class.store";
 import { Link } from "react-router-dom";
-import { Search, Plus, ChevronRight, CheckCircle,  } from "lucide-react";
+import { Search, Plus, ChevronRight, CheckCircle, } from "lucide-react";
 import {
   fetchStudentsList,
   formatClassName,
@@ -20,7 +20,7 @@ export function StudentList() {
   const grades = ["All", ...classes.map((c) => c.name)];
 
   useEffect(() => {
-    loadClasses().catch(() => {});
+    loadClasses().catch(() => { });
   }, [loadClasses]);
 
   useEffect(() => {
@@ -28,13 +28,26 @@ export function StudentList() {
     const loadStudents = async () => {
       setLoading(true);
       try {
-        const data = await fetchStudentsList(
-          search || undefined,
-          gradeFilter !== "All" ? gradeFilter : undefined,
-          search || undefined,
-        );
+        const classParam = gradeFilter !== "All" ? gradeFilter : undefined;
+
+        // If there's no search string, just fetch everything for the class
+        if (!search) {
+          const data = await fetchStudentsList(undefined, classParam, undefined);
+          if (isMounted) setStudents(data);
+          return;
+        }
+
+        // If there is a search string, we must search BOTH fields independently
+
+        const [byAdm, byName] = await Promise.all([
+          fetchStudentsList(search, classParam, undefined),
+          fetchStudentsList(undefined, classParam, search),
+        ]);
+
         if (isMounted) {
-          setStudents(data);
+          const map = new Map();
+          [...byAdm, ...byName].forEach((s) => map.set(s.id, s));
+          setStudents(Array.from(map.values()));
         }
       } catch (err: unknown) {
         console.error("Failed to load students:", err);
@@ -50,8 +63,9 @@ export function StudentList() {
     };
   }, [search, gradeFilter]);
 
-  const filtered = students.filter(() => {
-    if (statusFilter === "Active") return true; // assuming all are active for now
+  const filtered = students.filter((student) => {
+    if (statusFilter === "Active") return !!student.class_name;
+    if (statusFilter === "Inactive") return !student.class_name;
     return true;
   });
 
@@ -138,7 +152,7 @@ export function StudentList() {
                 const initials = (
                   (s.first_name[0] || "") + (s.last_name[0] || "")
                 ).toUpperCase();
-                
+
                 const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
                 const colorIndex = s.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
                 const avatarColor = colors[colorIndex];
@@ -167,9 +181,15 @@ export function StudentList() {
                       {s.email}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        <CheckCircle size={10} /> Active
-                      </span>
+                      {s.class_name ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <CheckCircle size={10} /> Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                          <span className="w-2 h-2 rounded-full bg-slate-400" /> Inactive
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3.5">
                       <Link
