@@ -63,7 +63,18 @@ from backend.app.routers.teacher_context import get_active_term_and_session, get
 from backend.app.routers.attendance import verify_teacher_class_access
 
 
-router = APIRouter(prefix="/results", tags=["Results Configuration"])
+configuration_router = APIRouter(prefix="/results", tags=["Results Configuration"])
+entry_router = APIRouter(prefix="/results", tags=["Results - Teacher Entry"])
+review_router = APIRouter(prefix="/results", tags=["Results - Administrative Review"])
+publication_router = APIRouter(prefix="/results", tags=["Results - Publication"])
+reports_router = APIRouter(prefix="/results", tags=["Results - Reports"])
+
+router = APIRouter()
+router.include_router(configuration_router)
+router.include_router(entry_router)
+router.include_router(review_router)
+router.include_router(publication_router)
+router.include_router(reports_router)
 
 
 def _get_scheme(scheme_id: UUID, school_id: UUID, session: Session) -> AssessmentScheme:
@@ -171,7 +182,7 @@ def _validate_rule_overlap(
             )
 
 
-@router.post("/schemes", response_model=AssessmentSchemeResponse, status_code=status.HTTP_201_CREATED)
+@configuration_router.post("/schemes", response_model=AssessmentSchemeResponse, status_code=status.HTTP_201_CREATED, summary="Create assessment scheme", description="Create a draft assessment scheme for one class, subject, academic session, and term.")
 def create_assessment_scheme(
     payload: AssessmentSchemeCreate,
     context: CurrentContext = Depends(require_permission("result:write")),
@@ -216,7 +227,7 @@ def create_assessment_scheme(
     return scheme
 
 
-@router.get("/schemes", response_model=List[AssessmentSchemeResponse])
+@configuration_router.get("/schemes", response_model=List[AssessmentSchemeResponse], summary="List assessment schemes", description="Return all assessment schemes configured for the current school.")
 def list_assessment_schemes(
     context: CurrentContext = Depends(require_permission("result:read")),
     session: Session = Depends(get_session),
@@ -228,7 +239,7 @@ def list_assessment_schemes(
     ).all()
 
 
-@router.get("/schemes/{scheme_id}", response_model=AssessmentSchemeResponse)
+@configuration_router.get("/schemes/{scheme_id}", response_model=AssessmentSchemeResponse, summary="Get assessment scheme", description="Return one assessment scheme and its class, subject, session, and term context.")
 def get_assessment_scheme(
     scheme_id: UUID,
     context: CurrentContext = Depends(require_permission("result:read")),
@@ -237,7 +248,7 @@ def get_assessment_scheme(
     return _get_scheme(scheme_id, context.school_id, session)
 
 
-@router.patch("/schemes/{scheme_id}", response_model=AssessmentSchemeResponse)
+@configuration_router.patch("/schemes/{scheme_id}", response_model=AssessmentSchemeResponse, summary="Update assessment scheme", description="Edit a draft scheme or activate it after its assessment weights are complete.")
 def update_assessment_scheme(
     scheme_id: UUID,
     payload: AssessmentSchemeUpdate,
@@ -265,7 +276,7 @@ def update_assessment_scheme(
     return scheme
 
 
-@router.post("/schemes/{scheme_id}/assessments", response_model=AssessmentResponse, status_code=status.HTTP_201_CREATED)
+@configuration_router.post("/schemes/{scheme_id}/assessments", response_model=AssessmentResponse, status_code=status.HTTP_201_CREATED, summary="Add assessment component", description="Add a component such as CA 1, CA 2, or Exam to a draft scheme.")
 def create_assessment(
     scheme_id: UUID,
     payload: AssessmentCreate,
@@ -292,7 +303,7 @@ def create_assessment(
     return assessment
 
 
-@router.get("/schemes/{scheme_id}/assessments", response_model=List[AssessmentResponse])
+@configuration_router.get("/schemes/{scheme_id}/assessments", response_model=List[AssessmentResponse], summary="List scheme assessments", description="Return the assessment components and weights belonging to a scheme.")
 def list_assessments(
     scheme_id: UUID,
     context: CurrentContext = Depends(require_permission("result:read")),
@@ -302,7 +313,7 @@ def list_assessments(
     return session.exec(select(Assessment).where(Assessment.scheme_id == scheme.id).order_by(Assessment.sequence)).all()
 
 
-@router.patch("/assessments/{assessment_id}", response_model=AssessmentResponse)
+@configuration_router.patch("/assessments/{assessment_id}", response_model=AssessmentResponse, summary="Update assessment component", description="Edit an assessment component while its parent scheme is still a draft.")
 def update_assessment(
     assessment_id: UUID,
     payload: AssessmentUpdate,
@@ -344,7 +355,7 @@ def update_assessment(
     return assessment
 
 
-@router.post("/grading-scales", response_model=GradingScaleResponse, status_code=status.HTTP_201_CREATED)
+@configuration_router.post("/grading-scales", response_model=GradingScaleResponse, status_code=status.HTTP_201_CREATED, summary="Create grading scale", description="Create the percentage-to-grade configuration used when official results are calculated.")
 def create_grading_scale(
     payload: GradingScaleCreate,
     context: CurrentContext = Depends(require_permission("result:write")),
@@ -383,7 +394,7 @@ def create_grading_scale(
     return scale
 
 
-@router.get("/grading-scales", response_model=List[GradingScaleResponse])
+@configuration_router.get("/grading-scales", response_model=List[GradingScaleResponse], summary="List grading scales", description="Return grading scales configured for the current school.")
 def list_grading_scales(
     context: CurrentContext = Depends(require_permission("result:read")),
     session: Session = Depends(get_session),
@@ -391,7 +402,7 @@ def list_grading_scales(
     return session.exec(select(GradingScale).where(GradingScale.school_id == context.school_id).order_by(GradingScale.name, GradingScale.version)).all()
 
 
-@router.patch("/grading-scales/{scale_id}", response_model=GradingScaleResponse)
+@configuration_router.patch("/grading-scales/{scale_id}", response_model=GradingScaleResponse, summary="Update grading scale", description="Edit a grading scale or its active status.")
 def update_grading_scale(
     scale_id: UUID,
     payload: GradingScaleUpdate,
@@ -420,7 +431,7 @@ def update_grading_scale(
     return scale
 
 
-@router.post("/grading-scales/{scale_id}/rules", response_model=GradingScaleRuleResponse, status_code=status.HTTP_201_CREATED)
+@configuration_router.post("/grading-scales/{scale_id}/rules", response_model=GradingScaleRuleResponse, status_code=status.HTTP_201_CREATED, summary="Add grading rule", description="Add a grade range such as A from 70 to 100 to a grading scale.")
 def create_grading_rule(
     scale_id: UUID,
     payload: GradingScaleRuleCreate,
@@ -447,7 +458,7 @@ def create_grading_rule(
     return rule
 
 
-@router.patch("/grading-rules/{rule_id}", response_model=GradingScaleRuleResponse)
+@configuration_router.patch("/grading-rules/{rule_id}", response_model=GradingScaleRuleResponse, summary="Update grading rule", description="Edit a grade range or its remark.")
 def update_grading_rule(
     rule_id: UUID,
     payload: GradingScaleRuleUpdate,
@@ -598,7 +609,7 @@ def _submission_roster(
     )
 
 
-@router.get("/classes/{class_id}/subjects/{subject_id}/assessments", response_model=List[AssessmentCatalogItem])
+@entry_router.get("/classes/{class_id}/subjects/{subject_id}/assessments", response_model=List[AssessmentCatalogItem], summary="List teacher assessments", description="Return active assessments for a teacher's assigned class and subject.")
 def list_teacher_assessments(
     class_id: UUID,
     subject_id: UUID,
@@ -645,7 +656,7 @@ def list_teacher_assessments(
     return sorted(assessments, key=lambda item: item.sequence)
 
 
-@router.get("/assessments/{assessment_id}/roster", response_model=AssessmentRosterResponse)
+@entry_router.get("/assessments/{assessment_id}/roster", response_model=AssessmentRosterResponse, summary="Get assessment roster", description="Return enrolled students and any saved scores for the selected assessment.")
 def get_assessment_roster(
     assessment_id: UUID,
     context: CurrentContext = Depends(require_permission("result:read")),
@@ -659,7 +670,7 @@ def get_assessment_roster(
     return _submission_roster(assessment, submission, scheme, session)
 
 
-@router.post("/assessments/{assessment_id}/scores", response_model=AssessmentSubmissionResponse)
+@entry_router.post("/assessments/{assessment_id}/scores", response_model=AssessmentSubmissionResponse, summary="Save assessment scores", description="Create or update a teacher's draft scores for the assessment roster.")
 def save_assessment_scores(
     assessment_id: UUID,
     payload: AssessmentScoresRequest,
@@ -733,7 +744,7 @@ def save_assessment_scores(
     return submission
 
 
-@router.post("/submissions/{submission_id}/submit", response_model=AssessmentSubmissionResponse)
+@entry_router.post("/submissions/{submission_id}/submit", response_model=AssessmentSubmissionResponse, summary="Submit scores for review", description="Submit completed assessment scores to an administrator for approval.")
 def submit_assessment_submission(
     submission_id: UUID,
     context: CurrentContext = Depends(require_permission("result:write")),
@@ -782,7 +793,7 @@ def submit_assessment_submission(
     return submission
 
 
-@router.get("/submissions", response_model=List[AssessmentSubmissionResponse])
+@review_router.get("/submissions", response_model=List[AssessmentSubmissionResponse], summary="List score submissions", description="Return teacher score submissions for administrative review, optionally filtered by status.")
 def list_submissions(
     submission_status: Optional[ResultSubmissionStatus] = None,
     context: CurrentContext = Depends(require_permission("result:approve")),
@@ -794,7 +805,7 @@ def list_submissions(
     return session.exec(statement.order_by(AssessmentSubmission.created_at.desc())).all()
 
 
-@router.get("/submissions/{submission_id}", response_model=AssessmentRosterResponse)
+@review_router.get("/submissions/{submission_id}", response_model=AssessmentRosterResponse, summary="Review score submission", description="Return submission metadata and all student scores for an administrator to review.")
 def get_submission_for_review(
     submission_id: UUID,
     context: CurrentContext = Depends(require_permission("result:approve")),
@@ -839,7 +850,7 @@ def _review_submission(
     return submission
 
 
-@router.post("/submissions/{submission_id}/approve", response_model=AssessmentSubmissionResponse)
+@review_router.post("/submissions/{submission_id}/approve", response_model=AssessmentSubmissionResponse, summary="Approve score submission", description="Approve submitted scores so they can be included in official result calculation.")
 def approve_submission(
     submission_id: UUID,
     context: CurrentContext = Depends(require_permission("result:approve")),
@@ -848,7 +859,7 @@ def approve_submission(
     return _review_submission(submission_id, context, session, ResultSubmissionStatus.APPROVED)
 
 
-@router.post("/submissions/{submission_id}/reject", response_model=AssessmentSubmissionResponse)
+@review_router.post("/submissions/{submission_id}/reject", response_model=AssessmentSubmissionResponse, summary="Reject score submission", description="Reject submitted scores and return a correction reason to the teacher.")
 def reject_submission(
     submission_id: UUID,
     payload: SubmissionDecisionRequest,
@@ -1108,7 +1119,7 @@ def _published_term_detail(
     )
 
 
-@router.post("/terms/{term_id}/publish", response_model=PublicationResponse)
+@publication_router.post("/terms/{term_id}/publish", response_model=PublicationResponse, summary="Publish term results", description="Calculate and publish official subject and term results after required submissions are approved.")
 def publish_term_results(
     term_id: UUID,
     context: CurrentContext = Depends(require_permission("result:publish")),
@@ -1133,7 +1144,7 @@ def publish_term_results(
     )
 
 
-@router.post("/terms/{term_id}/lock", response_model=PublicationResponse)
+@publication_router.post("/terms/{term_id}/lock", response_model=PublicationResponse, summary="Lock term results", description="Lock published results so they can no longer be recalculated or changed.")
 def lock_term_results(
     term_id: UUID,
     context: CurrentContext = Depends(require_permission("result:publish")),
@@ -1178,7 +1189,7 @@ def lock_term_results(
     )
 
 
-@router.get("/students/{student_id}", response_model=List[TermResultDetailResponse])
+@reports_router.get("/students/{student_id}", response_model=List[TermResultDetailResponse], summary="List student results", description="Return all published or locked term results for a student.")
 def get_student_results(
     student_id: UUID,
     context: CurrentContext = Depends(require_permission("result:read")),
@@ -1192,7 +1203,7 @@ def get_student_results(
     return [_published_term_detail(item, context.school_id, session) for item in results]
 
 
-@router.get("/students/{student_id}/terms/{term_id}", response_model=TermResultDetailResponse)
+@reports_router.get("/students/{student_id}/terms/{term_id}", response_model=TermResultDetailResponse, summary="Get student term result", description="Return one student's published or locked result for a specific academic term.")
 def get_student_term_result(
     student_id: UUID,
     term_id: UUID,
@@ -1210,7 +1221,7 @@ def get_student_term_result(
     return _published_term_detail(result, context.school_id, session)
 
 
-@router.get("/classes/{class_id}/terms/{term_id}", response_model=List[TermResultDetailResponse])
+@reports_router.get("/classes/{class_id}/terms/{term_id}", response_model=List[TermResultDetailResponse], summary="Get class term results", description="Return published or locked results for all students in a class for a term.")
 def get_class_term_results(
     class_id: UUID,
     term_id: UUID,

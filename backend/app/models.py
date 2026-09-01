@@ -557,6 +557,7 @@ class TeacherDailyAttendance(SQLModel, table=True):
     check_out_at: Optional[datetime] = None
 
     status: StaffAttendanceStatus = Field(default=StaffAttendanceStatus.NOT_STARTED)
+    is_late: bool = Field(default=False)
 
     check_in_method: Optional[AttendanceMethod] = None
     check_out_method: Optional[AttendanceMethod] = None
@@ -577,6 +578,7 @@ class TeacherAttendanceEvent(SQLModel, table=True):
     event_type: StaffAttendanceEventType
     event_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     method: AttendanceMethod
+    performed_by_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
     
     # Stores reasons for manual corrections (e.g., "Forgot to scan, admin overrode")
     metadata_notes: Optional[str] = None 
