@@ -9,9 +9,9 @@ import {
   ChevronDown,
   ChevronRight,
   UserCircle2,
-  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 import { getGradeLetter } from "../../teacher/grades/ReportCardsTab";
 
 const MOCK_SUBMISSIONS = [
@@ -209,11 +209,16 @@ export function ReportCardApprovalsTab() {
                           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
                         >
                           {approving === sub.id ? (
-                            <Loader2 size={16} className="animate-spin" />
+                            <>
+                              <Spinner size="sm" className="text-white" />
+                              Approving...
+                            </>
                           ) : (
-                            <CheckCircle size={16} />
+                            <>
+                              <CheckCircle size={16} />
+                              Approve All
+                            </>
                           )}
-                          Approve All
                         </button>
                       ) : (
                         <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold px-4 py-2 bg-emerald-50 rounded-lg">

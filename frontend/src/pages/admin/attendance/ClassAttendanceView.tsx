@@ -8,6 +8,7 @@ import {
   Send,
   X,
 } from "lucide-react";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import { useAttendanceStore } from "../../../store/attendance.store";
 import { toast } from "sonner";
 
@@ -89,6 +90,7 @@ export function ClassAttendanceView() {
     reopenSession,
     activeSessionId,
     activeSessionStatus,
+    activeSessionSubmittedAt,
   } = useAttendanceStore();
 
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
@@ -129,7 +131,9 @@ export function ClassAttendanceView() {
       minute: "2-digit",
     });
     const newRecs: NotifRecord[] = [...selectedAbsent].map((studentId) => {
-      const student = activeClassRoster.find((s) => (s.id || s.student_id) === studentId)!;
+      const student = activeClassRoster.find(
+        (s) => (s.id || s.student_id) === studentId,
+      )!;
       return {
         id: `N${Date.now()}-${studentId}`,
         studentName: `${student.first_name} ${student.last_name}`,
@@ -298,12 +302,22 @@ export function ClassAttendanceView() {
             </thead>
             <tbody>
               {loading && !dailySummary ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    Loading classes...
-                  </td>
-                </tr>
-              ) : !dailySummary?.classes || dailySummary.classes.length === 0 ? (
+                <>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="border-b border-slate-100 last:border-0">
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-20" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                      <td className="px-4 py-4 text-right"><Skeleton className="h-8 w-8 rounded-lg ml-auto" /></td>
+                    </tr>
+                  ))}
+                </>
+              ) : !dailySummary?.classes ||
+                dailySummary.classes.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
                     No classes found.
@@ -350,11 +364,10 @@ export function ClassAttendanceView() {
                       <td className="px-4 py-3">
                         {submitted ? (
                           <span
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                              cls.session_status === "APPROVED"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-indigo-100 text-indigo-700"
-                            }`}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cls.session_status === "APPROVED"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-indigo-100 text-indigo-700"
+                              }`}
                           >
                             {cls.session_status === "SUBMITTED"
                               ? "Submitted"
@@ -399,14 +412,16 @@ export function ClassAttendanceView() {
             </button>
             <div className="flex-1">
               <h2 className="font-bold text-lg text-slate-900">
-                {selectedCls.class_name} — Attendance Sheet
+                {selectedCls.class_name} Attendance Sheet
               </h2>
               <p className="text-sm text-slate-500">
-                Class Teacher: {selectedCls.form_teacher_name || "Unassigned"}{" "}
-                · Submitted 8:00 AM · Status: {activeSessionStatus || selectedCls.session_status}
+                Class Teacher: {selectedCls.form_teacher_name || "Unassigned"} ·
+                {activeSessionSubmittedAt && ` Submitted ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "numeric" }).format(new Date(activeSessionSubmittedAt))} · `}
+                Status:{" "}
+                {activeSessionStatus || selectedCls.session_status}
               </p>
             </div>
-            
+
             <div className="flex gap-2">
               {activeSessionStatus === "SUBMITTED" && activeSessionId && (
                 <>
@@ -424,14 +439,16 @@ export function ClassAttendanceView() {
                   </button>
                 </>
               )}
-              {(activeSessionStatus === "APPROVED" || activeSessionStatus === "REJECTED") && activeSessionId && (
-                <button
-                  onClick={handleReopen}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-                >
-                  <Clock size={15} /> Reopen
-                </button>
-              )}
+              {(activeSessionStatus === "APPROVED" ||
+                activeSessionStatus === "REJECTED") &&
+                activeSessionId && (
+                  <button
+                    onClick={handleReopen}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                  >
+                    <Clock size={15} /> Reopen
+                  </button>
+                )}
             </div>
 
             {selectedAbsent.size > 0 && (
@@ -475,14 +492,25 @@ export function ClassAttendanceView() {
               </thead>
               <tbody>
                 {loading && activeClassRoster.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400">
-                      Loading roster...
-                    </td>
-                  </tr>
+                  <>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <tr key={i} className="border-b border-slate-100 last:border-0">
+                        <td className="px-4 py-3"><Skeleton className="h-10 w-10 rounded-full" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                        <td className="px-4 py-3"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                        {activeSessionStatus === "PENDING" && (
+                          <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-5 ml-auto" /></td>
+                        )}
+                      </tr>
+                    ))}
+                  </>
                 ) : activeClassRoster.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                    <td
+                      colSpan={5}
+                      className="py-12 text-center text-slate-400"
+                    >
                       No students found.
                     </td>
                   </tr>
@@ -491,7 +519,8 @@ export function ClassAttendanceView() {
                     const isAbsent = student.status === "ABSENT";
                     const studentId = student.id || student.student_id;
                     const checked = selectedAbsent.has(studentId);
-                    const initials = `${student.first_name?.[0] || ""}${student.last_name?.[0] || ""}`.toUpperCase();
+                    const initials =
+                      `${student.first_name?.[0] || ""}${student.last_name?.[0] || ""}`.toUpperCase();
 
                     return (
                       <tr
@@ -509,8 +538,7 @@ export function ClassAttendanceView() {
                           )}
                         </td>
                         <td className="px-4 py-2.5 font-mono text-xs text-slate-500">
-                          {/* Fallback mock admission number if not provided by API */}
-                          {`WW/${selectedCls.class_name.replace(/\s+/g, '')}/${studentId.substring(0, 3)}`.toUpperCase()}
+                          {student.admission_number}
                         </td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2.5">
@@ -557,9 +585,12 @@ export function ClassAttendanceView() {
             </p>
             <div className="rounded-xl p-3 space-y-2 bg-slate-50 border border-slate-100">
               {[...selectedAbsent].map((sid) => {
-                const s = activeClassRoster.find((x) => (x.id || x.student_id) === sid);
+                const s = activeClassRoster.find(
+                  (x) => (x.id || x.student_id) === sid,
+                );
                 if (!s) return null;
-                const initials = `${s.first_name?.[0] || ""}${s.last_name?.[0] || ""}`.toUpperCase();
+                const initials =
+                  `${s.first_name?.[0] || ""}${s.last_name?.[0] || ""}`.toUpperCase();
                 return (
                   <div key={sid} className="flex items-center gap-3">
                     <div

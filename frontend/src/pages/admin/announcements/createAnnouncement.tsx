@@ -2,6 +2,7 @@ import { ROUTES } from "../../../config/routes";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
+import { Spinner } from "../../../components/ui/Spinner";
 import { useAnnouncementStore } from "../../../store/announcement.store";
 
 export function CreateAnnouncement() {
@@ -172,11 +173,16 @@ export function CreateAnnouncement() {
               className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-70 shadow-md shadow-indigo-600/10 cursor-pointer"
             >
               {saving ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <>
+                  <Spinner size="sm" className="text-white" />
+                  Posting...
+                </>
               ) : (
-                <Save size={16} />
+                <>
+                  <Save size={16} />
+                  Post Announcement
+                </>
               )}
-              {saving ? "Posting…" : "Post Announcement"}
             </button>
             <Link
               to={ROUTES.ADMIN.ANNOUNCEMENTS}

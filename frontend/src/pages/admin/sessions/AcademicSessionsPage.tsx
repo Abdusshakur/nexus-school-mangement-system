@@ -13,6 +13,7 @@ import { AccessRequestsPanel } from "./AccessRequestsPanel";
 import { SessionDetailView } from "./SessionDetailView";
 import { StatusBadge } from "./components/StatusBadge";
 import { ActionMenu } from "./components/ActionMenu";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-NG", {
@@ -23,7 +24,7 @@ function fmtDate(iso: string) {
 }
 
 export function AcademicSessionsPage() {
-  const { academicSessions, fetchSessions, startNewSession } =
+  const { academicSessions, loading, fetchSessions, startNewSession } =
     useSessionStore();
   const [activeSummary, setActiveSummary] = useState<any>(null);
 
@@ -95,7 +96,17 @@ export function AcademicSessionsPage() {
       )}
 
       {/* Active session */}
-      {active && (
+      {loading ? (
+        <div className="rounded-2xl border-2 border-emerald-500 p-6 space-y-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-12 h-12 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+        </div>
+      ) : active ? (
         <div className="rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-md">
           <div className="px-6 py-5 bg-linear-to-br from-emerald-100 to-emerald-50">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -175,11 +186,17 @@ export function AcademicSessionsPage() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Archived sessions  */}
-      {archived.length > 0 && (
-        <div>
+      {/* Archive */}
+      {loading ? (
+        <div className="mt-8 space-y-4">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+        </div>
+      ) : archived.length > 0 && (
+        <div className="mt-8">
           <h2 className="font-semibold mb-3 text-[15px] text-slate-700">
             Archived Sessions ({archived.length})
           </h2>

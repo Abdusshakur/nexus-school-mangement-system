@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { Send } from "lucide-react";
 import type { Assignment } from "./data";
+import { Spinner } from "../../../components/ui/Spinner";
 
 interface Props {
   onPost: (
@@ -10,22 +12,27 @@ interface Props {
 
 export function CreateAssignment({ onPost, onCancel }: Props) {
   const [title, setTitle] = useState("");
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClass, setSelectedClass] = useState("Advanced Mathematics III");
   const [dueDate, setDueDate] = useState("");
   const [maxPoints, setMaxPoints] = useState(100);
   const [description, setDescription] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !dueDate || !description) return;
 
-    onPost({
-      title,
-      class: selectedClass,
-      dueDate,
-      maxPoints: Number(maxPoints),
-      description,
-    });
+    setIsSaving(true);
+    setTimeout(() => {
+      onPost({
+        title,
+        class: selectedClass,
+        dueDate,
+        maxPoints: Number(maxPoints),
+        description,
+      });
+      setIsSaving(false);
+    }, 500);
   };
 
   return (
@@ -126,9 +133,19 @@ export function CreateAssignment({ onPost, onCancel }: Props) {
         </button>
         <button
           type="submit"
-          className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
+          disabled={isSaving}
+          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-600/10 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          Publish Assignment
+          {isSaving ? (
+            <>
+              <Spinner size="sm" className="text-white" />
+              Publishing...
+            </>
+          ) : (
+            <>
+              <Send size={15} /> Publish Assignment
+            </>
+          )}
         </button>
       </div>
     </form>

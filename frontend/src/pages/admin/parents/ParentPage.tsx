@@ -4,6 +4,7 @@ import { ROUTES } from "../../../config/routes";
 import { Search, Phone, Mail, MapPin, ChevronRight, Users, Plus } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
 import { AddParentModal } from "./AddParentModal";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 import {
   formatParentName,
@@ -100,10 +101,37 @@ export function ParentList() {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500 text-sm animate-pulse font-medium">
-              Loading parent records ...
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3.5 mb-5">
+                    <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                      <Skeleton className="h-4 w-1/3" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
+                  <div className="flex -space-x-2">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-1/4" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">

@@ -6,7 +6,7 @@ import { CreateAnnouncement } from "./CreateAnnouncement";
 import { AnnouncementList } from "./AnnouncementList";
 
 export default function TeacherAnnouncements() {
-  const { announcements, fetchAnnouncements, postAnnouncement, deleteAnnouncement } = useAnnouncementStore();
+  const { announcements, loading, fetchAnnouncements, postAnnouncement, deleteAnnouncement } = useAnnouncementStore();
   const [isPosting, setIsPosting] = useState(false);
 
   useEffect(() => {
@@ -51,6 +51,7 @@ export default function TeacherAnnouncements() {
 
         <AnnouncementList
           announcements={announcements}
+          loading={loading}
           onDelete={handleDelete}
         />
       </main>

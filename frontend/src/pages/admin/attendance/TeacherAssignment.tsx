@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { CheckCircle, AlertTriangle, UserCheck, Trash2, X } from "lucide-react";
 import { useClassStore } from "../../../store/class.store";
 import { useTeacherStore } from "../../../store/teacher.store";
+import { Skeleton } from "../../../components/ui/Skeleton";
+import { Spinner } from "../../../components/ui/Spinner";
 
 function Modal({
   title,
@@ -33,11 +35,14 @@ function Modal({
 export function TeacherAssignment() {
   const {
     classes,
+    loading: classesLoading,
     assignClassTeacher,
     removeClassTeacher,
     loadClasses,
   } = useClassStore();
-  const { teachers, fetchTeachers } = useTeacherStore();
+  const { teachers, loading: teachersLoading, fetchTeachers } = useTeacherStore();
+
+  const loading = classesLoading || teachersLoading;
 
   useEffect(() => {
     fetchTeachers().catch(() => { });
@@ -51,6 +56,7 @@ export function TeacherAssignment() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
   const activeTeachers = teachers.filter((t) => t.status === "Active");
@@ -77,6 +83,7 @@ export function TeacherAssignment() {
 
   const handleRemove = async (classId: string) => {
     try {
+      setRemoving(true);
       await removeClassTeacher(classId);
       setConfirmRemove(null);
       const cls = classes.find((c) => c.id === classId);
@@ -84,6 +91,8 @@ export function TeacherAssignment() {
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
       console.error(err);
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -147,7 +156,26 @@ export function TeacherAssignment() {
             </tr>
           </thead>
           <tbody>
-            {classes.map((cls) => {
+            {loading ? (
+              <>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i} className="border-t border-slate-100">
+                    <td className="px-5 py-4"><Skeleton className="h-5 w-20" /></td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2.5">
+                        <Skeleton className="w-7 h-7 rounded-full shrink-0" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                    <td className="px-5 py-4 text-right"><Skeleton className="h-8 w-8 rounded-lg ml-auto" /></td>
+                  </tr>
+                ))}
+              </>
+            ) : classes.map((cls) => {
               const tid = cls.form_teacher_id;
               const teacher = tid ? teachers.find((t) => t.id === tid) : null;
               return (
@@ -319,12 +347,11 @@ export function TeacherAssignment() {
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ${assignModal.classId && selectedTeacher ? "bg-indigo-500 hover:bg-indigo-600" : "bg-slate-300 cursor-not-allowed"}`}
               >
                 {confirming ? (
-                  "Assigning…"
+                  <Spinner size="sm" className="text-white" />
                 ) : (
-                  <>
-                    <UserCheck size={14} /> Confirm Assignment
-                  </>
+                  <UserCheck size={14} /> 
                 )}
+                {confirming ? "Assigning..." : "Confirm Assignment"}
               </button>
               <button
                 onClick={() => setAssignModal(null)}
@@ -355,9 +382,11 @@ export function TeacherAssignment() {
             <div className="flex gap-3">
               <button
                 onClick={() => handleRemove(confirmRemove)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+                disabled={removing}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                <Trash2 size={14} /> Remove Assignment
+                {removing ? <Spinner size="sm" className="text-white" /> : <Trash2 size={14} />}
+                {removing ? "Removing..." : "Remove Assignment"}
               </button>
               <button
                 onClick={() => setConfirmRemove(null)}

@@ -11,6 +11,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 import { createStudent } from "../../../api/students";
 import { useClassStore } from "../../../store/class.store";
 
@@ -544,11 +545,15 @@ export function AddStudent() {
             className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer shadow-sm"
           >
             {saving ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <>
+                <Spinner size="sm" className="text-white" />
+                Saving...
+              </>
             ) : (
-              <Save size={15} />
+              <>
+                <Save size={15} /> Save Record
+              </>
             )}
-            {saving ? "Saving..." : "Save Record"}
           </button>
         </div>
       </form>

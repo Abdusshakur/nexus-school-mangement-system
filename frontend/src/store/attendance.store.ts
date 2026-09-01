@@ -27,6 +27,7 @@ interface AttendanceState {
   activeClassRoster: any[]; // Replace with correct typing if needed
   activeSessionId: string | null;
   activeSessionStatus: string | null;
+  activeSessionSubmittedAt: string | null;
   loading: boolean;
   error: string | null;
 
@@ -48,6 +49,7 @@ export const useAttendanceStore = create<AttendanceState>()(
       activeClassRoster: [],
       activeSessionId: null,
       activeSessionStatus: null,
+      activeSessionSubmittedAt: null,
       loading: false,
       error: null,
 
@@ -79,13 +81,14 @@ export const useAttendanceStore = create<AttendanceState>()(
       },
 
       fetchClassRoster: async (classId: string, date: string) => {
-        set({ loading: true, error: null, activeClassRoster: [], activeSessionId: null, activeSessionStatus: null });
+        set({ loading: true, error: null, activeClassRoster: [], activeSessionId: null, activeSessionStatus: null, activeSessionSubmittedAt: null });
         try {
           const rosterResponse = await getClassRosterForAttendance(classId, date);
           set({ 
             activeClassRoster: rosterResponse?.students || [],
             activeSessionId: rosterResponse?.attendance_session_id || null,
             activeSessionStatus: rosterResponse?.attendance_status || null,
+            activeSessionSubmittedAt: rosterResponse?.submitted_at || null,
             loading: false 
           });
         } catch (error: any) {

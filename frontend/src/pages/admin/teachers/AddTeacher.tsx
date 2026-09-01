@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 import { type Teacher } from "../../../store/teacher.store";
 import { createTeacher, assignTeacherContexts } from "../../../api/teachers";
 import { useClassStore } from "../../../store/class.store";
@@ -189,6 +190,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
   const [step, setStep] = useState<AssignStep>("info");
   const [created, setCreated] = useState<Teacher | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -239,6 +241,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
 
   const handleCreate = async () => {
     try {
+      setIsSubmitting(true);
       const firstName = form.firstName.trim() || "";
       const lastName = form.lastName.trim() || " ";
 
@@ -295,8 +298,10 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
       setCreated(newTeacher);
       setStep("confirm");
       toast.success("Teacher profile created successfully!");
-    } catch {
-      toast.error("Failed to create teacher profile.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create teacher profile.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -526,10 +531,15 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
             <button
               type="button"
               onClick={handleCreate}
-              disabled={form.subjects.length === 0}
+              disabled={form.subjects.length === 0 || isSubmitting}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              <UserCheck size={15} /> Create Teacher Profile
+              {isSubmitting ? (
+                <Spinner size="sm" className="text-white" />
+              ) : (
+                <UserCheck size={15} />
+              )}
+              {isSubmitting ? "Creating..." : "Create Teacher Profile"}
             </button>
           </div>
         </div>

@@ -10,6 +10,8 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { useQRAttendanceStore, type TeacherCheckIn } from "../../store/qrAttendance.store";
 import { useTeacherStore } from "../../store/teacher.store";
+import { Spinner } from "../ui/Spinner";
+import { Skeleton } from "../ui/Skeleton";
 
 function formatDate(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
@@ -27,7 +29,7 @@ interface TeacherQRScannerProps {
 export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   const { teacherCheckIns, currentQRSession, generateQRSession } =
     useQRAttendanceStore();
-  const { teachers, fetchTeachers } = useTeacherStore();
+  const { teachers, loading, fetchTeachers } = useTeacherStore();
 
   const [timeLeft, setTimeLeft] = useState(30);
 
@@ -135,45 +137,59 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
         <div className="flex flex-col md:flex-row items-start gap-8">
           {/* QR Code */}
           <div className="bg-white p-3 border-2 border-slate-900 rounded-xl flex items-center justify-center shadow-sm shrink-0 w-[248px] h-[248px]">
-            {qrToken ? (
+            {loading ? (
+              <Skeleton className="w-full h-full rounded-lg" />
+            ) : qrToken ? (
               <QRCodeSVG value={qrToken} size={220} level="H" />
             ) : (
               <div className="flex flex-col items-center justify-center text-slate-400 gap-3">
-                <RefreshCw size={24} className="animate-spin text-indigo-500" />
+                <Spinner size="lg" className="text-indigo-500" />
                 <span className="text-xs font-semibold">Generating...</span>
               </div>
             )}
           </div>
 
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">
-              Today's Teacher Check-In
-            </h2>
-            <p className="text-sm text-slate-500 mb-5">{displayDate}</p>
-
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                <Clock size={14} />
-                Resets in {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
+            {loading ? (
+              <div className="space-y-4 max-w-sm mt-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-8 w-40 mt-4 rounded-full" />
+                <Skeleton className="h-5 w-5/6 mt-4" />
+                {isAdmin && <Skeleton className="h-10 w-48 mt-4 rounded-xl" />}
               </div>
-            </div>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-slate-900 mb-1">
+                  Today's Teacher Check-In
+                </h2>
+                <p className="text-sm text-slate-500 mb-5">{displayDate}</p>
 
-            <div className="mb-6">
-              <div className="text-[15px] font-semibold text-slate-900">
-                {checkedInCount} / {totalTeachers} Teachers Checked In Today
-              </div>
-            </div>
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                    <Clock size={14} />
+                    Resets in {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
+                  </div>
+                </div>
 
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  generateQRSession();
-                }}
-                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer transition-colors"
-              >
-                <RefreshCw size={16} />
-                Regenerate QR Manually
-              </button>
+                <div className="mb-6">
+                  <div className="text-[15px] font-semibold text-slate-900">
+                    {checkedInCount} / {totalTeachers} Teachers Checked In Today
+                  </div>
+                </div>
+
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      generateQRSession();
+                    }}
+                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer transition-colors"
+                  >
+                    <RefreshCw size={16} />
+                    Regenerate QR Manually
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -245,7 +261,22 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
                 Attendance by Teacher
               </h3>
               <div className="flex flex-col gap-4">
-                {teacherRates.map(({ teacher, rate }) => (
+                {loading ? (
+                  <>
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <Skeleton className="w-7 h-7 rounded-full shrink-0" />
+                            <Skeleton className="h-4 w-24" />
+                          </div>
+                          <Skeleton className="h-4 w-8" />
+                        </div>
+                        <Skeleton className="h-2 w-full rounded-full" />
+                      </div>
+                    ))}
+                  </>
+                ) : teacherRates.map(({ teacher, rate }) => (
                   <div key={teacher.id}>
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2.5">
@@ -311,7 +342,23 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
                 </tr>
               </thead>
               <tbody>
-                {teacherStatus.map(({ teacher, record }, idx) => {
+                {loading ? (
+                  <>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <tr key={i} className="border-t border-slate-100">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+                            <Skeleton className="h-4 w-32" />
+                          </div>
+                        </td>
+                        <td className="px-5 py-4"><Skeleton className="h-4 w-24" /></td>
+                        <td className="px-5 py-4"><Skeleton className="h-4 w-16" /></td>
+                        <td className="px-5 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                      </tr>
+                    ))}
+                  </>
+                ) : teacherStatus.map(({ teacher, record }, idx) => {
                   const badge = getStatusBadge(record);
                   return (
                     <tr

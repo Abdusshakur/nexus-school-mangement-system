@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CheckCircle, Clock, Save, AlertCircle } from "lucide-react";
 import { type Assignment, type Submission } from "./data";
+import { Spinner } from "../../../components/ui/Spinner";
 
 interface Props {
   activeAssignment: Assignment | null;
@@ -21,6 +22,7 @@ export function GradeSubmissions({
     useState<Submission | null>(null);
   const [gradeScore, setGradeScore] = useState<number | "">("");
   const [feedbackText, setFeedbackText] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!activeAssignment) {
     return (
@@ -45,19 +47,22 @@ export function GradeSubmissions({
     e.preventDefault();
     if (!selectedSubmission || gradeScore === "") return;
 
-    onGradeSubmit(selectedSubmission.id, Number(gradeScore), feedbackText);
+    setIsSaving(true);
+    setTimeout(() => {
+      onGradeSubmit(selectedSubmission.id, Number(gradeScore), feedbackText);
 
-    // Update local copy of submission state for immediate UI feedback on next click
-    const nextSub = {
-      ...selectedSubmission,
-      grade: Number(gradeScore),
-      feedback: feedbackText,
-      status: "graded" as const,
-    };
-    setSelectedSubmission(nextSub);
-    setGradeScore("");
-    setFeedbackText("");
-    setSelectedSubmission(null);
+      const nextSub = {
+        ...selectedSubmission,
+        grade: Number(gradeScore),
+        feedback: feedbackText,
+        status: "graded" as const,
+      };
+      setSelectedSubmission(nextSub);
+      setGradeScore("");
+      setFeedbackText("");
+      setSelectedSubmission(null);
+      setIsSaving(false);
+    }, 500);
   };
 
   return (
@@ -174,9 +179,19 @@ export function GradeSubmissions({
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
+              disabled={isSaving}
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-600/10 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <Save size={15} /> Save Grade & Feedback
+              {isSaving ? (
+                <>
+                  <Spinner size="sm" className="text-white" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={15} /> Save Grade & Feedback
+                </>
+              )}
             </button>
           </form>
         </div>

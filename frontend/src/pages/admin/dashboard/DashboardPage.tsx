@@ -36,6 +36,7 @@ import {
   formatClassName,
   type StudentResponse,
 } from "../../../api/students";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import { toast } from "sonner";
 
 interface StatCardProps {
@@ -232,10 +233,24 @@ export function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-1/2 flex items-center justify-center">
-        <p className="text-slate-500 text-sm font-medium animate-pulse">
-          Loading...
-        </p>
+      <div className="space-y-6 font-inter p-2">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-80 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-64 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }

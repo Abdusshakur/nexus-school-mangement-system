@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { updateParentProfile } from "../../../api/parents";
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 import type { ParentResponse } from "../../../api/parents";
 
 interface EditParentModalProps {
@@ -123,8 +124,9 @@ export function EditParentModal({ isOpen, onClose, onSuccess, parent }: EditPare
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
             >
+              {loading && <Spinner size="sm" className="text-white" />}
               {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>

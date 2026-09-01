@@ -3,6 +3,7 @@ import { X, Search, Link as LinkIcon, User, CheckCircle2 } from "lucide-react";
 import { linkParentToStudent } from "../../../api/parents";
 import { fetchStudentsList, type StudentResponse } from "../../../api/students";
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 
 interface LinkStudentModalProps {
   isOpen: boolean;
@@ -226,6 +227,7 @@ export function LinkStudentModal({
                 disabled={loading || !selectedStudentId}
                 className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
               >
+                {loading && <Spinner size="sm" className="text-white" />}
                 {loading ? "Linking..." : "Link Student"}
               </button>
             </div>

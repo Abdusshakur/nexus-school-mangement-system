@@ -4,6 +4,7 @@ import { useClassStore } from "../../../store/class.store";
 import { bulkTransferStudents } from "../../../api/students";
 import { fetchActiveSummary } from "../../../api/academics";
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 
 interface BulkTransferModalProps {
   isOpen: boolean;
@@ -121,8 +122,9 @@ export function BulkTransferModal({
             <button
               type="submit"
               disabled={loading || selectedStudentIds.length === 0}
-              className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
             >
+              {loading && <Spinner size="sm" className="text-white" />}
               {loading ? "Promoting..." : "Confirm Promotion"}
             </button>
           </div>
