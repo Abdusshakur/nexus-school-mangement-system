@@ -304,7 +304,7 @@ export function AdminTimetable() {
 
         <div className="p-4 sm:p-6">
           <div className="overflow-x-auto">
-            <table className="w-full border-separate border-spacing-1.5 min-w-">
+            <table className="w-full border-separate border-spacing-1.5 min-w-[800px]">
               <thead>
                 <tr>
                   <th className="w-[120px] pb-2.5 text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wider sticky left-0 bg-white z-10">

@@ -44,9 +44,11 @@ export function AnnouncementList() {
         </div>
         <Link
           to={ROUTES.ADMIN.ANNOUNCEMENT_CREATE}
-          className="flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 animate-fade-in"
+          className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4.5 sm:py-2.5 bg-indigo-600 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 animate-fade-in"
         >
-          <Plus size={16} /> Create Announcement
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+          <span className="hidden sm:inline">Create Announcement</span>
+          <span className="sm:hidden">Create</span>
         </Link>
       </header>
 

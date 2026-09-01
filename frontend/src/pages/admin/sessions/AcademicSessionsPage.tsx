@@ -97,7 +97,7 @@ export function AcademicSessionsPage() {
 
       {/* Active session */}
       {loading ? (
-        <div className="rounded-2xl border-2 border-emerald-500 p-6 space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4 shadow-sm">
           <div className="flex items-center gap-4">
             <Skeleton className="w-12 h-12 rounded-xl" />
             <div className="space-y-2">
@@ -294,7 +294,7 @@ export function AcademicSessionsPage() {
             All Sessions Directory
           </h2>
         </div>
-        <div className="">
+        <div className="overflow-x-auto w-full">
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-slate-50">

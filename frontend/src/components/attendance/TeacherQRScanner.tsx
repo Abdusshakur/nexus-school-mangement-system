@@ -123,7 +123,7 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
           Teacher Attendance Management
@@ -133,14 +133,14 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
         </p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start gap-8">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-7 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8">
           {/* QR Code */}
-          <div className="bg-white p-3 border-2 border-slate-900 rounded-xl flex items-center justify-center shadow-sm shrink-0 w-[248px] h-[248px]">
+          <div className="bg-white p-2 sm:p-3 border-2 border-slate-900 rounded-xl flex items-center justify-center shadow-sm shrink-0 w-[200px] h-[200px] sm:w-[248px] sm:h-[248px]">
             {loading ? (
               <Skeleton className="w-full h-full rounded-lg" />
             ) : qrToken ? (
-              <QRCodeSVG value={qrToken} size={220} level="H" />
+              <QRCodeSVG value={qrToken} width="100%" height="100%" level="H" />
             ) : (
               <div className="flex flex-col items-center justify-center text-slate-400 gap-3">
                 <Spinner size="lg" className="text-indigo-500" />
@@ -149,7 +149,7 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
             )}
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 w-full text-center md:text-left">
             {loading ? (
               <div className="space-y-4 max-w-sm mt-2">
                 <Skeleton className="h-6 w-3/4" />
@@ -165,7 +165,7 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
                 </h2>
                 <p className="text-sm text-slate-500 mb-5">{displayDate}</p>
 
-                <div className="mb-6">
+                <div className="mb-6 flex justify-center md:justify-start">
                   <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
                     <Clock size={14} />
                     Resets in {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
@@ -180,13 +180,11 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
 
                 {isAdmin && (
                   <button
-                    onClick={() => {
-                      generateQRSession();
-                    }}
-                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer transition-colors"
+                    onClick={() => generateQRSession()}
+                    className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-lg sm:rounded-xl px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold cursor-pointer transition-colors w-full sm:w-auto mt-2"
                   >
-                    <RefreshCw size={16} />
-                    Regenerate QR Manually
+                    <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Regenerate <span className="hidden sm:inline">QR Manually</span></span>
                   </button>
                 )}
               </>

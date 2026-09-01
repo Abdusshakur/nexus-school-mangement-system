@@ -140,7 +140,8 @@ export function TeacherAssignment() {
       )}
 
       <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-        <table className="w-full">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[700px]">
           <thead>
             <tr className="bg-slate-50">
               {["Class", "Current Class Teacher", "Status", "Actions"].map(
@@ -156,7 +157,7 @@ export function TeacherAssignment() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {loading && classes.length === 0 ? (
               <>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <tr key={i} className="border-t border-slate-100">
@@ -260,6 +261,7 @@ export function TeacherAssignment() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Assign modal */}
@@ -324,7 +326,7 @@ export function TeacherAssignment() {
               const alreadyAssignedClassId = classes.find(
                 (c) => c.form_teacher_id === selectedTeacher && c.id !== assignModal?.classId
               )?.id;
-              
+
               if (alreadyAssignedClassId) {
                 const alreadyAssignedClassName = classes.find((c) => c.id === alreadyAssignedClassId)?.name;
                 return (
@@ -338,24 +340,25 @@ export function TeacherAssignment() {
               }
               return null;
             })()}
-            <div className="flex gap-3 pt-1">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
               <button
+                type="button"
                 onClick={handleAssign}
                 disabled={
                   !assignModal.classId || !selectedTeacher || confirming
                 }
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ${assignModal.classId && selectedTeacher ? "bg-indigo-500 hover:bg-indigo-600" : "bg-slate-300 cursor-not-allowed"}`}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
               >
                 {confirming ? (
                   <Spinner size="sm" className="text-white" />
                 ) : (
-                  <UserCheck size={14} /> 
+                  <UserCheck size={14} />
                 )}
                 {confirming ? "Assigning..." : "Confirm Assignment"}
               </button>
               <button
                 onClick={() => setAssignModal(null)}
-                className="px-4 py-2.5 rounded-lg text-sm border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                className="px-4 py-2.5 rounded-lg text-sm border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors w-full sm:w-auto"
               >
                 Cancel
               </button>
@@ -379,18 +382,18 @@ export function TeacherAssignment() {
               ? The class will be unassigned and the teacher will no longer be
               able to mark attendance for it.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <button
                 onClick={() => handleRemove(confirmRemove)}
                 disabled={removing}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 w-full sm:w-auto"
               >
                 {removing ? <Spinner size="sm" className="text-white" /> : <Trash2 size={14} />}
                 {removing ? "Removing..." : "Remove Assignment"}
               </button>
               <button
                 onClick={() => setConfirmRemove(null)}
-                className="px-4 py-2.5 rounded-lg text-sm border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                className="px-4 py-2.5 rounded-lg text-sm border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors w-full sm:w-auto"
               >
                 Cancel
               </button>

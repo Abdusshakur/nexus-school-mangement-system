@@ -125,8 +125,9 @@ export function StudentList() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto w-full">
         {loading ? (
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left px-5 py-3"><Skeleton className="h-4 w-24" /></th>
@@ -157,7 +158,7 @@ export function StudentList() {
             </tbody>
           </table>
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -233,6 +234,7 @@ export function StudentList() {
             </tbody>
           </table>
         )}
+        </div>
         {!loading && filtered.length === 0 && (
           <div className="py-12 text-center text-slate-400 text-sm">
             No students records found.

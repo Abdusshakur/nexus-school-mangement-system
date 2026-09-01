@@ -74,7 +74,8 @@ export function TeachersPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-        <table className="w-full">
+        <div className="overflow-x-auto w-full">
+        <table className="w-full min-w-[700px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               {[
@@ -203,6 +204,7 @@ export function TeachersPage() {
             )))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showAdd && <AddTeacherModal onClose={() => setShowAdd(false)} />}

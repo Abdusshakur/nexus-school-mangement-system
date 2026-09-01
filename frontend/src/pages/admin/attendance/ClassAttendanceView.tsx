@@ -233,7 +233,8 @@ export function ClassAttendanceView() {
               No notifications sent yet.
             </div>
           ) : (
-            <table className="w-full">
+            <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50">
                   {["Student", "Parent", "Class", "Time Sent", "Status"].map(
@@ -272,13 +273,15 @@ export function ClassAttendanceView() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
 
       {tab === "classes" && !selectedClass && (
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-          <table className="w-full">
+          <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-slate-50">
                 {[
@@ -395,6 +398,7 @@ export function ClassAttendanceView() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -474,7 +478,8 @@ export function ClassAttendanceView() {
           )}
 
           <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-            <table className="w-full">
+            <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50">
                   <th className="w-10 px-4 py-3" />
@@ -570,6 +575,7 @@ export function ClassAttendanceView() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

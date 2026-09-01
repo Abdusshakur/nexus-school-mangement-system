@@ -44,18 +44,22 @@ export function AttendanceDashboard() {
           <h1 className="text-slate-900 text-2xl font-bold ">Attendance</h1>
           <p className="text-slate-500 text-sm mt-0.5">{currentDateString}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <Link
             to={ROUTES.ADMIN.ATTENDANCE_MARK}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-indigo-600 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10"
           >
-            <CheckCircle size={16} /> Mark Today
+            <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+            <span className="hidden sm:inline">Mark Today</span>
+            <span className="sm:hidden">Mark</span>
           </Link>
           <Link
             to={ROUTES.ADMIN.ATTENDANCE_REPORT}
-            className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 bg-white text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-all"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 border border-slate-200 bg-white text-slate-600 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold hover:bg-slate-50 transition-all"
           >
-            <TrendingUp size={16} /> Performance Report
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+            <span className="hidden sm:inline">Performance Report</span>
+            <span className="sm:hidden">Report</span>
           </Link>
         </div>
       </header>
@@ -223,7 +227,7 @@ export function AttendanceDashboard() {
                     }}
                   />
                 </div>
-                <div className="w-28 text-right shrink-0">
+                <div className="w-full sm:w-28 text-left sm:text-right shrink-0 flex items-center justify-between sm:block">
                   <span className="text-sm font-bold text-slate-800">
                     {g.total_present + g.total_late} / {g.total_students}
                   </span>

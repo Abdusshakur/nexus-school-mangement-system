@@ -58,7 +58,7 @@ export function Topbar() {
       {/* Hamburger */}
       <button
         onClick={toggleSidebar}
-        className="p-1.5 rounded-lg text-slate-500 transition-colors cursor-pointer hover:bg-slate-100 bg-transparent"
+        className="hidden md:block p-1.5 rounded-lg text-slate-500 transition-colors cursor-pointer hover:bg-slate-100 bg-transparent"
       >
         {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
       </button>

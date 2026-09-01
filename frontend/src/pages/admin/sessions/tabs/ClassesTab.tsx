@@ -13,7 +13,8 @@ export function ClassesTab({ classes }: ClassesTabProps) {
           Enrolled Classes ({classes.length})
         </h3>
       </div>
-      <table className="w-full">
+      <div className="overflow-x-auto w-full">
+      <table className="w-full min-w-[500px]">
         <thead>
           <tr className="bg-slate-50">
             {["CLASS", "LEVEL", "STATUS"].map((h) => (
@@ -54,6 +55,7 @@ export function ClassesTab({ classes }: ClassesTabProps) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
