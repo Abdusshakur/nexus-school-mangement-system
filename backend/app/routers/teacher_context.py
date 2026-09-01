@@ -247,7 +247,7 @@ def validate_qr_scan(raw_token: str, expected_type: QRType, context: CurrentCont
     return qr_session
 
 
-@router.get("/me/today", response_model=TeacherTodayStatusResponse)
+@router.get("/me/today", response_model=TeacherTodayStatusResponse, summary="Get my teacher attendance status for today")
 def get_my_status_today(
     context: CurrentContext = Depends(require_permission("teacher:read")),
     session: Session = Depends(get_session)
