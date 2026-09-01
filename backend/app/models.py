@@ -65,6 +65,41 @@ class AssignmentStatus(str, Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
+class AssessmentSchemeStatus(str, Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    LOCKED = "LOCKED"
+    ARCHIVED = "ARCHIVED"
+
+class AssessmentStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+class AssessmentType(str, Enum):
+    CONTINUOUS_ASSESSMENT = "CONTINUOUS_ASSESSMENT"
+    EXAM = "EXAM"
+    ASSIGNMENT = "ASSIGNMENT"
+    PROJECT = "PROJECT"
+    MIDTERM = "MIDTERM"
+    OTHER = "OTHER"
+
+class ResultSubmissionStatus(str, Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+class AssessmentScoreStatus(str, Enum):
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    EXCUSED = "EXCUSED"
+    MISSING = "MISSING"
+
+class OfficialResultStatus(str, Enum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    LOCKED = "LOCKED"
+
 # ==================================================================
 # TEACHER ATTENDANCE ENUMS
 # ==================================================================
@@ -522,6 +557,7 @@ class TeacherDailyAttendance(SQLModel, table=True):
     check_out_at: Optional[datetime] = None
 
     status: StaffAttendanceStatus = Field(default=StaffAttendanceStatus.NOT_STARTED)
+    is_late: bool = Field(default=False)
 
     check_in_method: Optional[AttendanceMethod] = None
     check_out_method: Optional[AttendanceMethod] = None
@@ -542,8 +578,221 @@ class TeacherAttendanceEvent(SQLModel, table=True):
     event_type: StaffAttendanceEventType
     event_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     method: AttendanceMethod
+    performed_by_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
     
     # Stores reasons for manual corrections (e.g., "Forgot to scan, admin overrode")
     metadata_notes: Optional[str] = None 
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AssessmentScheme(SQLModel, table=True):
+    """Assessment configuration for one class, subject, term, and session."""
+    __tablename__ = "assessment_schemes"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "academic_session_id",
+            "academic_term_id",
+            "class_id",
+            "subject_id",
+            "name",
+            name="uq_assessment_scheme_context_name",
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    academic_session_id: UUID = Field(foreign_key="academicsession.id", index=True)
+    academic_term_id: UUID = Field(foreign_key="academicterm.id", index=True)
+    class_id: UUID = Field(foreign_key="classes.id", index=True)
+    subject_id: UUID = Field(foreign_key="subject.id", index=True)
+
+    name: str = Field(index=True)
+    class_name: str
+    subject_name: str
+    academic_session_name: str
+    academic_term_name: str
+    total_weight: float = Field(default=100.0)
+    status: AssessmentSchemeStatus = Field(default=AssessmentSchemeStatus.DRAFT)
+    version: int = Field(default=1)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class Assessment(SQLModel, table=True):
+    """A weighted component within an assessment scheme."""
+    __tablename__ = "assessments"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("scheme_id", "name", name="uq_assessment_name_per_scheme"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scheme_id: UUID = Field(foreign_key="assessment_schemes.id", index=True)
+    name: str = Field(index=True)
+    type: AssessmentType = Field(default=AssessmentType.OTHER)
+    max_score: float
+    weight: float
+    sequence: int = Field(default=1)
+    is_required: bool = Field(default=True)
+    status: AssessmentStatus = Field(default=AssessmentStatus.ACTIVE)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GradingScale(SQLModel, table=True):
+    """A school-specific grading scale that can be versioned."""
+    __tablename__ = "grading_scales"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("school_id", "name", "version", name="uq_grading_scale_name_version"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    name: str = Field(index=True)
+    academic_session_id: Optional[UUID] = Field(default=None, foreign_key="academicsession.id", index=True)
+    academic_term_id: Optional[UUID] = Field(default=None, foreign_key="academicterm.id", index=True)
+    version: int = Field(default=1)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GradingScaleRule(SQLModel, table=True):
+    """One percentage range and grade within a grading scale."""
+    __tablename__ = "grading_scale_rules"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("grading_scale_id", "grade", name="uq_grade_per_grading_scale"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    grading_scale_id: UUID = Field(foreign_key="grading_scales.id", index=True)
+    grade: str = Field(index=True)
+    minimum_percentage: float
+    maximum_percentage: float
+    remark: Optional[str] = None
+
+
+class AssessmentSubmission(SQLModel, table=True):
+    """A teacher's submission of one assessment for a class and subject."""
+    __tablename__ = "assessment_submissions"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("assessment_id", name="uq_submission_per_assessment"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    assessment_id: UUID = Field(foreign_key="assessments.id", index=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    academic_session_id: UUID = Field(foreign_key="academicsession.id", index=True)
+    academic_term_id: UUID = Field(foreign_key="academicterm.id", index=True)
+    class_id: UUID = Field(foreign_key="classes.id", index=True)
+    subject_id: UUID = Field(foreign_key="subject.id", index=True)
+    teacher_id: UUID = Field(foreign_key="teacherprofile.id", index=True)
+    submitted_by: UUID = Field(foreign_key="user.id", index=True)
+
+    assessment_name: str
+    teacher_name: str
+    class_name: str
+    subject_name: str
+    academic_session_name: str
+    academic_term_name: str
+    status: ResultSubmissionStatus = Field(default=ResultSubmissionStatus.DRAFT)
+    submitted_at: Optional[datetime] = None
+    reviewed_by: Optional[UUID] = Field(default=None, foreign_key="user.id")
+    reviewed_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AssessmentScore(SQLModel, table=True):
+    """One student's score within an assessment submission."""
+    __tablename__ = "assessment_scores"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("submission_id", "student_id", name="uq_score_per_submission_student"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    submission_id: UUID = Field(foreign_key="assessment_submissions.id", index=True)
+    student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
+    score: Optional[float] = None
+    score_status: AssessmentScoreStatus = Field(default=AssessmentScoreStatus.PRESENT)
+    remarks: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class SubjectResult(SQLModel, table=True):
+    """Calculated result for one student in one subject and term."""
+    __tablename__ = "subject_results"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "academic_session_id",
+            "academic_term_id",
+            "class_id",
+            "subject_id",
+            "student_id",
+            name="uq_subject_result_student_context",
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    academic_session_id: UUID = Field(foreign_key="academicsession.id", index=True)
+    academic_term_id: UUID = Field(foreign_key="academicterm.id", index=True)
+    class_id: UUID = Field(foreign_key="classes.id", index=True)
+    subject_id: UUID = Field(foreign_key="subject.id", index=True)
+    student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
+    grading_scale_id: UUID = Field(foreign_key="grading_scales.id", index=True)
+
+    student_name: str
+    admission_number: str
+    class_name: str
+    subject_name: str
+    academic_session_name: str
+    academic_term_name: str
+    total_score: float
+    percentage: float
+    grade: str
+    status: OfficialResultStatus = Field(default=OfficialResultStatus.DRAFT)
+    calculated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class TermResult(SQLModel, table=True):
+    """Aggregated result for one student across subjects in a term."""
+    __tablename__ = "term_results"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "academic_session_id",
+            "academic_term_id",
+            "class_id",
+            "student_id",
+            name="uq_term_result_student_context",
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    academic_session_id: UUID = Field(foreign_key="academicsession.id", index=True)
+    academic_term_id: UUID = Field(foreign_key="academicterm.id", index=True)
+    class_id: UUID = Field(foreign_key="classes.id", index=True)
+    student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
+    grading_scale_id: UUID = Field(foreign_key="grading_scales.id", index=True)
+
+    student_name: str
+    admission_number: str
+    class_name: str
+    academic_session_name: str
+    academic_term_name: str
+    total_score: float
+    average_score: float
+    grade: str
+    status: OfficialResultStatus = Field(default=OfficialResultStatus.DRAFT)
+    published_at: Optional[datetime] = None
+    locked_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
