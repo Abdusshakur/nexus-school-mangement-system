@@ -9,8 +9,19 @@ from datetime import datetime, timezone
 
 
 from backend.app.db.database import get_session
-from backend.app.models import (Announcement, AnnouncementStatus, 
-                                PriorityEnum, Role, StudentProfile, ParentStudentLink)
+from backend.app.models import (
+    AdminProfile,
+    Announcement,
+    AnnouncementStatus,
+    ParentProfile,
+    ParentStudentLink,
+    PriorityEnum,
+    Role,
+    StudentProfile,
+    TeacherProfile,
+    User,
+    UserSchoolLink,
+)
 # 👇 1. Import the Gatekeeper
 from backend.app.core.auth_utils import CurrentContext, require_permission, get_current_context
 from backend.app.schemas.announcement import AnnouncementCreate, AnnouncementResponse, AnnouncementUpdate
@@ -21,6 +32,55 @@ router = APIRouter(prefix="/announcements", tags=["Announcements"])
 def send_push_notifications(audience: str, title: str, school_id: UUID):
     # 👇 2. MULTI-TENANT WORKER: The worker must receive the school_id so it doesn't email the wrong school!
     print(f"BACKGROUND TASK: Sending push notifications to {audience} for '{title}' at School {school_id}")
+
+
+def announcement_response(announcement: Announcement, session: Session) -> AnnouncementResponse:
+    """Return an announcement with tenant-scoped author details."""
+    user = session.get(User, announcement.author_id)
+    role = None
+    if user:
+        link = session.exec(select(UserSchoolLink, Role).join(
+            Role, UserSchoolLink.role_id == Role.id
+        ).where(
+            UserSchoolLink.user_id == announcement.author_id,
+            UserSchoolLink.school_id == announcement.school_id,
+            UserSchoolLink.is_active.is_(True),
+        )).first()
+        if link:
+            role = link[1]
+        elif user.role_id:
+            role = session.get(Role, user.role_id)
+
+    role_name = role.name if role else None
+    profile_types = {
+        "admin": AdminProfile,
+        "teacher": TeacherProfile,
+        "parent": ParentProfile,
+        "student": StudentProfile,
+    }
+    profile_type = profile_types.get(role_name.lower() if role_name else "")
+    profile = None
+    if profile_type:
+        profile = session.exec(select(profile_type).where(
+            profile_type.user_id == announcement.author_id,
+            profile_type.school_id == announcement.school_id,
+        )).first()
+    author_name = f"{profile.first_name} {profile.last_name}".strip() if profile else None
+
+    return AnnouncementResponse(
+        id=announcement.id,
+        title=announcement.title,
+        content=announcement.content,
+        category=announcement.category,
+        audience=announcement.audience,
+        priority=announcement.priority,
+        status=announcement.status,
+        author_id=announcement.author_id,
+        author_name=author_name,
+        author_role=role_name,
+        school_id=announcement.school_id,
+        created_at=announcement.created_at,
+    )
 
 @router.post("/", response_model=AnnouncementResponse, status_code=status.HTTP_201_CREATED)
 def create_announcement(
@@ -56,7 +116,7 @@ def create_announcement(
             context.school_id # 👈 Pass the tenant boundary to the worker
         )
         
-    return new_announcement
+    return announcement_response(new_announcement, session)
 
 
 @router.get("/", response_model=List[AnnouncementResponse])
@@ -135,7 +195,8 @@ def get_smart_announcement_feed(
         if audience:
             query = query.where(Announcement.audience == audience)
 
-    return session.exec(query.order_by(Announcement.created_at.desc())).all()
+    announcements = session.exec(query.order_by(Announcement.created_at.desc())).all()
+    return [announcement_response(item, session) for item in announcements]
 
 
 @router.get("/{announcement_id}", response_model=AnnouncementResponse)
@@ -169,7 +230,7 @@ def get_single_announcement(
                 detail="You do not have permission to view this draft."
             )
 
-    return announcement
+    return announcement_response(announcement, session)
 
 
 @router.patch("/{announcement_id}", response_model=AnnouncementResponse)
@@ -227,7 +288,7 @@ def update_announcement(
             context.school_id # 👈 Critical fix
         )
 
-    return announcement
+    return announcement_response(announcement, session)
 
 
 @router.delete("/{announcement_id}", status_code=status.HTTP_204_NO_CONTENT)
