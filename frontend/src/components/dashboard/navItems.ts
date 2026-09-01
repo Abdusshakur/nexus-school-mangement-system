@@ -14,6 +14,8 @@ import {
   UserCircle,
   Baby,
   Bell,
+  TrendingUp,
+  QrCode,
 } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
@@ -67,6 +69,30 @@ const ADMIN_NAV_ITEMS = [
     label: "Settings",
     href: ROUTES.ADMIN.SETTINGS,
     icon: Settings,
+  },
+];
+
+export const ADMIN_ATTENDANCE_SUB_ITEMS = [
+  { label: "Overview", href: ROUTES.ADMIN.ATTENDANCE, icon: LayoutDashboard },
+  {
+    label: "Class Attendance",
+    href: ROUTES.ADMIN.ATTENDANCE_CLASSES,
+    icon: CalendarCheck,
+  },
+  {
+    label: "Performance Report",
+    href: ROUTES.ADMIN.ATTENDANCE_REPORT,
+    icon: TrendingUp,
+  },
+  {
+    label: "Teacher Assignment",
+    href: ROUTES.ADMIN.ATTENDANCE_TEACHERS,
+    icon: ClipboardList,
+  },
+  {
+    label: "QR Scanner",
+    href: ROUTES.ADMIN.ATTENDANCE_TEACHER_RECORDS,
+    icon: QrCode,
   },
 ];
 
@@ -195,4 +221,33 @@ export function getNavItems(role: string | null) {
     return SECURITY_NAV_ITEMS;
   }
   return ADMIN_NAV_ITEMS;
+}
+
+export function getPrimaryNavItems(role: string | null) {
+  if (role === "teacher") {
+    return [
+      TEACHER_NAV_ITEMS[0], // Dashboard
+      TEACHER_NAV_ITEMS[1], // My Classes
+      TEACHER_NAV_ITEMS[4], // Student Attendance
+      TEACHER_NAV_ITEMS[5], // Assignments
+    ];
+  }
+  if (role === "parent") {
+    return [
+      PARENT_NAV_ITEMS[0], // Dashboard
+      PARENT_NAV_ITEMS[1], // My Children
+      PARENT_NAV_ITEMS[2], // Attendance
+      PARENT_NAV_ITEMS[4], // Results
+    ];
+  }
+  if (role === "security") {
+    return SECURITY_NAV_ITEMS;
+  }
+  // Admin default
+  return [
+    ADMIN_NAV_ITEMS[0], // Dashboard
+    ADMIN_NAV_ITEMS[1], // Students
+    ADMIN_NAV_ITEMS[4], // Attendance
+    ADMIN_NAV_ITEMS[5], // Announcements
+  ];
 }

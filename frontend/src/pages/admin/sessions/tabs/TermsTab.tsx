@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { AcademicTerm } from "../../../../store/session.store";
 import { useSessionStore } from "../../../../store/session.store";
-import { Plus, X, Loader2 } from "lucide-react";
-
+import { Plus, X } from "lucide-react";
+import { Spinner } from "../../../../components/ui/Spinner";
 function fmtDate(iso: string) {
   if (!iso) return "N/A";
   return new Date(iso).toLocaleDateString("en-NG", {
@@ -232,7 +232,7 @@ export function TermsTab({ sessionId, isActive, terms }: TermsTabProps) {
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
+                      <Spinner size="sm" className="text-white" />
                       Saving...
                     </>
                   ) : (

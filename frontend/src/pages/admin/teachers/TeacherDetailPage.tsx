@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import {
   ArrowLeft,
   Phone,
@@ -81,8 +82,12 @@ export function TeacherDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-        <p className="mb-4 animate-pulse">Loading teacher profile...</p>
+      <div className="flex-1 flex flex-col min-w-0 p-8 space-y-6">
+        <Skeleton className="h-10 w-1/3 rounded-lg" />
+        <div className="flex gap-6">
+          <Skeleton className="w-1/3 h-64 rounded-2xl" />
+          <Skeleton className="flex-1 h-64 rounded-2xl" />
+        </div>
       </div>
     );
   }

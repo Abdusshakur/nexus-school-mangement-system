@@ -164,7 +164,8 @@ export function AttendanceTab({
         <div className="px-5 py-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-900">Weekly Breakdown</h3>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto w-full">
+        <table className="w-full min-w-[500px]">
           <thead>
             <tr className="bg-slate-50">
               {["Week", "Present", "Late", "Absent", "Rate"].map((h) => (
@@ -216,6 +217,7 @@ export function AttendanceTab({
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

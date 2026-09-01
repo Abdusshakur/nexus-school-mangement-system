@@ -5,6 +5,7 @@ import { Phone, Mail, MapPin, ArrowLeft, ChevronRight, Pencil, Link as LinkIcon 
 import { useParentStore } from "../../../store/parent.store";
 import { EditParentModal } from "./EditParentModal";
 import { LinkStudentModal } from "./LinkStudentModal";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import {
   formatParentName,
   formatParentInitials,
@@ -70,10 +71,12 @@ export function ParentDetail() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center py-24 text-slate-400">
-        <p className="text-sm font-medium animate-pulse">
-          Loading parent record...
-        </p>
+      <div className="flex-1 flex flex-col min-w-0 p-8 space-y-6">
+        <Skeleton className="h-10 w-1/3 rounded-lg" />
+        <div className="flex gap-6">
+          <Skeleton className="w-1/3 h-64 rounded-2xl" />
+          <Skeleton className="flex-1 h-64 rounded-2xl" />
+        </div>
       </div>
     );
   }

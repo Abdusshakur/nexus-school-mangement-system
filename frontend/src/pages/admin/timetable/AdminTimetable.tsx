@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import {
   ChevronDown,
-  Loader2,
   Edit3,
   X,
   Save,
   Trash2,
   Plus,
 } from "lucide-react";
+import { Skeleton } from "../../../components/ui/Skeleton";
+import { Spinner } from "../../../components/ui/Spinner";
 import { getSubjectColors } from "../../../utils/colors";
 import {
   useTimetableStore,
@@ -94,9 +95,9 @@ function cellColor(sub: string) {
 }
 
 export function AdminTimetable() {
-  const { timetableGrid, fetchTerms, fetchAllTimetables, saveTimetableCell } =
+  const { timetableGrid, loading: timetableLoading, fetchTerms, fetchAllTimetables, saveTimetableCell } =
     useTimetableStore();
-  const { classes, loadClasses } = useClassStore();
+  const { classes, loading: classLoading, loadClasses } = useClassStore();
   const { teachers, fetchTeachers } = useTeacherStore();
   const { subjects, loadSubjects } = useSubjectStore();
   const { academicSessions, fetchSessions } = useSessionStore();
@@ -243,7 +244,7 @@ export function AdminTimetable() {
         </div>
 
         {academicSessions.length === 0 ? (
-          <Loader2 className="animate-spin text-slate-400" size={20} />
+          <Spinner size="md" className="text-slate-400" />
         ) : (
           <div className="flex gap-3">
             <div className="relative">
@@ -303,7 +304,7 @@ export function AdminTimetable() {
 
         <div className="p-4 sm:p-6">
           <div className="overflow-x-auto">
-            <table className="w-full border-separate border-spacing-1.5 min-w-">
+            <table className="w-full border-separate border-spacing-1.5 min-w-[800px]">
               <thead>
                 <tr>
                   <th className="w-[120px] pb-2.5 text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wider sticky left-0 bg-white z-10">
@@ -320,7 +321,24 @@ export function AdminTimetable() {
                 </tr>
               </thead>
               <tbody>
-                {PERIODS.map((p) => {
+                {classLoading || timetableLoading ? (
+                  <>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <tr key={i}>
+                        <td className="pr-2 py-3"><Skeleton className="h-6 w-16" /></td>
+                        {classes.length > 0 ? (
+                          classes.map((c) => (
+                            <td key={c.id} className="p-1"><Skeleton className="h-[76px] w-full rounded-xl" /></td>
+                          ))
+                        ) : (
+                          [1, 2, 3].map((j) => (
+                            <td key={j} className="p-1"><Skeleton className="h-[76px] w-full rounded-xl" /></td>
+                          ))
+                        )}
+                      </tr>
+                    ))}
+                  </>
+                ) : PERIODS.map((p) => {
                   const isBreak = BREAK_IDS.has(p.id);
                   return (
                     <tr key={p.id}>
@@ -561,11 +579,15 @@ export function AdminTimetable() {
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSaving ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <>
+                      <Spinner size="sm" className="text-white" />
+                      Saving...
+                    </>
                   ) : (
-                    <Save size={16} />
+                    <>
+                      <Save size={16} /> Save
+                    </>
                   )}
-                  Save
                 </button>
                 {timetableGrid[editCell.cellKey] && (
                   <button

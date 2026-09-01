@@ -36,6 +36,7 @@ import {
   formatClassName,
   type StudentResponse,
 } from "../../../api/students";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import { toast } from "sonner";
 
 interface StatCardProps {
@@ -58,26 +59,26 @@ function StatCard({
   iconBgClass,
 }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl p-5 flex items-start gap-4 transition-shadow hover:shadow-md border border-slate-200">
+    <div className="bg-white rounded-xl p-3 sm:p-5 flex items-start gap-2.5 sm:gap-4 transition-shadow hover:shadow-md border border-slate-200">
       <div
-        className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${iconBgClass}`}
+        className={`w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${iconBgClass}`}
       >
-        <Icon size={22} className={iconColorClass} />
+        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColorClass}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-500">{label}</p>
-        <p className="mt-0.5 font-bold text-[26px] leading-none text-slate-900">
+        <p className="text-xs sm:text-sm text-slate-500 truncate">{label}</p>
+        <p className="mt-0.5 sm:mt-1 font-bold text-lg sm:text-[26px] leading-none text-slate-900 truncate">
           {value}
         </p>
         {change && (
           <p
-            className={`text-xs mt-1 font-medium flex items-center gap-1 ${positive ? "text-indigo-600" : "text-rose-600"}`}
+            className={`text-[10px] sm:text-xs mt-1 font-medium flex items-center gap-1 ${positive ? "text-indigo-600" : "text-rose-600"} truncate`}
           >
             <Triangle
               size={8}
               className={`fill-current shrink-0 ${positive ? "" : "rotate-180"}`}
             />
-            <span>{change}</span>
+            <span className="truncate">{change}</span>
           </p>
         )}
       </div>
@@ -232,10 +233,24 @@ export function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-1/2 flex items-center justify-center">
-        <p className="text-slate-500 text-sm font-medium animate-pulse">
-          Loading...
-        </p>
+      <div className="space-y-6 font-inter p-2">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-80 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-64 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -284,14 +299,15 @@ export function DashboardPage() {
         </div>
         <Link
           to={ROUTES.ADMIN.STUDENT_ADD}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+          className="flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[11px] sm:text-sm font-semibold text-white transition-colors bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
         >
-          <Plus size={16} /> Add Student
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+          <span>Add Student</span>
         </Link>
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard
           label="Total Students"
           value={metrics?.students ?? 0}
@@ -479,7 +495,8 @@ export function DashboardPage() {
               View all <ArrowRight size={14} />
             </Link>
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="bg-slate-50">
                 {["Student", "Grade", "Guardian", "Status"].map((header) => (
@@ -563,6 +580,7 @@ export function DashboardPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Announcements Tab */}

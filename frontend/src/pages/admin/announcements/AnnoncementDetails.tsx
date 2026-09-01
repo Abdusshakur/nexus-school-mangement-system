@@ -74,9 +74,9 @@ export function AnnouncementDetail() {
         </button>
       </header>
 
-      <main className="flex-1 p-8 max-w-3xl w-full ">
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+      <main className="flex-1 p-4 sm:p-8 max-w-3xl w-full mx-auto">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 pb-6 border-b border-slate-100">
             <div
               className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${p.className}`}
             >
@@ -90,7 +90,7 @@ export function AnnouncementDetail() {
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${p.className}`}
                 >
-                  {p.label} Priority
+                  {p.label} <span className="hidden sm:inline">Priority</span>
                 </span>
                 <span className="text-slate-300 text-xs">·</span>
                 <span className="text-xs font-semibold text-slate-500">
@@ -104,7 +104,7 @@ export function AnnouncementDetail() {
             {ann.body}
           </p>
 
-          <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-3 gap-2 sm:gap-5">
             {[
               { icon: Clock, label: "Published", value: ann.date },
               { icon: Users, label: "Audience", value: ann.audience },
@@ -112,13 +112,13 @@ export function AnnouncementDetail() {
             ].map(({ icon: Icon, label, value }) => (
               <div
                 key={label}
-                className="bg-slate-50 rounded-xl p-4 border border-slate-100"
+                className="bg-slate-50 rounded-lg sm:rounded-xl p-2.5 sm:p-4 border border-slate-100 flex flex-col items-center text-center sm:items-start sm:text-left"
               >
-                <div className="flex items-center gap-1.5 mb-1 text-slate-400">
-                  <Icon size={14} />
-                  <p className="text-xs tracking-wider">{label}</p>
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1 text-slate-400">
+                  <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <p className="text-[10px] sm:text-xs tracking-wider">{label}</p>
                 </div>
-                <p className="text-xs font-medium text-slate-800 mt-1">
+                <p className="text-[11px] sm:text-xs font-medium text-slate-800 mt-1">
                   {value}
                 </p>
               </div>

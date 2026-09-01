@@ -1,12 +1,19 @@
 import { ROUTES } from "../../../config/routes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download } from "lucide-react";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import { studentsList } from "./data";
 
 export function AttendanceReport() {
   const [gradeFilter, setGradeFilter] = useState("All");
   const [monthFilter, setMonthFilter] = useState("June 2026");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Predictable pseudorandom reporting data
   const reportData = studentsList.map((s, idx) => {
@@ -101,7 +108,7 @@ export function AttendanceReport() {
         {/* Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider">
@@ -125,11 +132,36 @@ export function AttendanceReport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredReport.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="hover:bg-slate-50/50 transition-colors"
-                  >
+                {loading ? (
+                  <>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+                            <Skeleton className="h-4 w-32" />
+                          </div>
+                        </td>
+                        <td className="px-6 py-4"><Skeleton className="h-4 w-12" /></td>
+                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
+                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
+                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
+                        <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-12 rounded-full mx-auto" /></td>
+                      </tr>
+                    ))}
+                  </>
+                ) : filteredReport.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                      No report data found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredReport.map((s) => (
+                    <tr
+                      key={s.id}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div
@@ -179,7 +211,8 @@ export function AttendanceReport() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>

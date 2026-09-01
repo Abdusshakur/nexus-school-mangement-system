@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { History, Calendar, Layout } from "lucide-react";
 import { getStudentEnrollments, type StudentEnrollmentHistoryResponse } from "../../../../api/students";
+import { Skeleton } from "../../../../components/ui/Skeleton";
 
 export function EnrollmentsTab({ studentId }: { studentId: string }) {
   const [enrollments, setEnrollments] = useState<StudentEnrollmentHistoryResponse[]>([]);
@@ -28,8 +29,18 @@ export function EnrollmentsTab({ studentId }: { studentId: string }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20 text-slate-400">
-        <p className="animate-pulse text-sm">Loading enrollment history...</p>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-10 rounded-lg" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+        </div>
       </div>
     );
   }

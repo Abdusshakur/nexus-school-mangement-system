@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import { useParentStore } from "../../../store/parent.store";
 import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/Spinner";
 
 interface AddParentModalProps {
   isOpen: boolean;
@@ -130,8 +131,9 @@ export function AddParentModal({ isOpen, onClose, onSuccess }: AddParentModalPro
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
             >
+              {loading && <Spinner size="sm" className="text-white" />}
               {loading ? "Creating..." : "Create Parent"}
             </button>
           </div>

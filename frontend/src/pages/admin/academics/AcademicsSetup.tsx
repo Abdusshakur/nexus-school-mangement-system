@@ -4,7 +4,6 @@ import {
   Users,
   Plus,
   Trash2,
-  Loader2,
   AlertCircle,
   X,
   AlertTriangle,
@@ -12,6 +11,8 @@ import {
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { toast } from "sonner";
+import { Skeleton } from "../../../components/ui/Skeleton";
+import { Spinner } from "../../../components/ui/Spinner";
 
 function Modal({
   title,
@@ -211,7 +212,7 @@ export function AcademicsSetup() {
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm cursor-pointer"
             >
               {isSubmitting ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Spinner size="sm" className="text-white" />
               ) : (
                 <Plus size={16} />
               )}
@@ -220,12 +221,13 @@ export function AcademicsSetup() {
           </form>
 
           {isLoading && currentItems.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-              <Loader2
-                size={32}
-                className="animate-spin mb-4 text-indigo-500"
-              />
-              <p>Loading {activeTab}...</p>
+            <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+              ))}
             </div>
           ) : currentItems.length > 0 ? (
             <div className="flex-1 overflow-y-auto pr-2 space-y-2">
@@ -281,7 +283,7 @@ export function AcademicsSetup() {
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Spinner size="sm" className="text-white" />
                 ) : (
                   <Trash2 size={16} />
                 )}

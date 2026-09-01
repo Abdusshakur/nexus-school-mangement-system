@@ -4,12 +4,13 @@ import { ROUTES } from "../../../config/routes";
 import { Search, Plus } from "lucide-react";
 import { useTeacherStore } from "../../../store/teacher.store";
 import { AddTeacherModal } from "./AddTeacher";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function TeachersPage() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
-  const { teachers, fetchTeachers } = useTeacherStore();
+  const { teachers, loading, fetchTeachers } = useTeacherStore();
 
   useEffect(() => {
     fetchTeachers().catch(() => {});
@@ -73,7 +74,8 @@ export function TeachersPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-        <table className="w-full">
+        <div className="overflow-x-auto w-full">
+        <table className="w-full min-w-[700px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               {[
@@ -94,10 +96,38 @@ export function TeachersPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((t) => (
-              <tr
-                key={t.id}
-                className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors"
+            {loading && teachers.length === 0 ? (
+              <>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i} className="border-b border-slate-100 last:border-0">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-5 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                    <td className="px-5 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                    <td className="px-5 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                    <td className="px-5 py-4 text-right"><Skeleton className="h-8 w-8 rounded-lg ml-auto" /></td>
+                  </tr>
+                ))}
+              </>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-12 text-center text-slate-400">
+                  No teachers found.
+                </td>
+              </tr>
+            ) : (
+              filtered.map((t) => (
+                <tr
+                  key={t.id}
+                  className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors"
               >
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
@@ -171,19 +201,10 @@ export function TeachersPage() {
                   </Link>
                 </td>
               </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="py-10 text-center text-sm text-slate-400"
-                >
-                  No teachers found.
-                </td>
-              </tr>
-            )}
+            )))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showAdd && <AddTeacherModal onClose={() => setShowAdd(false)} />}

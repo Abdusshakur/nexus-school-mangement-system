@@ -86,7 +86,7 @@ export function ResultsTab({
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="bg-slate-50">
                 {[

@@ -1,6 +1,7 @@
 import React from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { BottomNav } from "./BottomNav";
 import { useAuthStore } from "../../store/auth";
 
 interface AppShellProps {
@@ -18,10 +19,11 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar />
-        <main className={`flex-1 overflow-y-auto p-6 transition-colors ${bgClass}`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 pb-24 md:pb-6 transition-colors ${bgClass}`}>
           {children}
         </main>
       </div>
+      <BottomNav />
     </div>
   );
 }

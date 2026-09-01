@@ -3,7 +3,6 @@ import {
   ArrowRightLeft,
   Search,
   Filter,
-  Loader2,
   CheckCircle,
   GraduationCap,
   ChevronDown,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getGradeLetter } from "../../teacher/grades/ReportCardsTab";
+import { Spinner } from "../../../components/ui/Spinner";
 
 const APPROVED_CLASSES = [
   {
@@ -36,7 +36,7 @@ export function PromotionsTab() {
   const [isPromoting, setIsPromoting] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>("sub_2");
 
-  // Track selected students per class: Record<classId, Set<studentId>>
+  // Track selected students per class
   const [selectedStudents, setSelectedStudents] = useState<
     Record<string, Set<string>>
   >({
@@ -167,7 +167,7 @@ export function PromotionsTab() {
                         >
                           {isPromoting === cls.id ? (
                             <>
-                              <Loader2 size={16} className="animate-spin" />
+                              <Spinner size="sm" className="text-white" />
                               Processing...
                             </>
                           ) : (
@@ -221,11 +221,10 @@ export function PromotionsTab() {
                           return (
                             <div
                               key={student.id}
-                              className={`flex items-center gap-3 p-3 bg-white border rounded-lg transition-colors ${
-                                isSelected
+                              className={`flex items-center gap-3 p-3 bg-white border rounded-lg transition-colors ${isSelected
                                   ? "border-indigo-500 ring-1 ring-indigo-500"
                                   : "border-slate-200"
-                              }`}
+                                }`}
                             >
                               {cls.status === "PENDING_PROMOTION" && (
                                 <input

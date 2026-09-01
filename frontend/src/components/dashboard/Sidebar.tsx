@@ -4,13 +4,8 @@ import {
   ChevronRight,
   ChevronDown,
   LogOut,
-  CalendarCheck,
-  ClipboardList,
-  QrCode,
-  TrendingUp,
-  LayoutDashboard,
 } from "lucide-react";
-import { getNavItems } from "./navItems";
+import { getNavItems, ADMIN_ATTENDANCE_SUB_ITEMS } from "./navItems";
 import { useUIStore } from "../../store/ui";
 import { useAuthStore } from "../../store/auth";
 import { ROUTES } from "../../config/routes";
@@ -23,29 +18,7 @@ export function Sidebar() {
   const role = user?.role || "admin";
   const NAV_ITEMS = getNavItems(role);
 
-  const ATTENDANCE_SUB_ITEMS = [
-    { label: "Overview", href: ROUTES.ADMIN.ATTENDANCE, icon: LayoutDashboard },
-    {
-      label: "Class Attendance",
-      href: ROUTES.ADMIN.ATTENDANCE_CLASSES,
-      icon: CalendarCheck,
-    },
-    {
-      label: "Performance Report",
-      href: ROUTES.ADMIN.ATTENDANCE_REPORT,
-      icon: TrendingUp,
-    },
-    {
-      label: "Teacher Assignment",
-      href: ROUTES.ADMIN.ATTENDANCE_TEACHERS,
-      icon: ClipboardList,
-    },
-    {
-      label: "QR Scanner",
-      href: ROUTES.ADMIN.ATTENDANCE_TEACHER_RECORDS,
-      icon: QrCode,
-    },
-  ];
+  const ATTENDANCE_SUB_ITEMS = ADMIN_ATTENDANCE_SUB_ITEMS;
 
   const theme = {
     sidebar: "bg-indigo-950",
@@ -58,7 +31,7 @@ export function Sidebar() {
   return (
     <aside
       id="dashboard-sidebar"
-      className={`flex flex-col h-full transition-all duration-300 shrink-0 ${theme.sidebar}`}
+      className={`hidden md:flex flex-col h-full transition-all duration-300 shrink-0 ${theme.sidebar}`}
       style={{
         width: collapsed ? 72 : 256,
       }}

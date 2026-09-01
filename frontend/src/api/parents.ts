@@ -85,5 +85,5 @@ export const updateParentProfile = async (
 export const linkParentToStudent = async (
   payload: RelationshipCreatePayload,
 ): Promise<RelationshipResponse> => {
-  return apiClient.post("/relationships", payload);
+  return apiClient.post("/relationships/", payload);
 };

@@ -8,6 +8,7 @@ import {
   formatClassName,
   type StudentResponse,
 } from "../../../api/students";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function StudentList() {
   const { classes, loadClasses } = useClassStore();
@@ -124,12 +125,40 @@ export function StudentList() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto w-full">
         {loading ? (
-          <div className="py-12 text-center text-slate-400 text-sm animate-pulse">
-            Loading...
-          </div>
+          <table className="w-full min-w-[700px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-5 py-3"><Skeleton className="h-4 w-24" /></th>
+                <th className="text-left px-5 py-3"><Skeleton className="h-4 w-16" /></th>
+                <th className="text-left px-5 py-3 hidden md:table-cell"><Skeleton className="h-4 w-16" /></th>
+                <th className="text-left px-5 py-3 hidden lg:table-cell"><Skeleton className="h-4 w-24" /></th>
+                <th className="text-right px-5 py-3"><Skeleton className="h-4 w-12 ml-auto" /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <tr key={i} className="border-b border-slate-100">
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4"><Skeleton className="h-4 w-16" /></td>
+                  <td className="px-5 py-4 hidden md:table-cell"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-5 py-4 hidden lg:table-cell"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-5 py-4 text-right"><Skeleton className="h-8 w-8 rounded-lg ml-auto" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -205,6 +234,7 @@ export function StudentList() {
             </tbody>
           </table>
         )}
+        </div>
         {!loading && filtered.length === 0 && (
           <div className="py-12 text-center text-slate-400 text-sm">
             No students records found.

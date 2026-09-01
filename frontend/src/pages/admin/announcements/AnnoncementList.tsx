@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 import { Plus, Clock, Users, Megaphone, ArrowRight } from "lucide-react";
 import { priorityConfig } from "./data";
 import { useAnnouncementStore } from "../../../store/announcement.store";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function AnnouncementList() {
   const [filter, setFilter] = useState("All");
+
   const { announcements, fetchAnnouncements, loading } = useAnnouncementStore();
 
   useEffect(() => {
@@ -42,9 +44,11 @@ export function AnnouncementList() {
         </div>
         <Link
           to={ROUTES.ADMIN.ANNOUNCEMENT_CREATE}
-          className="flex items-center gap-2 px-4.5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 animate-fade-in"
+          className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4.5 sm:py-2.5 bg-indigo-600 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 animate-fade-in"
         >
-          <Plus size={16} /> Create Announcement
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+          <span className="hidden sm:inline">Create Announcement</span>
+          <span className="sm:hidden">Create</span>
         </Link>
       </header>
 
@@ -68,10 +72,25 @@ export function AnnouncementList() {
 
         {/* List */}
         {loading ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500 text-sm animate-pulse font-medium">
-              Loading announcements...
-            </p>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 flex gap-4">
+                <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-5 w-1/3" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex gap-4 pt-4 border-t border-slate-100">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">

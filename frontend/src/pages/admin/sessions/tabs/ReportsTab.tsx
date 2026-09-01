@@ -6,7 +6,8 @@ export function ReportsTab() {
       <div className="px-5 py-4 border-b border-slate-100">
         <h3 className="font-semibold text-slate-900">Report Card Status</h3>
       </div>
-      <table className="w-full">
+      <div className="overflow-x-auto w-full">
+      <table className="w-full min-w-[500px]">
         <thead>
           <tr className="bg-slate-50">
             {["TERM", "PUBLISHED", "TOTAL STUDENTS", "ACTION"].map((h) => (
@@ -49,6 +50,7 @@ export function ReportsTab() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
