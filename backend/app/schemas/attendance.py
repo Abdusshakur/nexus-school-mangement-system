@@ -108,6 +108,16 @@ class ClassRosterResponse(BaseModel):
     attendance_status: Optional[SessionStatus] = None
     students: List[StudentAttendanceItem]
 
+
+class ParentAttendanceResponse(BaseModel):
+    attendance_session_id: UUID
+    date: date
+    class_id: UUID
+    class_name: str
+    status: AttendanceStatus
+    remarks: Optional[str] = None
+    session_status: SessionStatus
+
 class AttendanceRecordSubmit(BaseModel):
     student_id: UUID
     status: AttendanceStatus

@@ -15,6 +15,7 @@ class ParentOnboardingDetails(BaseModel):
     last_name: str
     email: EmailStr
     phone_number: str
+    address: Optional[str] = None
     relationship_type: RelationshipType
     is_primary_contact: bool = False
     is_financial_sponsor: bool = False
@@ -29,12 +30,14 @@ class ParentCreateRequest(BaseModel):
     last_name: str
     email: EmailStr
     phone_number: str
+    address: Optional[str] = None
 
 class ParentProfileUpdate(BaseModel):
     """Payload for updating an existing parent's details."""
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = None
+    address: Optional[str] = None
 
 
 # ------------------------------------------------------------------
@@ -60,6 +63,7 @@ class ParentResponse(BaseModel):
     last_name: str
     email: EmailStr
     phone_number: str
+    address: Optional[str] = None
     created_at: datetime
     students: List[LinkedStudentResponse] = []
     children: List[LinkedStudentResponse] = []
@@ -75,6 +79,7 @@ class ParentDetailResponse(BaseModel):
     last_name: str
     email: EmailStr
     phone_number: str
+    address: Optional[str] = None
     created_at: datetime
     
     # Nested relationship

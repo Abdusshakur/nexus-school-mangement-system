@@ -56,6 +56,7 @@ class LinkedParentResponse(BaseModel):
     first_name: str
     last_name: str
     phone_number: str
+    address: Optional[str] = None
     email: str
     relationship_type: str  # e.g., "GUARDIAN", "FATHER", "MOTHER"
 
