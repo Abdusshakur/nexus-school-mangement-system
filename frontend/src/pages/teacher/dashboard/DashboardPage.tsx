@@ -112,6 +112,9 @@ export default function TeacherDashboard() {
 
   const activeTermId = academicSessions.find(s => s.status === "active")?.termId || "";
 
+  const hasCheckedIn = todayStatus?.status === "CHECKED_IN" || todayStatus?.status === "LATE" || todayStatus?.status === "CHECKED_OUT";
+  const hasCheckedOut = todayStatus?.status === "CHECKED_OUT";
+
   useEffect(() => {
     if (activeTermId) {
       fetchMyTimetable(activeTermId);
@@ -240,28 +243,28 @@ export default function TeacherDashboard() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button
               onClick={() => setScannerAction("CHECK_IN")}
-              disabled={todayStatus?.status === "CHECKED_IN"}
+              disabled={hasCheckedIn}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border border-transparent text-center transition-all shadow-sm
-                ${todayStatus?.status === "CHECKED_IN" 
+                ${hasCheckedIn 
                   ? "bg-slate-50 opacity-60 cursor-not-allowed" 
                   : "bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-0.5"}`}
             >
-              <ScanFace size={24} className={todayStatus?.status === "CHECKED_IN" ? "text-slate-400" : "text-white"} />
-              <span className={`text-xs font-semibold leading-tight ${todayStatus?.status === "CHECKED_IN" ? "text-slate-500" : "text-white"}`}>
-                {todayStatus?.status === "CHECKED_IN" ? "Checked In" : "Scan to Sign In"}
+              <ScanFace size={24} className={hasCheckedIn ? "text-slate-400" : "text-white"} />
+              <span className={`text-xs font-semibold leading-tight ${hasCheckedIn ? "text-slate-500" : "text-white"}`}>
+                {hasCheckedIn ? "Checked In Today" : "Scan to Sign In"}
               </span>
             </button>
             <button
               onClick={() => setScannerAction("CHECK_OUT")}
-              disabled={todayStatus?.status === "CHECKED_OUT" || todayStatus?.status === "NOT_STARTED"}
+              disabled={hasCheckedOut || !hasCheckedIn}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border border-transparent text-center transition-all shadow-sm
-                ${todayStatus?.status === "CHECKED_OUT" || todayStatus?.status === "NOT_STARTED"
+                ${hasCheckedOut || !hasCheckedIn
                   ? "bg-slate-50 opacity-60 cursor-not-allowed" 
                   : "bg-emerald-600 hover:bg-emerald-700 hover:-translate-y-0.5"}`}
             >
-              <ScanFace size={24} className={todayStatus?.status === "CHECKED_OUT" || todayStatus?.status === "NOT_STARTED" ? "text-slate-400" : "text-white"} />
-              <span className={`text-xs font-semibold leading-tight ${todayStatus?.status === "CHECKED_OUT" || todayStatus?.status === "NOT_STARTED" ? "text-slate-500" : "text-white"}`}>
-                {todayStatus?.status === "CHECKED_OUT" ? "Checked Out" : "Scan to Sign Out"}
+              <ScanFace size={24} className={hasCheckedOut || !hasCheckedIn ? "text-slate-400" : "text-white"} />
+              <span className={`text-xs font-semibold leading-tight ${hasCheckedOut || !hasCheckedIn ? "text-slate-500" : "text-white"}`}>
+                {hasCheckedOut ? "Checked Out" : "Scan to Sign Out"}
               </span>
             </button>
           </div>

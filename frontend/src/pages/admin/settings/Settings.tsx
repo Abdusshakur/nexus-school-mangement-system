@@ -4,6 +4,7 @@ import { tabs, initialUsers, roleColors } from "./data";
 import { toast } from "sonner";
 import { fetchTeacherAttendanceSettings, updateTeacherAttendanceSettings, type TeacherAttendanceSettings } from "../../../api/teacherAttendanceAdmin";
 import { useEffect } from "react";
+import { ResultsSettingsTab } from "./tabs/results/ResultsSettingsTab";
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState("school");
@@ -407,6 +408,10 @@ export function Settings() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === "results" && (
+            <ResultsSettingsTab />
           )}
 
           {activeTab === "users" && (

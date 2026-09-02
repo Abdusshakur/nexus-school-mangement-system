@@ -32,16 +32,17 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   const { teachers, loading, fetchTeachers } = useTeacherStore();
 
   const [timeLeft, setTimeLeft] = useState(30);
+  const [qrType, setQrType] = useState<"CHECK_IN" | "CHECK_OUT">("CHECK_IN");
 
   useEffect(() => {
     fetchTeachers();
   }, [fetchTeachers]);
 
   useEffect(() => {
-    if (!currentQRSession && isAdmin) {
-      generateQRSession();
+    if (isAdmin) {
+      generateQRSession(qrType);
     }
-  }, [currentQRSession, isAdmin, generateQRSession]);
+  }, [qrType, isAdmin, generateQRSession]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,12 +55,12 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
       setTimeLeft(remainingSeconds);
 
       if (remainingSeconds <= 0 && isAdmin) {
-        generateQRSession();
+        generateQRSession(qrType);
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentQRSession, isAdmin, generateQRSession]);
+  }, [currentQRSession, isAdmin, generateQRSession, qrType]);
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const totalTeachers = teachers.length;
@@ -148,10 +149,25 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
               </div>
             ) : (
               <>
-                <h2 className="text-lg font-bold text-slate-900 mb-1">
-                  Today's Teacher Check-In
+                <h2 className="text-lg font-bold text-slate-900 mb-2">
+                  {qrType === "CHECK_IN" ? "Today's Check-In QR" : "Today's Check-Out QR"}
                 </h2>
-                <p className="text-sm text-slate-500 mb-5">{displayDate}</p>
+                <p className="text-sm text-slate-500 mb-4">{displayDate}</p>
+
+                <div className="flex bg-slate-100 p-1 rounded-lg w-fit mb-5 mx-auto md:mx-0">
+                  <button
+                    onClick={() => setQrType("CHECK_IN")}
+                    className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${qrType === "CHECK_IN" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Check In
+                  </button>
+                  <button
+                    onClick={() => setQrType("CHECK_OUT")}
+                    className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${qrType === "CHECK_OUT" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Check Out
+                  </button>
+                </div>
 
                 <div className="mb-6 flex justify-center md:justify-start">
                   <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
@@ -168,7 +184,7 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
 
                 {isAdmin && (
                   <button
-                    onClick={() => generateQRSession()}
+                    onClick={() => generateQRSession(qrType)}
                     className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-lg sm:rounded-xl px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold cursor-pointer transition-colors w-full sm:w-auto mt-2"
                   >
                     <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
