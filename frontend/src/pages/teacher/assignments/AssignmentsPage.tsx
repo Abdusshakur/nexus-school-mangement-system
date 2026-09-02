@@ -40,9 +40,9 @@ export default function TeacherAssignments() {
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 min-h-0 overflow-y-auto">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
+          <h1 className="text-slate-900 text-xl sm:text-2xl font-extrabold tracking-tight">
             Assignments
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
@@ -60,7 +60,7 @@ export default function TeacherAssignments() {
         </button>
       </header>
 
-      <main className="flex-1 p-8 max-w-7xl w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="lg:col-span-2 space-y-6">
           {isCreating ? (
             <CreateAssignment

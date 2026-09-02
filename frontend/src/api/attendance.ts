@@ -28,6 +28,7 @@ export interface ClassAttendanceSummary {
   total_absent: number;
   total_late: number;
   attendance_rate_percentage: number;
+  submitted_at?: string;
 }
 
 export interface DailyAttendanceSummaryResponse {

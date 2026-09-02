@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Save, Plus, Trash2, Check, Lock } from "lucide-react";
 import { tabs, initialUsers, roleColors } from "./data";
 import { toast } from "sonner";
+import { fetchTeacherAttendanceSettings, updateTeacherAttendanceSettings, type TeacherAttendanceSettings } from "../../../api/teacherAttendanceAdmin";
+import { useEffect } from "react";
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState("school");
@@ -25,13 +27,37 @@ export function Settings() {
   });
   const [showAddUser, setShowAddUser] = useState(false);
 
-  const [attendanceForm, setAttendanceForm] = useState({
+  const [attendanceForm, setAttendanceForm] = useState<TeacherAttendanceSettings>({
+    check_in_start: "06:00",
     expected_check_in_time: "07:30",
     late_threshold: "08:00",
     check_in_end: "11:00",
+    check_out_start: "14:00",
     expected_check_out_time: "15:30",
-    qr_rotation_seconds: "300",
+    check_out_end: "18:00",
+    qr_rotation_seconds: 300,
   });
+  const [hasAttendanceSettings, setHasAttendanceSettings] = useState(false);
+
+  useEffect(() => {
+    fetchTeacherAttendanceSettings().then((data) => {
+      setHasAttendanceSettings(true);
+      setAttendanceForm({
+        ...data,
+        check_in_start: data.check_in_start ? data.check_in_start.slice(0, 5) : "06:00",
+        expected_check_in_time: data.expected_check_in_time ? data.expected_check_in_time.slice(0, 5) : "07:30",
+        late_threshold: data.late_threshold ? data.late_threshold.slice(0, 5) : "08:00",
+        check_in_end: data.check_in_end ? data.check_in_end.slice(0, 5) : "11:00",
+        check_out_start: data.check_out_start ? data.check_out_start.slice(0, 5) : "14:00",
+        expected_check_out_time: data.expected_check_out_time ? data.expected_check_out_time.slice(0, 5) : "15:30",
+        check_out_end: data.check_out_end ? data.check_out_end.slice(0, 5) : "18:00",
+      });
+    }).catch((err) => {
+      console.error("Failed to fetch settings on load:", err);
+      // If it throws 404, we don't have settings.
+      setHasAttendanceSettings(false);
+    });
+  }, []);
 
   // Notification states
   const [notifications, setNotifications] = useState({
@@ -221,6 +247,22 @@ export function Settings() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Check-In Window Opens
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.check_in_start}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          check_in_start: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
                       Expected Arrival Time
                     </label>
                     <input
@@ -253,6 +295,22 @@ export function Settings() {
                   </div>
                   <div>
                     <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Check-Out Window Opens
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.check_out_start}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          check_out_start: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
                       Expected Departure Time
                     </label>
                     <input
@@ -267,14 +325,84 @@ export function Settings() {
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
                     />
                   </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Check-In Window Closes
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.check_in_end}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          check_in_end: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      Check-Out Window Closes
+                    </label>
+                    <input
+                      type="time"
+                      value={attendanceForm.check_out_end}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          check_out_end: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-bold uppercase tracking-wider mb-1.5">
+                      QR Code Rotation (Seconds)
+                    </label>
+                    <input
+                      type="number"
+                      min="30"
+                      value={attendanceForm.qr_rotation_seconds}
+                      onChange={(e) =>
+                        setAttendanceForm({
+                          ...attendanceForm,
+                          qr_rotation_seconds: parseInt(e.target.value) || 300,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+                    />
+                  </div>
                 </div>
                 <div className="mt-6 pt-2">
                   <button
-                    onClick={handleSave}
+                    onClick={async () => {
+                      try {
+                        const payload = {
+                          ...attendanceForm,
+                          check_in_start: attendanceForm.check_in_start.length === 5 ? `${attendanceForm.check_in_start}:00` : attendanceForm.check_in_start,
+                          expected_check_in_time: attendanceForm.expected_check_in_time.length === 5 ? `${attendanceForm.expected_check_in_time}:00` : attendanceForm.expected_check_in_time,
+                          late_threshold: attendanceForm.late_threshold.length === 5 ? `${attendanceForm.late_threshold}:00` : attendanceForm.late_threshold,
+                          check_in_end: attendanceForm.check_in_end.length === 5 ? `${attendanceForm.check_in_end}:00` : attendanceForm.check_in_end,
+                          check_out_start: attendanceForm.check_out_start.length === 5 ? `${attendanceForm.check_out_start}:00` : attendanceForm.check_out_start,
+                          expected_check_out_time: attendanceForm.expected_check_out_time.length === 5 ? `${attendanceForm.expected_check_out_time}:00` : attendanceForm.expected_check_out_time,
+                          check_out_end: attendanceForm.check_out_end.length === 5 ? `${attendanceForm.check_out_end}:00` : attendanceForm.check_out_end,
+                          qr_rotation_seconds: Number(attendanceForm.qr_rotation_seconds)
+                        };
+                        await updateTeacherAttendanceSettings(payload, hasAttendanceSettings);
+                        setHasAttendanceSettings(true);
+                        setSaved(true);
+                        toast.success("Attendance Settings saved successfully!");
+                        setTimeout(() => setSaved(false), 2000);
+                      } catch (err: any) {
+                        toast.error(err.response?.data?.detail || err.message || "Failed to save attendance settings");
+                      }
+                    }}
                     className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
                   >
                     {saved ? <Check size={16} /> : <Save size={16} />}
-                    {saved ? "Changes Saved!" : "Save"}
+                    {saved ? "Changes Saved!" : "Save Configuration"}
                   </button>
                 </div>
               </div>

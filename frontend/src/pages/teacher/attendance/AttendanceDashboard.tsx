@@ -233,26 +233,26 @@ export default function TeacherAttendance() {
 
     return (
       <div className="flex-1 flex bg-slate-50 min-h-0 overflow-y-auto">
-        <main className="flex-1 p-8 w-full space-y-5">
-          <header className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between">
+        <main className="flex-1 p-4 sm:p-8 w-full space-y-5">
+          <header className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight flex items-center">
+              <h1 className="text-slate-900 text-lg sm:text-2xl font-extrabold tracking-tight flex flex-col sm:flex-row sm:items-center gap-2">
                 Attendance Register {classSelector}
               </h1>
-              <p className="text-slate-500 text-sm mt-0.5">
+              <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
                 {TODAY}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:justify-end">
               {classRosterData?.attendance_status !== "APPROVED" && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="px-2 sm:px-3 py-1.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                  Edit Attendance
+                  Edit
                 </button>
               )}
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+              <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${
                 classRosterData?.attendance_status === "APPROVED" ? "bg-indigo-100 text-indigo-800" :
                 classRosterData?.attendance_status === "REJECTED" ? "bg-red-100 text-red-800" :
                 "bg-emerald-100 text-emerald-800"
@@ -344,16 +344,16 @@ export default function TeacherAttendance() {
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 min-h-0 overflow-y-auto">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 sm:py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight flex items-center">
+          <h1 className="text-slate-900 text-lg sm:text-2xl font-extrabold tracking-tight flex flex-col sm:flex-row sm:items-center gap-2">
             Mark Attendance {classSelector}
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">{TODAY}</p>
+          <p className="text-slate-500 text-xs sm:text-sm mt-0.5">{TODAY}</p>
         </div>
       </header>
 
-      <main className="flex-1 p-8 w-full space-y-5">
+      <main className="flex-1 p-4 sm:p-8 w-full space-y-5">
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -362,9 +362,9 @@ export default function TeacherAttendance() {
                 {students.length} students enrolled
               </p>
             </div>
-            <div className="text-right">
-              <p className="font-bold text-2xl text-teal-600">{completion}%</p>
-              <p className="text-xs text-slate-500">complete</p>
+            <div className="text-right shrink-0">
+              <p className="font-bold text-xl sm:text-2xl text-teal-600">{completion}%</p>
+              <p className="text-[10px] sm:text-xs text-slate-500">complete</p>
             </div>
           </div>
 
@@ -396,17 +396,17 @@ export default function TeacherAttendance() {
                 bg: "bg-amber-100",
               },
             ].map(({ label, value, color, bg }) => (
-              <div key={label} className={`text-center p-3 rounded-xl ${bg}`}>
-                <p className={`font-bold text-2xl ${color}`}>{value}</p>
-                <p className={`text-xs font-medium opacity-80 ${color}`}>
+              <div key={label} className={`text-center p-2 sm:p-3 rounded-xl ${bg}`}>
+                <p className={`font-bold text-xl sm:text-2xl ${color}`}>{value}</p>
+                <p className={`text-[10px] sm:text-xs font-medium opacity-80 ${color} truncate`}>
                   {label}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
-            <span className="text-sm font-medium text-slate-500">
+          <div className="flex items-center gap-2 sm:gap-3 mt-4 pt-4 border-t border-slate-100 flex-wrap">
+            <span className="text-xs sm:text-sm font-medium text-slate-500 shrink-0">
               Mark all as:
             </span>
             <button

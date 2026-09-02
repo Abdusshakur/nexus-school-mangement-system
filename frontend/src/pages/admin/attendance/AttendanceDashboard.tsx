@@ -15,12 +15,16 @@ import {
   fetchAttendanceTrends,
   type DailyAttendance,
 } from "../../../api/dashboard";
-import { fetchDailyAttendanceSummary, type DailyAttendanceSummaryResponse } from "../../../api/attendance";
+import {
+  fetchDailyAttendanceSummary,
+  type DailyAttendanceSummaryResponse,
+} from "../../../api/attendance";
 import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function AttendanceDashboard() {
   const [trendsData, setTrendsData] = useState<DailyAttendance[]>([]);
-  const [summaryData, setSummaryData] = useState<DailyAttendanceSummaryResponse | null>(null);
+  const [summaryData, setSummaryData] =
+    useState<DailyAttendanceSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,19 +49,19 @@ export function AttendanceDashboard() {
           <p className="text-slate-500 text-sm mt-0.5">{currentDateString}</p>
         </div>
         <div className="flex gap-2 sm:gap-3">
-          <Link
+          {/* <Link
             to={ROUTES.ADMIN.ATTENDANCE_MARK}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-indigo-600 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/10"
           >
             <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
             <span className="hidden sm:inline">Mark Today</span>
             <span className="sm:hidden">Mark</span>
-          </Link>
+          </Link> */}
           <Link
             to={ROUTES.ADMIN.ATTENDANCE_REPORT}
             className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 border border-slate-200 bg-white text-slate-600 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-semibold hover:bg-slate-50 transition-all"
           >
-            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Performance Report</span>
             <span className="sm:hidden">Report</span>
           </Link>
@@ -67,69 +71,82 @@ export function AttendanceDashboard() {
       <main className="flex-1 py-8 space-y-6 max-w-full w-full ">
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {loading ? (
-            [1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
-                <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-3 w-1/2" />
-                  <Skeleton className="h-6 w-1/4" />
-                </div>
-              </div>
-            ))
-          ) : (
-            [
-              {
-                label: "Present Today",
-                value: summaryData?.classes.reduce((sum, c) => sum + c.total_present, 0) || 0,
-                icon: CheckCircle,
-                text: "text-indigo-500",
-                bg: "bg-indigo-100",
-              },
-              {
-                label: "Absent Today",
-                value: summaryData?.classes.reduce((sum, c) => sum + c.total_absent, 0) || 0,
-                icon: XCircle,
-                text: "text-red-500",
-                bg: "bg-red-100",
-              },
-              {
-                label: "Late Arrivals",
-                value: summaryData?.classes.reduce((sum, c) => sum + c.total_late, 0) || 0,
-                icon: Clock,
-                text: "text-amber-500",
-                bg: "bg-amber-100",
-              },
-              {
-                label: "Attendance Rate",
-                value: summaryData?.classes.length
-                  ? `${Math.round(summaryData.classes.reduce((sum, c) => sum + c.attendance_rate_percentage, 0) / summaryData.classes.length)}%`
-                  : "0%",
-                icon: TrendingUp,
-                text: "text-indigo-500",
-                bg: "bg-indigo-100",
-              },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm"
-              >
+          {loading
+            ? [1, 2, 3, 4].map((i) => (
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}
+                  key={i}
+                  className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm"
                 >
-                  <s.icon size={22} className={s.text} />
+                  <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-6 w-1/4" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    {s.label}
-                  </p>
-                  <p className="font-extrabold text-slate-900 mt-0.5 text-2xl">
-                    {s.value}
-                  </p>
+              ))
+            : [
+                {
+                  label: "Present Today",
+                  value:
+                    summaryData?.classes.reduce(
+                      (sum, c) => sum + c.total_present,
+                      0,
+                    ) || 0,
+                  icon: CheckCircle,
+                  text: "text-indigo-500",
+                  bg: "bg-indigo-100",
+                },
+                {
+                  label: "Absent Today",
+                  value:
+                    summaryData?.classes.reduce(
+                      (sum, c) => sum + c.total_absent,
+                      0,
+                    ) || 0,
+                  icon: XCircle,
+                  text: "text-red-500",
+                  bg: "bg-red-100",
+                },
+                {
+                  label: "Late Arrivals",
+                  value:
+                    summaryData?.classes.reduce(
+                      (sum, c) => sum + c.total_late,
+                      0,
+                    ) || 0,
+                  icon: Clock,
+                  text: "text-amber-500",
+                  bg: "bg-amber-100",
+                },
+                {
+                  label: "Attendance Rate",
+                  value: summaryData?.classes.length
+                    ? `${Math.round(summaryData.classes.reduce((sum, c) => sum + c.attendance_rate_percentage, 0) / summaryData.classes.length)}%`
+                    : "0%",
+                  icon: TrendingUp,
+                  text: "text-indigo-500",
+                  bg: "bg-indigo-100",
+                },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.bg}`}
+                  >
+                    <s.icon size={22} className={s.text} />
+                  </div>
+                  <div>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      {s.label}
+                    </p>
+                    <p className="font-extrabold text-slate-900 mt-0.5 text-2xl">
+                      {s.value}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))}
         </div>
 
         {/* Chart */}
@@ -216,12 +233,13 @@ export function AttendanceDashboard() {
                 </div>
                 <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${g.attendance_rate_percentage >= 90
-                      ? "bg-indigo-500"
-                      : g.attendance_rate_percentage >= 85
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      g.attendance_rate_percentage >= 90
                         ? "bg-indigo-500"
-                        : "bg-amber-500"
-                      }`}
+                        : g.attendance_rate_percentage >= 85
+                          ? "bg-indigo-500"
+                          : "bg-amber-500"
+                    }`}
                     style={{
                       width: `${g.attendance_rate_percentage}%`,
                     }}

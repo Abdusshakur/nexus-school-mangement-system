@@ -36,9 +36,9 @@ export const studentsList = [
   },
   {
     id: "S006",
-    name: "James Thompson",
+    name: "Ademide Faith",
     grade: "JSS 1",
-    avatar: "JT",
+    avatar: "AF",
     avatarColor: "bg-pink-500",
   },
   {
@@ -65,3 +65,60 @@ export const weeklyData = [
 ];
 
 export type AttendanceStatus = "Present" | "Absent" | "Late" | "";
+
+export type DailyStatus = "PRESENT" | "ABSENT" | "LATE" | "HOLIDAY";
+
+export interface StudentMonthlyRecord {
+  id: string;
+  name: string;
+  avatar: string;
+  avatarColor: string;
+  grade: string;
+  totalPresent: number;
+  totalAbsent: number;
+  totalLate: number;
+  rate: number;
+  heatmap: DailyStatus[];
+}
+
+export function generateMockMonthlyAttendance(
+  className: string,
+  daysInMonth: number = 22, // Weekdays only
+): StudentMonthlyRecord[] {
+  // Filter mock students by class
+  const classStudents = studentsList.filter((s) => s.grade === className);
+
+  return classStudents.map((student, idx) => {
+    const heatmap: DailyStatus[] = [];
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+
+    for (let i = 0; i < daysInMonth; i++) {
+      const rand = Math.random();
+      // Pseudo-random but heavily skewed toward present
+      let status: DailyStatus = "PRESENT";
+      if (rand > 0.85) status = "ABSENT";
+      else if (rand > 0.70) status = "LATE";
+
+      // Make a couple of specific students have perfect attendance or poor attendance
+      if (idx === 0) status = "PRESENT"; // Perfect
+      if (idx === 1 && i % 4 === 0) status = "ABSENT"; // Poor
+
+      heatmap.push(status);
+
+      if (status === "PRESENT") present++;
+      else if (status === "ABSENT") absent++;
+      else if (status === "LATE") late++;
+    }
+
+    return {
+      ...student,
+      totalPresent: present,
+      totalAbsent: absent,
+      totalLate: late,
+      rate: Math.round(((present + late) / daysInMonth) * 100),
+      heatmap,
+    };
+  });
+}

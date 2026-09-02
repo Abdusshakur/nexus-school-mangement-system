@@ -73,13 +73,7 @@ export default function TeacherDashboard() {
 
   const { academicSessions, fetchSessions } = useSessionStore();
   const { myTimetableGrid, fetchMyTimetable } = useTimetableStore();
-  const { myAssignments, myStudents, fetchAllContext } = useTeacherContextStore();
-
-  useEffect(() => {
-    fetchSessions();
-    fetchTodayStatus();
-    fetchAllContext();
-  }, [fetchSessions, fetchAllContext]);
+  const { myAssignments, myStudents, attendanceStats, fetchAllContext } = useTeacherContextStore();
 
   const [todayStatus, setTodayStatus] = useState<any>(null);
   const [scannerAction, setScannerAction] = useState<"CHECK_IN" | "CHECK_OUT" | null>(null);
@@ -92,6 +86,12 @@ export default function TeacherDashboard() {
       console.error("Failed to fetch today status", err);
     }
   };
+
+  useEffect(() => {
+    fetchSessions();
+    fetchTodayStatus();
+    fetchAllContext();
+  }, [fetchSessions, fetchAllContext]);
 
   const handleScan = async (token: string) => {
     if (!scannerAction) return;
@@ -167,7 +167,7 @@ export default function TeacherDashboard() {
       </div>
 
       {/* stat cards  */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Classes Assigned"
           value={new Set(myAssignments.map(a => a.class_id)).size}
@@ -186,15 +186,15 @@ export default function TeacherDashboard() {
         />
         <StatCard
           label="Attendance Rate"
-          value="91%"
+          value={attendanceStats ? `${attendanceStats.attendance_rate}%` : "0%"}
           icon={CalendarCheck}
           iconColor="text-indigo-500"
           iconBg="bg-indigo-50"
-          sub="This week"
+          sub={attendanceStats ? `${attendanceStats.present_days} present, ${attendanceStats.late_days} late, ${attendanceStats.absent_days} absent` : "Loading..."}
         />
         <StatCard
           label="Pending Tasks"
-          value={3}
+          value={0}
           icon={ClipboardList}
           iconColor="text-amber-500"
           iconBg="bg-amber-50"

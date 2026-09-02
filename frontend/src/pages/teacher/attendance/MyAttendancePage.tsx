@@ -16,6 +16,12 @@ import {
   teacherCheckIn,
   teacherCheckOut,
 } from "../../../api/attendance";
+import {
+  fetchMyAttendanceStats,
+  fetchMyAttendanceHistory,
+  type TeacherAttendanceStatsResponse,
+  type TeacherAttendanceHistoryItem,
+} from "../../../api/teacherContext";
 import { QRScannerModal } from "../../../components/dashboard/QRScannerModal";
 
 // Time formater
@@ -33,7 +39,10 @@ function getWorkingDaysInMonth(year: number, month: number): string[] {
   while (date.getMonth() === month) {
     const dow = date.getDay();
     if (dow !== 0 && dow !== 6) {
-      days.push(date.toISOString().slice(0, 10));
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      days.push(`${yyyy}-${mm}-${dd}`);
     }
     date.setDate(date.getDate() + 1);
   }
@@ -62,9 +71,31 @@ export default function MyAttendancePage() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
+  const [monthStats, setMonthStats] = useState<TeacherAttendanceStatsResponse | null>(null);
+  const [monthHistory, setMonthHistory] = useState<TeacherAttendanceHistoryItem[]>([]);
+
   useEffect(() => {
     fetchTodayStatus();
   }, []);
+
+  useEffect(() => {
+    // Backend expects month 1-12
+    const m = viewMonth + 1;
+    fetchMyAttendanceStats(viewYear, m)
+      .then(setMonthStats)
+      .catch(console.error);
+
+    const sYear = viewYear;
+    const sMonth = String(viewMonth + 1).padStart(2, '0');
+    const start_date = `${sYear}-${sMonth}-01`;
+
+    const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const end_date = `${sYear}-${sMonth}-${String(lastDay).padStart(2, '0')}`;
+    
+    fetchMyAttendanceHistory(start_date, end_date)
+      .then(setMonthHistory)
+      .catch(console.error);
+  }, [viewYear, viewMonth]);
 
   const fetchTodayStatus = async () => {
     try {
@@ -124,47 +155,38 @@ export default function MyAttendancePage() {
   const isCurrentMonth =
     viewYear === now.getFullYear() && viewMonth === now.getMonth();
   const allWorkingDays = getWorkingDaysInMonth(viewYear, viewMonth);
-  const todayISO = now.toISOString().slice(0, 10);
+  const nowYYYY = now.getFullYear();
+  const nowMM = String(now.getMonth() + 1).padStart(2, '0');
+  const nowDD = String(now.getDate()).padStart(2, '0');
+  const todayISO = `${nowYYYY}-${nowMM}-${nowDD}`;
   const workingDays = isCurrentMonth
     ? allWorkingDays.filter((d) => d <= todayISO)
     : allWorkingDays;
 
-  // MOCK DATA for History
-  const teacherCheckIns = [
-    {
-      date: todayISO,
-      checkInTime: todayStatus?.check_in_at
-        ? formatTime(todayStatus.check_in_at)
-        : "07:55 AM",
-      status: todayStatus?.status === "LATE" ? "late" : "present",
-    },
-    { date: "2026-08-28", checkInTime: "07:50 AM", status: "present" },
-    { date: "2026-08-27", checkInTime: "08:15 AM", status: "late" },
-    { date: "2026-08-26", checkInTime: "07:45 AM", status: "present" },
-    { date: "2026-08-25", checkInTime: "07:58 AM", status: "present" },
-    { date: "2026-08-24", checkInTime: "07:52 AM", status: "present" },
-    { date: "2026-08-21", checkInTime: "07:55 AM", status: "present" },
-    { date: "2026-08-20", checkInTime: "08:05 AM", status: "late" },
-  ];
-
-  const monthKey = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
-  const monthCheckIns = teacherCheckIns.filter((c) =>
-    c.date.startsWith(monthKey),
+  // Real backend check-in data mapped to the required format
+  const checkInMap = Object.fromEntries(
+    monthHistory.map((c) => [
+      c.attendance_date, 
+      {
+        date: c.attendance_date,
+        checkInTime: c.check_in_at ? formatTime(c.check_in_at) : "—",
+        status: c.status === "MISSED_CHECK_IN" ? "absent" : (c.is_late ? "late" : "present")
+      }
+    ])
   );
-  const checkInMap = Object.fromEntries(monthCheckIns.map((c) => [c.date, c]));
 
-  const presentDays = monthCheckIns.filter(
-    (c) => c.status === "present",
-  ).length;
-  const lateDays = monthCheckIns.filter((c) => c.status === "late").length;
-  const absentDays = workingDays.filter((d) => !checkInMap[d]).length;
-  const totalWorkingDays = workingDays.length;
-  const attendanceRate =
-    totalWorkingDays > 0
-      ? Math.round(((presentDays + lateDays) / totalWorkingDays) * 100)
-      : 100;
+  const presentDays = monthStats?.present_days || 0;
+  const lateDays = monthStats?.late_days || 0;
+  const absentDays = monthStats?.absent_days || 0;
+  const totalWorkingDays = monthStats?.total_working_days || 0;
+  const attendanceRate = monthStats?.attendance_rate || 0;
 
-  const tableRows = [...workingDays].reverse().map((day) => {
+  // Collect all unique dates from workingDays AND from the backend history
+  const allDatesSet = new Set(workingDays);
+  Object.keys(checkInMap).forEach((d) => allDatesSet.add(d));
+  const allSortedDates = Array.from(allDatesSet).sort((a, b) => (a < b ? 1 : -1));
+
+  const tableRows = allSortedDates.map((day) => {
     const record = checkInMap[day];
     return {
       date: day,
@@ -374,9 +396,6 @@ export default function MyAttendancePage() {
           );
         })}
       </div>
-      <p className="text-[10px] text-slate-400 text-center uppercase tracking-wider font-semibold">
-        * Mock data shown until backend API is available
-      </p>
 
       {/* Attendance Table */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">

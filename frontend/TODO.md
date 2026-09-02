@@ -9,3 +9,4 @@
 7. patches on paret profile the address phone number
    request for the authors name in the announcment author_name?: string;
    author_role?: string;
+8. Mark attendance for students functionality but the admin.

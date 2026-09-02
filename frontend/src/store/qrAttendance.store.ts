@@ -39,7 +39,7 @@ export const useQRAttendanceStore = create<TeacherAttendanceState>((set) => ({
         currentQRSession: {
           token: response.raw_token,
           date: new Date().toISOString().slice(0, 10),
-          expiresAt: response.expires_at,
+          expiresAt: response.expires_at.endsWith('Z') ? response.expires_at : `${response.expires_at}Z`,
         },
         loading: false,
       });
