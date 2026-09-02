@@ -31,7 +31,7 @@ export function BottomNav() {
                   size={22}
                   className={isActive ? "fill-indigo-50 text-indigo-600" : "text-slate-500"}
                 />
-                <span className={`text-[10px] font-medium ${isActive ? "font-bold" : ""}`}>
+                <span className={`text-[10px] font-medium text-center leading-tight px-1 ${isActive ? "font-bold" : ""}`}>
                   {item.label}
                 </span>
               </Link>
@@ -44,7 +44,7 @@ export function BottomNav() {
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isMenuOpen ? "text-indigo-600" : "text-slate-500 active:bg-slate-50"}`}
           >
             {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
-            <span className={`text-[10px] font-medium ${isMenuOpen ? "font-bold" : ""}`}>
+            <span className={`text-[10px] font-medium text-center leading-tight px-1 ${isMenuOpen ? "font-bold" : ""}`}>
               Menu
             </span>
           </button>

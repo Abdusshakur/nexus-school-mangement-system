@@ -292,10 +292,11 @@ export function ClassAttendanceView() {
                   "Absent",
                   "Rate",
                   "Submitted",
+                  "Status",
                   "",
-                ].map((h) => (
+                ].map((h, i) => (
                   <th
-                    key={h}
+                    key={h || i}
                     className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
                   >
                     {h}
@@ -313,8 +314,9 @@ export function ClassAttendanceView() {
                       <td className="px-4 py-4"><Skeleton className="h-4 w-20" /></td>
                       <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
                       <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
                       <td className="px-4 py-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                      <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
                       <td className="px-4 py-4 text-right"><Skeleton className="h-8 w-8 rounded-lg ml-auto" /></td>
                     </tr>
                   ))}
@@ -366,20 +368,34 @@ export function ClassAttendanceView() {
                       </td>
                       <td className="px-4 py-3">
                         {submitted ? (
-                          <span
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cls.session_status === "APPROVED"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-indigo-100 text-indigo-700"
-                              }`}
-                          >
-                            {cls.session_status === "SUBMITTED"
-                              ? "Submitted"
-                              : cls.session_status}
-                          </span>
+                          cls.submitted_at ? (
+                            <span className="text-xs font-medium text-slate-500 whitespace-nowrap flex items-center gap-1.5">
+                              <Clock size={12} className="text-slate-400" />
+                              {new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "numeric" }).format(new Date(cls.submitted_at))}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-medium text-slate-500">—</span>
+                          )
                         ) : (
                           <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
                             <Clock size={12} /> Pending
                           </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {submitted ? (
+                          <span
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cls.session_status === "APPROVED"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : cls.session_status === "REJECTED"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-indigo-100 text-indigo-700"
+                              }`}
+                          >
+                            {cls.session_status}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">

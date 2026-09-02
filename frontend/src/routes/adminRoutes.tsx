@@ -17,6 +17,7 @@ import { ClassAttendanceView } from "../pages/admin/attendance/ClassAttendanceVi
 import { AttendanceReport } from "../pages/admin/attendance/AttendanceReport";
 import { TeacherAssignment } from "../pages/admin/attendance/TeacherAssignment";
 import { AdminTeacherAttendance } from "../pages/admin/attendance/AdminTeacherAttendance";
+import { MarkAttendance } from "../pages/admin/attendance/MarkAttendance";
 import { AnnouncementList } from "../pages/admin/announcements/AnnoncementList";
 import { CreateAnnouncement } from "../pages/admin/announcements/createAnnouncement";
 import { AnnouncementDetail } from "../pages/admin/announcements/AnnoncementDetails";
@@ -41,6 +42,7 @@ export const adminRoutes = (
     <Route path="attendance/report" element={<AttendanceReport />} />
     <Route path="attendance/teachers" element={<TeacherAssignment />} />
     <Route path="attendance/teacher-records" element={<AdminTeacherAttendance />} />
+    <Route path="attendance/mark" element={<MarkAttendance />} />
     <Route path="announcements" element={<AnnouncementList />} />
     <Route path="announcements/create" element={<CreateAnnouncement />} />
     <Route path="announcements/:id" element={<AnnouncementDetail />} />

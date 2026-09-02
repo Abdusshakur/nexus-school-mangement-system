@@ -8,7 +8,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { useQRAttendanceStore, type TeacherCheckIn } from "../../store/qrAttendance.store";
+import { useQRAttendanceStore } from "../../store/qrAttendance.store";
 import { useTeacherStore } from "../../store/teacher.store";
 import { Spinner } from "../ui/Spinner";
 import { Skeleton } from "../ui/Skeleton";
@@ -64,21 +64,10 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   const todayISO = new Date().toISOString().slice(0, 10);
   const totalTeachers = teachers.length;
 
-  const teacherStatus = teachers.map((t, idx) => {
+  const teacherStatus = teachers.map((t) => {
     let record = teacherCheckIns.find(
       (c) => c.teacherId === t.id && c.date === todayISO,
     );
-
-    // Mock data for the first 2 teachers
-    if (!record && idx < 2) {
-      record = {
-        id: `c-dyn-${idx}`,
-        teacherId: t.id,
-        date: todayISO,
-        checkInTime: idx === 0 ? "07:15 AM" : "07:35 AM",
-        status: idx === 0 ? "present" : "late",
-      } as TeacherCheckIn;
-    }
 
     return { teacher: t, record };
   });
@@ -97,13 +86,12 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
     ? formatDate(currentQRSession.date)
     : formatDate(todayISO);
 
-  const teacherRates = teachers.map((t, idx) => {
+  const teacherRates = teachers.map((t) => {
     const allCheckIns = teacherCheckIns.filter((c) => c.teacherId === t.id);
-    const mockRate = idx === 0 ? 95 : idx === 1 ? 75 : 15;
     const rate =
       allCheckIns.length > 0
         ? Math.min(100, Math.round((allCheckIns.length / 20) * 100))
-        : mockRate;
+        : 0;
     return { teacher: t, rate };
   });
 

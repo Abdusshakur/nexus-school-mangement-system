@@ -259,7 +259,7 @@ export default function TeacherTimetable() {
       {/* My summary cards — only on "mine" tab */}
       {tab === "mine" && (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {stats.map(({ label, value }) => (
               <div
                 key={label}
@@ -272,7 +272,7 @@ export default function TeacherTimetable() {
           </div>
           {/* My classes + subjects badges */}
           {myCells.length > 0 && (
-            <div className="bg-white rounded-xl p-4 flex flex-wrap gap-4 border border-slate-200">
+            <div className="bg-white rounded-xl p-4 flex flex-col sm:flex-row sm:flex-wrap gap-4 border border-slate-200">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide mb-2 text-slate-400">
                   My Classes

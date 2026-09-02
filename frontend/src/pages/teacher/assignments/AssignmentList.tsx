@@ -53,8 +53,8 @@ export function AssignmentList({
             </div>
           </div>
 
-          <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-            <div className="flex gap-4">
+          <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center gap-3 text-xs">
+            <div className="flex gap-4 flex-wrap">
               <span className="text-slate-500 font-medium flex items-center gap-1">
                 <Clock size={13} className="text-slate-400" />
                 <strong>{as.submittedCount || 4}</strong> Submissions

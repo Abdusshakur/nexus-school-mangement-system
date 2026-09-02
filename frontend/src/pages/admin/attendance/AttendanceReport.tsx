@@ -1,132 +1,212 @@
 import { ROUTES } from "../../../config/routes";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";
-import { studentsList } from "./data";
+import {
+  generateMockMonthlyAttendance,
+  type StudentMonthlyRecord,
+} from "./data";
+
+const CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
+const MONTHS = ["September 2026", "August 2026", "July 2026", "June 2026"];
 
 export function AttendanceReport() {
-  const [gradeFilter, setGradeFilter] = useState("All");
-  const [monthFilter, setMonthFilter] = useState("June 2026");
+  const [monthFilter, setMonthFilter] = useState("September 2026");
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reportData, setReportData] = useState<StudentMonthlyRecord[]>([]);
 
+  // Simulate network load
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 400);
+    setLoading(true);
+    const timer = setTimeout(() => {
+      if (selectedClass) {
+        setReportData(generateMockMonthlyAttendance(selectedClass, 22));
+      }
+      setLoading(false);
+    }, 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [selectedClass, monthFilter]);
 
-  // Predictable pseudorandom reporting data
-  const reportData = studentsList.map((s, idx) => {
-    const present = [19, 18, 20, 17, 20, 16, 18, 19][idx % 8];
-    const absent = [0, 1, 0, 2, 0, 3, 1, 0][idx % 8];
-    const late = [1, 1, 0, 1, 0, 1, 1, 1][idx % 8];
-    const rate = Math.round((present / 20) * 100);
-    return {
-      ...s,
-      totalDays: 20,
-      present,
-      absent,
-      late,
-      rate,
-    };
-  });
-
-  const filteredReport =
-    gradeFilter === "All"
-      ? reportData
-      : reportData.filter((r) => r.grade === gradeFilter);
-
-  return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center gap-4">
-        <Link
-          to={ROUTES.ADMIN.ATTENDANCE}
-          className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </Link>
-        <div>
-          <h1 className="text-slate-900 text-2xl font-extrabold tracking-tight">
-            Attendance Report
-          </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Monthly attendance aggregate summary
-          </p>
-        </div>
-        <button className="ml-auto flex items-center gap-2 px-4.5 py-2.5 border border-slate-200 bg-white text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-all cursor-pointer">
-          <Download size={15} /> Export CSV
-        </button>
-      </header>
-
-      <main className="flex-1 p-8 space-y-6 max-w-7xl w-full mx-auto">
-        {/* Filters */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex gap-4 shadow-sm">
-          <div className="w-full sm:w-48">
-            <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">
-              Grade Level
-            </label>
-            <select
-              value={gradeFilter}
-              onChange={(e) => setGradeFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+  if (!selectedClass) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0 bg-[#F4F7FE]">
+        <header className="bg-white border-b border-slate-200 px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link
+              to={ROUTES.ADMIN.ATTENDANCE}
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
             >
-              {[
-                "All",
-                "JSS 1",
-                "JSS 2",
-                "JSS 3",
-                "SS 1",
-                "SS 2",
-                "SS 3",
-              ].map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 className="text-slate-900 text-xl font-bold">
+                Performance Report
+              </h1>
+              <p className="text-slate-500 text-sm mt-0.5">
+                Monthly attendance aggregate summary
+              </p>
+            </div>
           </div>
-          <div className="w-full sm:w-48">
-            <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1.5">
-              Reporting Period
-            </label>
-            <select
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              {["June 2026", "May 2026", "April 2026", "March 2026"].map(
-                (m) => (
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-600">
+                Period:
+              </span>
+              <select
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:border-indigo-500"
+              >
+                {MONTHS.map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
-                ),
-              )}
-            </select>
+                ))}
+              </select>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+          {/* Classes Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {CLASSES.map((cls) => (
+              <div
+                key={cls}
+                onClick={() => setSelectedClass(cls)}
+                className="bg-white rounded-lg border border-slate-200 p-6 hover:shadow-sm cursor-pointer transition-shadow"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-10 h-10 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Users size={20} />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500 mb-1">Average Rate</p>
+                    <span className="text-lg font-bold text-slate-900">
+                      92%
+                    </span>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-bold text-slate-900 mb-1">{cls}</h3>
+                <p className="text-sm text-slate-500">
+                  Class Teacher: Unassigned
+                </p>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Calculate stats
+  const topAttendees = reportData.filter((r) => r.rate >= 95).length;
+
+  return (
+    <div className="flex-1 flex flex-col min-w-0 bg-[#F4F7FE]">
+      <header className="bg-white border-b border-slate-200 px-6 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setSelectedClass(null)}
+            className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-slate-900 text-xl font-bold">
+              {selectedClass} Report
+            </h1>
+            <p className="text-slate-500 text-sm mt-0.5">
+              {monthFilter} Attendance Summary
+            </p>
           </div>
         </div>
 
+        <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors">
+          <Download size={16} /> Export CSV
+        </button>
+      </header>
+
+      <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-slate-500">
+                Total Students
+              </span>
+              <div className="w-8 h-8 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Users size={16} />
+              </div>
+            </div>
+            <span className="text-2xl font-bold text-slate-900">
+              {reportData.length}
+            </span>
+          </div>
+
+          <div className="bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-slate-500">
+                Top Attendees (&ge; 95%)
+              </span>
+              <div className="w-8 h-8 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <TrendingUp size={16} />
+              </div>
+            </div>
+            <span className="text-2xl font-bold text-slate-900">
+              {topAttendees}
+            </span>
+          </div>
+
+          {/* <div className="bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-slate-500">
+                At Risk (&lt; 85%)
+              </span>
+              <div className="w-8 h-8 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center">
+                <AlertTriangle size={16} />
+              </div>
+            </div>
+            <span className="text-2xl font-bold text-slate-900">{atRisk}</span>
+          </div> */}
+        </div>
+
         {/* Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+          <div className="p-5 border-b border-slate-200">
+            <h2 className="text-lg font-bold text-slate-900">
+              Student Attendance Records
+            </h2>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+            <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <tr className="bg-[#F8FAFC] border-b border-slate-200">
+                  <th className="px-6 py-4 text-slate-500 text-xs font-semibold w-64">
                     Student
                   </th>
-                  <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    Grade
+                  <th className="px-6 py-4 text-slate-500 text-xs font-semibold">
+                    Monthly Heatmap (22 Days)
                   </th>
-                  <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+                  <th className="px-4 py-4 text-slate-500 text-xs font-semibold text-center">
                     Present
                   </th>
-                  <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+                  <th className="px-4 py-4 text-slate-500 text-xs font-semibold text-center">
                     Absent
                   </th>
-                  <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+                  <th className="px-4 py-4 text-slate-500 text-xs font-semibold text-center">
                     Late
                   </th>
-                  <th className="px-6 py-4 text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+                  <th className="px-6 py-4 text-slate-500 text-xs font-semibold text-right">
                     Rate
                   </th>
                 </tr>
@@ -135,82 +215,96 @@ export function AttendanceReport() {
                 {loading ? (
                   <>
                     {[1, 2, 3, 4, 5, 6].map((i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={i}>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <Skeleton className="w-8 h-8 rounded-full shrink-0" />
                             <Skeleton className="h-4 w-32" />
                           </div>
                         </td>
-                        <td className="px-6 py-4"><Skeleton className="h-4 w-12" /></td>
-                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
-                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
-                        <td className="px-6 py-4 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
-                        <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-12 rounded-full mx-auto" /></td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-full" />
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <Skeleton className="h-4 w-6 mx-auto" />
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <Skeleton className="h-4 w-6 mx-auto" />
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <Skeleton className="h-4 w-6 mx-auto" />
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Skeleton className="h-4 w-8 ml-auto" />
+                        </td>
                       </tr>
                     ))}
                   </>
-                ) : filteredReport.length === 0 ? (
+                ) : reportData.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
-                      No report data found.
+                    <td
+                      colSpan={6}
+                      className="px-6 py-12 text-center text-slate-500"
+                    >
+                      No students found in this class.
                     </td>
                   </tr>
                 ) : (
-                  filteredReport.map((s) => (
+                  reportData.map((s) => (
                     <tr
                       key={s.id}
-                      className="hover:bg-slate-50/50 transition-colors"
+                      className="hover:bg-slate-50 transition-colors"
                     >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                          style={{ background: s.avatarColor }}
-                        >
-                          <span className="text-white font-bold text-[10px]">
-                            {s.avatar}
-                          </span>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${s.avatarColor}`}
+                          >
+                            <span className="text-white font-medium text-xs">
+                              {s.avatar}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-slate-900">
+                            {s.name}
+                          </p>
                         </div>
-                        <p className="text-sm font-bold text-slate-800">
-                          {s.name}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 font-semibold">
-                      {s.grade}
-                    </td>
-                    <td className="px-6 py-4 text-center font-bold text-indigo-600 text-sm">
-                      {s.present}
-                    </td>
-                    <td className="px-6 py-4 text-center font-bold text-red-500 text-sm">
-                      {s.absent}
-                    </td>
-                    <td className="px-6 py-4 text-center font-bold text-amber-500 text-sm">
-                      {s.late}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-bold"
-                        style={{
-                          background:
-                            s.rate >= 90
-                              ? "#D1FAE5"
-                              : s.rate >= 80
-                                ? "#EEF2FF"
-                                : "#FEE2E2",
-                          color:
-                            s.rate >= 90
-                              ? "#065F46"
-                              : s.rate >= 80
-                                ? "#4338CA"
-                                : "#991B1B",
-                        }}
-                      >
-                        {s.rate}%
-                      </span>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-1.5 flex-wrap max-w-[280px]">
+                          {s.heatmap.map((status, index) => (
+                            <div
+                              key={index}
+                              title={`Day ${index + 1}: ${status}`}
+                              className={`w-6 h-6 rounded border flex items-center justify-center text-[10px] font-bold cursor-default ${
+                                status === "PRESENT"
+                                  ? "bg-indigo-50 border-indigo-200 text-indigo-600"
+                                  : status === "ABSENT"
+                                    ? "bg-red-50 border-red-200 text-red-600"
+                                    : status === "LATE"
+                                      ? "bg-amber-50 border-amber-200 text-amber-600"
+                                      : "bg-slate-50 border-slate-200 text-slate-500"
+                              }`}
+                            >
+                              {status === "PRESENT" ? "P" : status === "ABSENT" ? "A" : status === "LATE" ? "L" : "H"}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center text-slate-700 text-sm">
+                        {s.totalPresent}
+                      </td>
+                      <td className="px-4 py-4 text-center text-slate-700 text-sm">
+                        {s.totalAbsent}
+                      </td>
+                      <td className="px-4 py-4 text-center text-slate-700 text-sm">
+                        {s.totalLate}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-sm font-semibold text-slate-900">
+                          {s.rate}%
+                        </span>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>

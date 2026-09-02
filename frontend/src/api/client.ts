@@ -61,6 +61,10 @@ apiClient.interceptors.response.use(
             const field = firstErr?.loc?.length > 1 ? firstErr.loc[1] : "Input";
             if (firstErr?.msg?.includes("valid email address")) {
               errorMsg = "Invalid email address.";
+            } else if (firstErr?.msg?.startsWith("Value error, ")) {
+              errorMsg = firstErr.msg.replace("Value error, ", "");
+            } else if (firstErr?.msg) {
+              errorMsg = firstErr.msg;
             } else {
               errorMsg = `Invalid format provided for ${field}.`;
             }
