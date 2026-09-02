@@ -19,12 +19,21 @@ const MONTHS = ["September 2026", "August 2026", "July 2026", "June 2026"];
 export function AttendanceReport() {
   const [monthFilter, setMonthFilter] = useState("September 2026");
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<StudentMonthlyRecord[]>([]);
+
+  const handleClassSelect = (cls: string) => {
+    setLoading(true);
+    setSelectedClass(cls);
+  };
+
+  const handleMonthChange = (val: string) => {
+    setLoading(true);
+    setMonthFilter(val);
+  };
 
   // Simulate network load
   useEffect(() => {
-    setLoading(true);
     const timer = setTimeout(() => {
       if (selectedClass) {
         setReportData(generateMockMonthlyAttendance(selectedClass, 22));
@@ -62,7 +71,7 @@ export function AttendanceReport() {
               </span>
               <select
                 value={monthFilter}
-                onChange={(e) => setMonthFilter(e.target.value)}
+                onChange={(e) => handleMonthChange(e.target.value)}
                 className="px-3 py-2 border border-slate-200 rounded-md text-sm bg-white focus:outline-none focus:border-indigo-500"
               >
                 {MONTHS.map((m) => (
@@ -81,7 +90,7 @@ export function AttendanceReport() {
             {CLASSES.map((cls) => (
               <div
                 key={cls}
-                onClick={() => setSelectedClass(cls)}
+                onClick={() => handleClassSelect(cls)}
                 className="bg-white rounded-lg border border-slate-200 p-6 hover:shadow-sm cursor-pointer transition-shadow"
               >
                 <div className="flex justify-between items-start mb-6">

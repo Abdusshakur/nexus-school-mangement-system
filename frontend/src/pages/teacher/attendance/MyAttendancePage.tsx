@@ -40,8 +40,8 @@ function getWorkingDaysInMonth(year: number, month: number): string[] {
     const dow = date.getDay();
     if (dow !== 0 && dow !== 6) {
       const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
       days.push(`${yyyy}-${mm}-${dd}`);
     }
     date.setDate(date.getDate() + 1);
@@ -71,8 +71,11 @@ export default function MyAttendancePage() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
 
-  const [monthStats, setMonthStats] = useState<TeacherAttendanceStatsResponse | null>(null);
-  const [monthHistory, setMonthHistory] = useState<TeacherAttendanceHistoryItem[]>([]);
+  const [monthStats, setMonthStats] =
+    useState<TeacherAttendanceStatsResponse | null>(null);
+  const [monthHistory, setMonthHistory] = useState<
+    TeacherAttendanceHistoryItem[]
+  >([]);
 
   useEffect(() => {
     fetchTodayStatus();
@@ -86,12 +89,12 @@ export default function MyAttendancePage() {
       .catch(console.error);
 
     const sYear = viewYear;
-    const sMonth = String(viewMonth + 1).padStart(2, '0');
+    const sMonth = String(viewMonth + 1).padStart(2, "0");
     const start_date = `${sYear}-${sMonth}-01`;
 
     const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const end_date = `${sYear}-${sMonth}-${String(lastDay).padStart(2, '0')}`;
-    
+    const end_date = `${sYear}-${sMonth}-${String(lastDay).padStart(2, "0")}`;
+
     fetchMyAttendanceHistory(start_date, end_date)
       .then(setMonthHistory)
       .catch(console.error);
@@ -156,8 +159,8 @@ export default function MyAttendancePage() {
     viewYear === now.getFullYear() && viewMonth === now.getMonth();
   const allWorkingDays = getWorkingDaysInMonth(viewYear, viewMonth);
   const nowYYYY = now.getFullYear();
-  const nowMM = String(now.getMonth() + 1).padStart(2, '0');
-  const nowDD = String(now.getDate()).padStart(2, '0');
+  const nowMM = String(now.getMonth() + 1).padStart(2, "0");
+  const nowDD = String(now.getDate()).padStart(2, "0");
   const todayISO = `${nowYYYY}-${nowMM}-${nowDD}`;
   const workingDays = isCurrentMonth
     ? allWorkingDays.filter((d) => d <= todayISO)
@@ -166,13 +169,19 @@ export default function MyAttendancePage() {
   // Real backend check-in data mapped to the required format
   const checkInMap = Object.fromEntries(
     monthHistory.map((c) => [
-      c.attendance_date, 
+      c.attendance_date,
       {
         date: c.attendance_date,
         checkInTime: c.check_in_at ? formatTime(c.check_in_at) : "—",
-        status: c.status === "MISSED_CHECK_IN" ? "absent" : (c.is_late ? "late" : "present")
-      }
-    ])
+        checkOutTime: c.check_out_at ? formatTime(c.check_out_at) : "—",
+        status:
+          c.status === "MISSED_CHECK_IN"
+            ? "absent"
+            : c.is_late
+              ? "late"
+              : "present",
+      },
+    ]),
   );
 
   const presentDays = monthStats?.present_days || 0;
@@ -184,19 +193,24 @@ export default function MyAttendancePage() {
   // Collect all unique dates from workingDays AND from the backend history
   const allDatesSet = new Set(workingDays);
   Object.keys(checkInMap).forEach((d) => allDatesSet.add(d));
-  const allSortedDates = Array.from(allDatesSet).sort((a, b) => (a < b ? 1 : -1));
+  const allSortedDates = Array.from(allDatesSet).sort((a, b) =>
+    a < b ? 1 : -1,
+  );
 
   const tableRows = allSortedDates.map((day) => {
     const record = checkInMap[day];
     return {
       date: day,
       checkInTime: record ? record.checkInTime : "—",
+      checkOutTime: record ? record.checkOutTime : "—",
       status: record ? record.status : "absent",
     };
   });
 
   const isCheckedIn =
-    todayStatus?.status === "CHECKED_IN" || todayStatus?.status === "LATE";
+    todayStatus?.status === "CHECKED_IN" ||
+    todayStatus?.status === "LATE" ||
+    todayStatus?.status === "CHECKED_OUT";
   const checkInTimeStr = formatTime(todayStatus?.check_in_at);
   const statusStr = todayStatus?.status === "LATE" ? "Late" : "Present";
 
@@ -249,7 +263,7 @@ export default function MyAttendancePage() {
               </div>
             </div>
 
-            {/* Check Out Button if they haven't checked out */}
+            {/* Check Out Button */}
             {todayStatus?.status !== "CHECKED_OUT" && (
               <div className="mt-8 border-t border-slate-100 pt-6">
                 <button
@@ -287,7 +301,7 @@ export default function MyAttendancePage() {
           {/* QR Scanner Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <QrCode size={22} className="text-teal-600" />
+              <QrCode size={22} className="text-indigo-600" />
               <h2 className="text-xl font-bold text-slate-900">
                 Teacher Check-In
               </h2>
@@ -299,7 +313,7 @@ export default function MyAttendancePage() {
             {/* Scan Button */}
             <button
               onClick={() => setScannerAction("CHECK_IN")}
-              className="bg-teal-600 hover:bg-teal-700 text-white border-none rounded-xl px-8 py-3 text-sm font-semibold cursor-pointer inline-flex items-center gap-2 transition-all hover:shadow-md hover:-translate-y-0.5"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl px-8 py-3 text-sm font-semibold cursor-pointer inline-flex items-center gap-2 transition-all hover:shadow-md hover:-translate-y-0.5"
             >
               <QrCode size={18} />
               Scan & Check In
@@ -419,6 +433,9 @@ export default function MyAttendancePage() {
                   Check-in Time
                 </th>
                 <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Check-out Time
+                </th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Status
                 </th>
               </tr>
@@ -427,7 +444,7 @@ export default function MyAttendancePage() {
               {tableRows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     className="px-5 py-12 text-center text-slate-400 text-sm"
                   >
                     No working days recorded for this month.
@@ -446,6 +463,11 @@ export default function MyAttendancePage() {
                       className={`px-5 py-3.5 text-sm font-mono ${row.checkInTime === "—" ? "text-slate-400" : "text-slate-700 font-semibold"}`}
                     >
                       {row.checkInTime}
+                    </td>
+                    <td
+                      className={`px-5 py-3.5 text-sm font-mono ${row.checkOutTime === "—" ? "text-slate-400" : "text-slate-700 font-semibold"}`}
+                    >
+                      {row.checkOutTime}
                     </td>
                     <td className="px-5 py-3.5">
                       <span
