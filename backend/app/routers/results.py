@@ -401,7 +401,6 @@ def list_grading_scales(
 ):
     return session.exec(select(GradingScale).where(GradingScale.school_id == context.school_id).order_by(GradingScale.name, GradingScale.version)).all()
 
-
 @configuration_router.patch("/grading-scales/{scale_id}", response_model=GradingScaleResponse, summary="Update grading scale", description="Edit a grading scale or its active status.")
 def update_grading_scale(
     scale_id: UUID,
@@ -429,6 +428,35 @@ def update_grading_scale(
     session.commit()
     session.refresh(scale)
     return scale
+
+
+@configuration_router.get(
+    "/grading-scales/{scale_id}/rules",
+    response_model=List[GradingScaleRuleResponse],
+    summary="List grading rules",
+    description="Return the percentage ranges and grades belonging to a grading scale in the current school.",
+)
+def list_grading_rules(
+    scale_id: UUID,
+    context: CurrentContext = Depends(require_permission("result:read")),
+    session: Session = Depends(get_session),
+):
+    scale = session.exec(
+        select(GradingScale).where(
+            GradingScale.id == scale_id,
+            GradingScale.school_id == context.school_id,
+        )
+    ).first()
+    if not scale:
+        raise HTTPException(status_code=404, detail="Grading scale not found.")
+
+    return session.exec(
+        select(GradingScaleRule)
+        .where(GradingScaleRule.grading_scale_id == scale.id)
+        .order_by(GradingScaleRule.minimum_percentage.desc())
+    ).all()
+
+
 
 
 @configuration_router.post("/grading-scales/{scale_id}/rules", response_model=GradingScaleRuleResponse, status_code=status.HTTP_201_CREATED, summary="Add grading rule", description="Add a grade range such as A from 70 to 100 to a grading scale.")
