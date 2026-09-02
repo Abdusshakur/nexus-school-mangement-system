@@ -235,8 +235,22 @@ class TeacherProfile(SQLModel, table=True):
     assignments: List["TeacherAssignment"] = Relationship(back_populates="teacher")
 
 class ParentStudentLink(SQLModel, table=True):
-    parent_id: UUID = Field(foreign_key="parentprofile.id", primary_key=True)
-    student_id: UUID = Field(foreign_key="studentprofile.id", primary_key=True)
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "parent_id",
+            "student_id",
+            name="uq_parent_student_link_per_school",
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    school_name: str = Field(index=True)
+    parent_id: UUID = Field(foreign_key="parentprofile.id", index=True)
+    parent_name: str = Field(index=True)
+    student_id: UUID = Field(foreign_key="studentprofile.id", index=True)
+    student_name: str = Field(index=True)
     
     relationship_type: RelationshipType
     is_primary_contact: bool = Field(default=False)
@@ -253,6 +267,7 @@ class ParentProfile(SQLModel, table=True):
     first_name: str                     
     last_name: str
     phone_number: str
+    address: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     students: List["StudentProfile"] = Relationship(back_populates="parents", link_model=ParentStudentLink)

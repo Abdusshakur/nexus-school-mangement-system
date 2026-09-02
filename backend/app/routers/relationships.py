@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from backend.app.db.database import get_session
-from backend.app.models import ParentProfile, StudentProfile, ParentStudentLink
+from backend.app.models import ParentProfile, StudentProfile, ParentStudentLink, School
 from backend.app.schemas.relationship import RelationshipCreate, RelationshipResponse
+from backend.app.services.parent_relationship_service import build_parent_student_link
 
 # 👇 V2 Gatekeeper Imports
 from backend.app.core.auth_utils import CurrentContext, require_permission
@@ -46,7 +47,8 @@ def link_parent_to_student(
     existing_link = session.exec(
         select(ParentStudentLink).where(
             ParentStudentLink.parent_id == request.parent_id,
-            ParentStudentLink.student_id == request.student_id
+            ParentStudentLink.student_id == request.student_id,
+            ParentStudentLink.school_id == context.school_id,
         )
     ).first()
     
@@ -54,13 +56,12 @@ def link_parent_to_student(
         raise HTTPException(status_code=400, detail="This parent and student are already linked.")
 
     # 4. Insert the connection row 
-    new_link = ParentStudentLink(
-        parent_id=request.parent_id,
-        student_id=request.student_id,
-        relationship_type=request.relationship_type
-        # Note: If your ParentStudentLink model was updated to include a school_id column 
-        # in the V2 models, uncomment the line below to lock the join table as well:
-        # school_id=context.school_id  
+    school = session.get(School, context.school_id)
+    new_link = build_parent_student_link(
+        school=school,
+        parent=parent,
+        student=student,
+        relationship_type=request.relationship_type,
     )
     session.add(new_link)
     session.commit()

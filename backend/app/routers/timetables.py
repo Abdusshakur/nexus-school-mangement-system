@@ -356,7 +356,11 @@ def get_teacher_schedule(
 # STUDENT SCHEDULE ENDPOINT
 # ==========================================
 
-from backend.app.models import StudentEnrollment, EnrollmentStatus, ParentProfile, ParentStudentLink
+from backend.app.models import StudentEnrollment, EnrollmentStatus, ParentProfile, ParentStudentLink, Role
+from backend.app.services.parent_relationship_service import (
+    get_current_parent_profile,
+    verify_parent_child_access,
+)
 
 @router.get("/student/{student_id}", response_model=List[TimetableEntryResponse])
 def get_student_schedule(
@@ -380,28 +384,25 @@ def get_student_schedule(
         
     # 2. DYNAMIC AUTHORIZATION (Parent & Student Boundaries)
     # Check if the caller is a parent by looking for a ParentProfile in this tenant
-    parent_profile = session.exec(
-        select(ParentProfile).where(
-            ParentProfile.user_id == context.user_id,
-            ParentProfile.school_id == context.school_id
-        )
-    ).first()
+    role = session.get(Role, context.role_id)
+    role_is_parent = bool(role and role.name.lower() == "parent")
+    parent_profile = get_current_parent_profile(context, session) if role_is_parent else None
 
     if parent_profile:
         # 🛠️ FIXED: Compare against parent_profile.id, NOT context.user_id!
-        valid_link = session.exec(
-            select(ParentStudentLink).where(
-                ParentStudentLink.parent_id == parent_profile.id,
-                ParentStudentLink.student_id == student_id
-            )
-        ).first()
-        
-        if not valid_link:
-            raise HTTPException(status_code=403, detail="You do not have permission to view this student's timetable.")
+        verify_parent_child_access(
+            parent_profile.id,
+            student_id,
+            context.school_id,
+            session,
+        )
     else:
         # If they aren't a parent, check if they are a student trying to view someone else's timetable
         student_profile_for_user = session.exec(
-            select(StudentProfile).where(StudentProfile.user_id == context.user_id)
+            select(StudentProfile).where(
+                StudentProfile.user_id == context.user_id,
+                StudentProfile.school_id == context.school_id,
+            )
         ).first()
         
         if student_profile_for_user and student_profile_for_user.id != student_id:
@@ -412,6 +413,7 @@ def get_student_schedule(
     enrollment = session.exec(
         select(StudentEnrollment).where(
             StudentEnrollment.student_id == student.id,
+            StudentEnrollment.school_id == context.school_id,
             StudentEnrollment.term_id == term_id,
             StudentEnrollment.status == EnrollmentStatus.ACTIVE
         )

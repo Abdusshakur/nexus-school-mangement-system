@@ -11,8 +11,10 @@ from backend.app.core.auth_utils import CurrentContext, require_permission, hash
 from backend.app.models import (
     User, StudentProfile, ParentProfile, ParentStudentLink, 
     SchoolClass, AcademicSession, AcademicTerm, StudentEnrollment, SchoolSettings, EnrollmentStatus,
-    Role, UserRole
+    Role, UserRole, School
 )
+
+from backend.app.services.parent_relationship_service import build_parent_student_link
 from backend.app.schemas.student import (
     UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate, 
     LinkedParentResponse, StudentDetailResponse, TransferStudentRequest, BulkTransferStudentRequest, StudentEnrollmentHistoryResponse
@@ -33,6 +35,7 @@ def fetch_linked_parents(student_id: UUID, school_id: UUID, session: Session) ->
         .join(User, ParentProfile.user_id == User.id)
         .where(
             ParentStudentLink.student_id == student_id,
+            ParentStudentLink.school_id == school_id,
             ParentProfile.school_id == school_id  # 👈 MULTI-TENANT ISOLATION
         )
     )
@@ -44,6 +47,7 @@ def fetch_linked_parents(student_id: UUID, school_id: UUID, session: Session) ->
             first_name=parent_profile.first_name,
             last_name=parent_profile.last_name,
             phone_number=parent_profile.phone_number,
+            address=parent_profile.address,
             email=parent_user.email,
             relationship_type=relationship_type
         )
@@ -198,18 +202,20 @@ def create_student_with_parent_onboarding(
                     school_id=context.school_id,
                     first_name=parent_data.first_name,
                     last_name=parent_data.last_name,
-                    phone_number=parent_data.phone_number
+                    phone_number=parent_data.phone_number,
+                    address=parent_data.address,
                 )
                 session.add(parent_profile)
                 session.flush()
 
             # 7. Map the Relationship Link
-            relationship = ParentStudentLink(
-                parent_id=parent_profile.id,
-                student_id=student_profile.id,
+            relationship = build_parent_student_link(
+                school=session.get(School, context.school_id),
+                parent=parent_profile,
+                student=student_profile,
                 relationship_type=parent_data.relationship_type,
                 is_primary_contact=parent_data.is_primary_contact,
-                is_financial_sponsor=parent_data.is_financial_sponsor
+                is_financial_sponsor=parent_data.is_financial_sponsor,
             )
             session.add(relationship)
 
@@ -332,6 +338,35 @@ def list_students(
         )
         for profile, user, current_class_name in results
     ]
+
+
+@router.get("/{student_id}/parents", response_model=List[LinkedParentResponse])
+def get_student_linked_parents(
+    student_id: UUID,
+    context: CurrentContext = Depends(require_permission("student:read")),
+    session: Session = Depends(get_session),
+):
+    """Return the parents linked to a student for authorized school staff."""
+    role = session.get(Role, context.role_id)
+    if not role or role.name.lower() not in {"admin", "teacher"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators and teachers can view linked parents.",
+        )
+
+    student = session.exec(
+        select(StudentProfile).where(
+            StudentProfile.id == student_id,
+            StudentProfile.school_id == context.school_id,
+        )
+    ).first()
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found in your school.",
+        )
+
+    return fetch_linked_parents(student.id, context.school_id, session)
 
 
 # ------------------------------------------------------------------

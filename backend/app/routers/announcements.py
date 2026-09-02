@@ -25,6 +25,7 @@ from backend.app.models import (
 # 👇 1. Import the Gatekeeper
 from backend.app.core.auth_utils import CurrentContext, require_permission, get_current_context
 from backend.app.schemas.announcement import AnnouncementCreate, AnnouncementResponse, AnnouncementUpdate
+from backend.app.services.parent_relationship_service import get_current_parent_profile
 
 router = APIRouter(prefix="/announcements", tags=["Announcements"])
 
@@ -180,11 +181,13 @@ def get_smart_announcement_feed(
                 
         elif role_name == "parent":
             allowed_audiences.append("ALL_PARENTS")
+            parent_profile = get_current_parent_profile(context, session)
             children_classes = session.exec(
                 select(StudentProfile.class_name)
                 .join(ParentStudentLink, ParentStudentLink.student_id == StudentProfile.id)
                 .where(
-                    ParentStudentLink.parent_id == context.user_id,
+                    ParentStudentLink.parent_id == parent_profile.id,
+                    ParentStudentLink.school_id == context.school_id,
                     StudentProfile.school_id == context.school_id # 👈 Tenant isolation
                 )
             ).all()
