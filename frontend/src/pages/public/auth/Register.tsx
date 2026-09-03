@@ -13,8 +13,10 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [schoolName, setSchoolName] = useState("");
+  const [motto, setMotto] = useState("");
+  const [address, setAddress] = useState("");
+  const [principalName, setPrincipalName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,10 +26,14 @@ export default function Register() {
   ) => {
     e.preventDefault();
 
-    if (!email || !password || !firstName || !lastName) return;
+    if (!email || !password || !principalName || !schoolName) return;
 
     setIsSubmitting(true);
     try {
+      const nameParts = principalName.trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       const newSchoolId = crypto.randomUUID(); // Auto-generate UUID for the new school
       await registerSchoolAdmin({
         email,
@@ -36,6 +42,9 @@ export default function Register() {
         last_name: lastName,
         phone_number: phone,
         school_id: newSchoolId,
+        school_name: schoolName,
+        motto,
+        address,
       });
       toast.success("School Registered successfully! Please log in.");
       navigate("/login");
@@ -127,33 +136,46 @@ export default function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="John"
-                  required
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
-                  required
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
-                />
-              </div>
+            <div>
+              <label className="block text-slate-700 text-sm font-semibold mb-1.5">
+                Name of School
+              </label>
+              <input
+                type="text"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                placeholder="Nexus Academy"
+                required
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 text-sm font-semibold mb-1.5">
+                Name of Principal / Director
+              </label>
+              <input
+                type="text"
+                value={principalName}
+                onChange={(e) => setPrincipalName(e.target.value)}
+                placeholder="Dr. John Doe"
+                required
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 text-sm font-semibold mb-1.5">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+234 801 234 5678"
+                required
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+              />
             </div>
 
             <div>
@@ -172,13 +194,26 @@ export default function Register() {
 
             <div>
               <label className="block text-slate-700 text-sm font-semibold mb-1.5">
-                Phone Number (Optional)
+                School Motto (Optional)
               </label>
               <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 234 567 890"
+                type="text"
+                value={motto}
+                onChange={(e) => setMotto(e.target.value)}
+                placeholder="Knowledge is Power"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 text-sm font-semibold mb-1.5">
+                School Address (Optional)
+              </label>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="123 Education Lane, Lagos"
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-slate-50 focus:bg-white"
               />
             </div>
@@ -229,7 +264,7 @@ export default function Register() {
           </p>
 
           <button
-            onClick={() => navigate("/#pricing")}
+            onClick={() => navigate("/request-demo")}
             className="w-full border border-slate-200 text-slate-600 hover:border-indigo-500/30 hover:text-indigo-500 py-3 rounded-xl transition-all text-sm font-semibold"
           >
             Request a Demo
