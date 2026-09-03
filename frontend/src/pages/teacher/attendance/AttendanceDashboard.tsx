@@ -10,6 +10,8 @@ import { useTeacherStore } from "../../../store/teacher.store";
 import { useEffect } from "react";
 
 
+import { Skeleton } from "../../../components/ui/Skeleton";
+
 type MarkStatus = "P" | "A" | "L" | "";
 
 function NotClassTeacher() {
@@ -191,11 +193,19 @@ export default function TeacherAttendance() {
   };
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center h-full bg-slate-50">
-      <div className="flex flex-col items-center">
-        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p className="mt-4 text-slate-500 font-medium">Loading classes...</p>
+    <div className="flex-1 p-4 sm:p-8 w-full space-y-5">
+      <header className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between gap-4">
+         <div>
+           <Skeleton className="h-8 w-64 mb-2" />
+           <Skeleton className="h-4 w-32" />
+         </div>
+      </header>
+      <div className="grid grid-cols-3 gap-4">
+         <Skeleton className="h-24 rounded-xl" />
+         <Skeleton className="h-24 rounded-xl" />
+         <Skeleton className="h-24 rounded-xl" />
       </div>
+      <Skeleton className="h-[400px] rounded-xl" />
     </div>
   );
 

@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { getTeacherTodayStatus, teacherCheckIn, teacherCheckOut } from "../../../api/attendance";
 import { QRScannerModal } from "../../../components/dashboard/QRScannerModal";
 import { ScanFace } from "lucide-react";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 function getScheduleColors(subjectName: string) {
   const hash = (subjectName || "").split("").reduce((a, b) => a + b.charCodeAt(0), 0);
@@ -39,16 +40,30 @@ function getScheduleColors(subjectName: string) {
 }
 
 const PERIODS = [
-  { id: 1, label: "Period 1", time: "8:00 - 8:50 AM" },
-  { id: 2, label: "Period 2", time: "9:00 - 9:50 AM" },
-  { id: 3, label: "Period 3", time: "10:00 - 10:50 AM" },
-  { id: 4, label: "Break", time: "11:00 - 11:30 AM" },
-  { id: 5, label: "Period 4", time: "11:30 AM - 12:20 PM" },
-  { id: 6, label: "Period 5", time: "12:30 - 1:20 PM" },
-  { id: 7, label: "Lunch", time: "1:20 - 2:00 PM" },
-  { id: 8, label: "Period 6", time: "2:00 - 2:50 PM" },
-  { id: 9, label: "Period 7", time: "3:00 - 3:50 PM" },
+  { id: 1, label: "Period 1" },
+  { id: 2, label: "Period 2" },
+  { id: 3, label: "Period 3" },
+  { id: 4, label: "Break" },
+  { id: 5, label: "Period 4" },
+  { id: 6, label: "Period 5" },
+  { id: 7, label: "Lunch" },
+  { id: 8, label: "Period 6" },
+  { id: 9, label: "Period 7" },
 ];
+
+function formatTime(timeStr?: string) {
+  if (!timeStr) return "TBD";
+  try {
+    const [h, m] = timeStr.split(":");
+    let hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${m} ${ampm}`;
+  } catch (e) {
+    return timeStr;
+  }
+}
 
 export default function TeacherDashboard() {
   const { user } = useAuthStore();
@@ -73,17 +88,21 @@ export default function TeacherDashboard() {
 
   const { academicSessions, fetchSessions } = useSessionStore();
   const { myTimetableGrid, fetchMyTimetable } = useTimetableStore();
-  const { myAssignments, myStudents, attendanceStats, fetchAllContext } = useTeacherContextStore();
+  const { myAssignments, myStudents, attendanceStats, fetchAllContext, loading: contextLoading } = useTeacherContextStore();
 
   const [todayStatus, setTodayStatus] = useState<any>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
   const [scannerAction, setScannerAction] = useState<"CHECK_IN" | "CHECK_OUT" | null>(null);
 
   const fetchTodayStatus = async () => {
     try {
+      setLoadingStatus(true);
       const data = await getTeacherTodayStatus();
       setTodayStatus(data);
     } catch (err) {
       console.error("Failed to fetch today status", err);
+    } finally {
+      setLoadingStatus(false);
     }
   };
 
@@ -122,22 +141,18 @@ export default function TeacherDashboard() {
   }, [activeTermId, fetchMyTimetable]);
 
   const todaySchedule = useMemo(() => {
-    const dayMap: Record<number, string> = {
-      1: "MONDAY", 2: "TUESDAY", 3: "WEDNESDAY", 4: "THURSDAY", 5: "FRIDAY",
-    };
-    const dayIndex = todayDate.getDay();
-    // Default to MONDAY if it's weekend, just so dashboard isn't completely empty for demo
-    const currentDayStr = dayMap[dayIndex] || "MONDAY";
+    const dayIndex = todayDate.getDay(); // 0 is Sunday, 1 is Monday, etc.
+    const dIndex = (dayIndex >= 1 && dayIndex <= 5) ? dayIndex - 1 : 0; // map to 0-4 for Mon-Fri, default to 0 for weekend demo
 
     return PERIODS.map(p => {
-      const cell = myTimetableGrid[`${currentDayStr}-${p.id}`];
+      const cell = myTimetableGrid[`${dIndex}-${p.id}`];
       if (!cell) return null;
       
       const colors = getScheduleColors(cell.subject);
       return {
         subject: cell.subject,
         class: cell.className,
-        time: p.time,
+        time: cell.startTime && cell.endTime ? `${formatTime(cell.startTime)} - ${formatTime(cell.endTime)}` : "TBD",
         room: cell.room || "TBD",
         colorText: colors.text,
         colorBg: colors.bg,
@@ -148,6 +163,28 @@ export default function TeacherDashboard() {
       };
     }).filter(Boolean) as any[];
   }, [myTimetableGrid]);
+
+  if (loadingStatus || contextLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-[120px] rounded-2xl w-full" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Skeleton className="h-[300px] rounded-xl w-full" />
+          </div>
+          <div>
+            <Skeleton className="h-[300px] rounded-xl w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
