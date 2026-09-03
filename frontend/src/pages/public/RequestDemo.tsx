@@ -16,7 +16,7 @@ export default function RequestDemo() {
     emailAddress: "",
     website: "",
     address: "",
-    principalName: "",
+    ownerName: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -156,12 +156,12 @@ export default function RequestDemo() {
 
               <div>
                 <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-2">
-                  Principal's Name
+                  Owner Full Name
                 </label>
                 <input
                   type="text"
-                  value={form.principalName}
-                  onChange={(e) => setField("principalName", e.target.value)}
+                  value={form.ownerName}
+                  onChange={(e) => setField("ownerName", e.target.value)}
                   className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                   placeholder="e.g. Dr. John Makolo"
                 />
@@ -169,7 +169,7 @@ export default function RequestDemo() {
 
               <div>
                 <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-2">
-                  Work Email <span className="text-red-500">*</span>
+                  Owner Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
                   <input
@@ -178,7 +178,7 @@ export default function RequestDemo() {
                     value={form.emailAddress}
                     onChange={(e) => setField("emailAddress", e.target.value)}
                     className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
-                    placeholder="contact@school.edu"
+                    placeholder="owner@school.com"
                   />
                 </div>
               </div>

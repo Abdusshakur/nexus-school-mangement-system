@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, AlertCircle } from "lucide-react";
 import { Spinner } from "../../../../../components/ui/Spinner";
 import { fetchActiveSummary } from "../../../../../api/academics";
 import { useResultsConfigStore } from "../../../../../store/resultsConfig.store";
+import { useClassStore } from "../../../../../store/class.store";
+import { useSubjectStore } from "../../../../../store/subject.store";
 import { toast } from "sonner";
 
 interface CreateSchemeModalProps {
@@ -11,6 +13,9 @@ interface CreateSchemeModalProps {
 
 export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
   const { createNewScheme } = useResultsConfigStore();
+  const { classes, loadClasses } = useClassStore();
+  const { subjects, loadSubjects } = useSubjectStore();
+  
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -18,11 +23,16 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
   const [activeTermId, setActiveTermId] = useState("");
 
   const [formData, setFormData] = useState({
-    name: "Global School Assessment Scheme",
+    name: "",
     total_weight: 100,
   });
 
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+
   useEffect(() => {
+    loadClasses();
+    loadSubjects();
     fetchActiveSummary()
       .then((summary) => {
         if (summary.active_session)
@@ -35,7 +45,7 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
         toast.error("Failed to load academic data");
         setLoading(false);
       });
-  }, []);
+  }, [loadClasses, loadSubjects]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +64,13 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
       await createNewScheme({
         academic_session_id: activeSessionId,
         academic_term_id: activeTermId,
-        class_id: null,
-        subject_id: null,
+        class_id: selectedClassId || null,
+        subject_id: selectedSubjectId || null,
         name: formData.name,
         total_weight: formData.total_weight,
         status: "DRAFT",
       });
-      toast.success("Global Assessment Scheme created!");
+      toast.success("Assessment Scheme created!");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create scheme");
@@ -68,6 +78,8 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
       setSubmitting(false);
     }
   };
+
+  const isGlobal = !selectedClassId && !selectedSubjectId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -78,7 +90,7 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
               Create Result Scheme
             </h2>
             <p className="text-sm text-slate-500">
-              Configure a default grading scheme for the entire school
+              Configure a grading scheme for the school or specific classes
             </p>
           </div>
           <button
@@ -116,6 +128,44 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
                     placeholder="e.g. Standard JSS Scheme"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      Class (Optional)
+                    </label>
+                    <select
+                      value={selectedClassId}
+                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                    >
+                      <option value="">All Classes (Global)</option>
+                      {classes.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      Subject (Optional)
+                    </label>
+                    <select
+                      value={selectedSubjectId}
+                      onChange={(e) => setSelectedSubjectId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                    >
+                      <option value="">All Subjects (Global)</option>
+                      {subjects.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">
                     Total Target Weight (%)
@@ -135,15 +185,26 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
                 </div>
               </div>
 
-              <div className="bg-indigo-50 text-indigo-800 p-4 rounded-xl border border-indigo-100 flex gap-3 text-sm">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                  <Check size={16} className="text-indigo-600" />
+              {isGlobal ? (
+                <div className="bg-indigo-50 text-indigo-800 p-4 rounded-xl border border-indigo-100 flex gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                    <Check size={16} className="text-indigo-600" />
+                  </div>
+                  <p>
+                    This scheme will serve as the <strong>global default</strong>{" "}
+                    for all classes and subjects in the current academic term.
+                  </p>
                 </div>
-                <p>
-                  This scheme will serve as the <strong>global default</strong>{" "}
-                  for all classes and subjects in the current academic term.
-                </p>
-              </div>
+              ) : (
+                <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-100 flex gap-3 text-sm">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                    <AlertCircle size={16} className="text-amber-600" />
+                  </div>
+                  <p>
+                    This scheme will act as a <strong>specific override</strong>. It will only apply when the selected class and subject match.
+                  </p>
+                </div>
+              )}
             </form>
           </div>
         )}
@@ -166,7 +227,7 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
             {submitting ? (
               <Spinner className="w-4 h-4" />
             ) : (
-              "Save Global Scheme"
+              "Save Scheme"
             )}
           </button>
         </div>
