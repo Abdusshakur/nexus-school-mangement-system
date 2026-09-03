@@ -8,12 +8,17 @@ import type {
   AssessmentComponentCreate,
   GradingScaleCreate,
   GradingScaleUpdate,
+  GradingRuleResponse,
+  GradingRuleCreate,
+  GradingRuleUpdate,
 } from "../api/resultsConfig";
+
 
 interface ResultsConfigState {
   schemes: AssessmentSchemeResponse[];
-  components: Record<string, AssessmentComponentResponse[]>; // schemeId -> components
+  components: Record<string, AssessmentComponentResponse[]>; // schemeId 
   gradingScales: GradingScaleResponse[];
+  gradingRules: Record<string, GradingRuleResponse[]>; // scaleId rules
   loading: boolean;
   error: string | null;
 
@@ -42,6 +47,16 @@ interface ResultsConfigState {
     scaleId: string,
     payload: GradingScaleUpdate,
   ) => Promise<GradingScaleResponse>;
+
+  loadGradingRules: (scaleId: string) => Promise<GradingRuleResponse[]>;
+  createNewGradingRule: (
+    scaleId: string,
+    payload: GradingRuleCreate,
+  ) => Promise<GradingRuleResponse>;
+  editGradingRule: (
+    ruleId: string,
+    payload: GradingRuleUpdate,
+  ) => Promise<GradingRuleResponse>;
 }
 
 export const useResultsConfigStore = create<ResultsConfigState>((set, get) => ({
@@ -83,6 +98,7 @@ export const useResultsConfigStore = create<ResultsConfigState>((set, get) => ({
     ],
   },
   gradingScales: [],
+  gradingRules: {},
   loading: false,
   error: null,
 
@@ -171,6 +187,7 @@ export const useResultsConfigStore = create<ResultsConfigState>((set, get) => ({
   },
 
   loadGradingScales: async () => {
+    // Just resolve immediately using local mock data
     set({ loading: false });
   },
 
@@ -186,20 +203,64 @@ export const useResultsConfigStore = create<ResultsConfigState>((set, get) => ({
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    set((state) => ({ gradingScales: [...state.gradingScales, newScale] }));
+    set((state) => ({ gradingScales: [newScale, ...state.gradingScales], loading: false }));
     return newScale;
   },
 
   editGradingScale: async (scaleId, payload) => {
-    const updated = {
-      ...get().gradingScales.find((s) => s.id === scaleId)!,
-      ...payload,
-    } as GradingScaleResponse;
-    set((state) => ({
-      gradingScales: state.gradingScales.map((s) =>
-        s.id === scaleId ? updated : s,
-      ),
+    const updated = { ...get().gradingScales.find(s => s.id === scaleId)!, ...payload } as GradingScaleResponse;
+    set(state => ({
+      gradingScales: state.gradingScales.map(s => s.id === scaleId ? updated : s)
     }));
     return updated;
   },
+
+  loadGradingRules: async (scaleId: string) => {
+    return get().gradingRules?.[scaleId] || [];
+  },
+
+  createNewGradingRule: async (scaleId: string, payload: GradingRuleCreate) => {
+    const newRule: GradingRuleResponse = {
+      id: "rule-" + Math.random().toString(36).substring(7),
+      grading_scale_id: scaleId,
+      grade: payload.grade,
+      minimum_percentage: payload.minimum_percentage,
+      maximum_percentage: payload.maximum_percentage,
+      remark: payload.remark || "",
+    };
+
+    set(state => {
+      const currentRules = state.gradingRules || {};
+      const existing = currentRules[scaleId] || [];
+      return {
+        gradingRules: {
+          ...currentRules,
+          [scaleId]: [...existing, newRule].sort((a, b) => b.minimum_percentage - a.minimum_percentage)
+        }
+      };
+    });
+
+    return newRule;
+  },
+
+  editGradingRule: async (ruleId: string, payload: GradingRuleUpdate) => {
+    // Mock implementation for edit
+    let updatedRule: GradingRuleResponse | null = null;
+    set(state => {
+      const currentRules = { ...state.gradingRules };
+      for (const scaleId in currentRules) {
+        const ruleIdx = currentRules[scaleId].findIndex(r => r.id === ruleId);
+        if (ruleIdx !== -1) {
+          const rule = currentRules[scaleId][ruleIdx];
+          updatedRule = { ...rule, ...payload } as GradingRuleResponse;
+          currentRules[scaleId][ruleIdx] = updatedRule;
+          currentRules[scaleId].sort((a, b) => b.minimum_percentage - a.minimum_percentage);
+          break;
+        }
+      }
+      return { gradingRules: currentRules };
+    });
+    if (!updatedRule) throw new Error("Rule not found");
+    return updatedRule;
+  }
 }));

@@ -141,7 +141,7 @@ export default function TeacherStudents() {
                       <td className="px-6 py-4 text-right">
                         <Link
                           to={ROUTES.TEACHER.STUDENT_DETAIL(student.student_id)}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                         >
                           {isClassTeacher ? "View Profile" : "View Subject Grades"} <ChevronRight size={14} />
                         </Link>

@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle,
   Save,
   FileText,
-  AlertCircle,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { useGradeStore } from "../../../store/grade.store";
+import { useTeacherContextStore } from "../../../store/teacherContext.store";
 import { ReportCardsTab } from "./ReportCardsTab";
 
 function getNigerianGradeShort(pct: number) {
@@ -28,205 +29,161 @@ function getNigerianGradeShort(pct: number) {
   return { l: "F9", bg: "bg-red-100", color: "text-red-800" };
 }
 
-const MY_CLASSES = [
-  {
-    id: "SS2SCI",
-    name: "SS 2 Science",
-    subjects: ["Biology", "Basic Science"],
-    students: [
-      {
-        id: "S001",
-        name: "Amelia Johnson",
-        initials: "AJ",
-        color: "bg-indigo-500",
-      },
-      {
-        id: "S003",
-        name: "Sofia Rodriguez",
-        initials: "SR",
-        color: "bg-amber-500",
-      },
-      { id: "S007", name: "Layla Hassan", initials: "LH", color: "bg-sky-500" },
-      {
-        id: "S009",
-        name: "Femi Adeyemi",
-        initials: "FA",
-        color: "bg-emerald-500",
-      },
-      {
-        id: "S010",
-        name: "Chidi Okafor",
-        initials: "CO",
-        color: "bg-purple-500",
-      },
-    ],
-  },
-  {
-    id: "SS1SCI",
-    name: "SS 1 Science",
-    subjects: ["Biology", "Basic Science"],
-    students: [
-      {
-        id: "S002",
-        name: "Marcus Williams",
-        initials: "MW",
-        color: "bg-emerald-500",
-      },
-      {
-        id: "S011",
-        name: "Temi Balogun",
-        initials: "TB",
-        color: "bg-pink-500",
-      },
-      { id: "S012", name: "Emeka Eze", initials: "EE", color: "bg-indigo-600" },
-      {
-        id: "S016",
-        name: "Yusuf Abubakar",
-        initials: "YA",
-        color: "bg-indigo-500",
-      },
-    ],
-  },
-  {
-    id: "JSS3A",
-    name: "JSS 3A",
-    subjects: ["Basic Science"],
-    students: [
-      {
-        id: "S006",
-        name: "James Thompson",
-        initials: "JT",
-        color: "bg-pink-500",
-      },
-      {
-        id: "S008",
-        name: "Noah Anderson",
-        initials: "NA",
-        color: "bg-indigo-500",
-      },
-      { id: "S013", name: "Ngozi Ibe", initials: "NI", color: "bg-indigo-500" },
-      {
-        id: "S017",
-        name: "Oluwaseun Oyelaran",
-        initials: "OO",
-        color: "bg-amber-500",
-      },
-    ],
-  },
-  {
-    id: "SS3SCI",
-    name: "SS 3 Science",
-    subjects: ["Biology"],
-    students: [
-      {
-        id: "S005",
-        name: "Priya Patel",
-        initials: "PP",
-        color: "bg-purple-500",
-      },
-      {
-        id: "S014",
-        name: "Kolade Adebisi",
-        initials: "KA",
-        color: "bg-amber-500",
-      },
-      {
-        id: "S015",
-        name: "Aisha Mohammed",
-        initials: "AM",
-        color: "bg-red-500",
-      },
-    ],
-  },
-];
-
-const SESSIONS = ["2025/2026", "2024/2025", "2023/2024"];
-const TERMS = ["1st Term", "2nd Term", "3rd Term"];
-
-const ASSESSMENT_TYPES = [
-  { id: "ca1", label: "1st CA", max: 20 },
-  { id: "ca2", label: "2nd CA", max: 20 },
-  { id: "ca3", label: "3rd CA", max: 20 },
-  { id: "mid", label: "Mid-Term Test", max: 20 },
-  { id: "exam", label: "Exam", max: 60 },
-];
-
-type GradeMap = Record<string, number | "">;
-
 export default function TeacherGrades() {
-  const { gradeRecords, saveGrades } = useGradeStore();
-  const [activeTab, setActiveTab] = useState<"grading" | "report_cards">("grading");
+  const {
+    loadAssessments,
+    loadRoster,
+    saveScores,
+    submitScores,
+    assessments,
+    rosters,
+    loading: apiLoading,
+  } = useGradeStore();
+  const {
+    myAssignments,
+    fetchMyAssignments,
+    loading: contextLoading,
+  } = useTeacherContextStore();
+
+  const [activeTab, setActiveTab] = useState<"grading" | "report_cards">(
+    "grading",
+  );
   const [step, setStep] = useState<"select" | "enter">("select");
-  const [classId, setClassId] = useState("SS2SCI");
-  const [subject, setSubject] = useState("Biology");
-  const [session, setSession] = useState("2025/2026");
-  const [term, setTerm] = useState("3rd Term");
-  const [assessmentId, setAssessmentId] = useState("ca1");
-  const [grades, setGrades] = useState<GradeMap>({});
+
+  const [classId, setClassId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [assessmentId, setAssessmentId] = useState("");
+
+  const [grades, setGrades] = useState<Record<string, number | "">>({});
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
 
-  const cls = MY_CLASSES.find((c) => c.id === classId)!;
-  const assessment = ASSESSMENT_TYPES.find((a) => a.id === assessmentId)!;
+  useEffect(() => {
+    if (myAssignments.length === 0) {
+      fetchMyAssignments();
+    }
+  }, [myAssignments.length, fetchMyAssignments]);
+
+  // Derived state
+  const uniqueClasses = Array.from(
+    new Set(myAssignments.map((a) => a.class_id)),
+  ).map((id) => myAssignments.find((a) => a.class_id === id)!);
+  const subjectsForClass = classId
+    ? myAssignments.filter((a) => a.class_id === classId)
+    : [];
+
+  const classKey = `${classId}_${subjectId}`;
+  const classAssessments = assessments[classKey] || [];
+  const currentAssessment = classAssessments.find((a) => a.id === assessmentId);
+  const rosterData = assessmentId ? rosters[assessmentId] : null;
+
+  // Effects to auto-select
+  useEffect(() => {
+    if (uniqueClasses.length > 0 && !classId)
+      setClassId(uniqueClasses[0].class_id);
+  }, [uniqueClasses, classId]);
+
+  useEffect(() => {
+    if (
+      subjectsForClass.length > 0 &&
+      (!subjectId || !subjectsForClass.find((s) => s.subject_id === subjectId))
+    ) {
+      setSubjectId(subjectsForClass[0].subject_id);
+    }
+  }, [subjectsForClass, subjectId]);
+
+  // Fetch assessments when class and subject are selected
+  useEffect(() => {
+    if (classId && subjectId) {
+      loadAssessments(classId, subjectId).catch(console.error);
+    }
+  }, [classId, subjectId, loadAssessments]);
+
+  // Fetch roster when assessment is selected and we move to entry
+  useEffect(() => {
+    if (assessmentId && step === "enter") {
+      loadRoster(assessmentId)
+        .then((data) => {
+          const initialGrades: Record<string, number | ""> = {};
+          data.students.forEach((s) => {
+            initialGrades[s.student_id] =
+              s.score !== null && s.score !== undefined ? s.score : "";
+          });
+          setGrades(initialGrades);
+        })
+        .catch(console.error);
+    }
+  }, [assessmentId, step, loadRoster]);
 
   const updateGrade = (studentId: string, val: string) => {
+    if (!currentAssessment) return;
     const num =
-      val === "" ? "" : Math.max(0, Math.min(assessment.max, Number(val)));
+      val === ""
+        ? ""
+        : Math.max(0, Math.min(currentAssessment.max_score, Number(val)));
     setGrades((prev) => ({ ...prev, [studentId]: num }));
   };
 
-  const allEntered = cls.students.every(
-    (s) => grades[s.id] !== undefined && grades[s.id] !== "",
-  );
-
-  const numGrades = cls.students.map((s) => Number(grades[s.id] ?? 0));
-  const avg = allEntered
-    ? Math.round(numGrades.reduce((a, b) => a + b, 0) / numGrades.length)
-    : null;
-  const highest = allEntered ? Math.max(...numGrades) : null;
-  const passCount = allEntered
-    ? numGrades.filter((n) => (n / assessment.max) * 100 >= 50).length
-    : null;
-
-  const existingRecord = gradeRecords.find(
-    (r) =>
-      r.teacherId === "T001" &&
-      r.classId === classId &&
-      r.subject === subject &&
-      r.term === term &&
-      r.session === session,
-  );
-
-  const handleSave = (submit: boolean) => {
+  const handleSave = async (submit: boolean) => {
+    if (!assessmentId || !rosterData) return;
     setSaving(true);
-    setTimeout(() => {
-      saveGrades({
-        teacherId: "T001",
-        teacherName: "Mr. Ade Okafor",
-        classId,
-        className: cls.name,
-        subject,
-        term,
-        session,
-        submitted: submit,
-        grades: cls.students.map((s) => ({
-          studentId: s.id,
-          studentName: s.name,
-          ca1: assessmentId === "ca1" ? Number(grades[s.id] ?? 0) : 0,
-          ca2: assessmentId === "ca2" ? Number(grades[s.id] ?? 0) : 0,
-          exam: assessmentId === "exam" ? Number(grades[s.id] ?? 0) : 0,
-        })),
-      });
-      setSaving(false);
-      setSavedMsg(submit ? "Grades submitted successfully." : "Draft saved.");
+    try {
+      const payload = {
+        scores: rosterData.students.map((s) => {
+          const val = grades[s.student_id];
+          return {
+            student_id: s.student_id,
+            score: val === "" ? null : Number(val),
+            score_status:
+              val === "" ? ("MISSING" as const) : ("PRESENT" as const),
+          };
+        }),
+      };
+
+      await saveScores(assessmentId, payload);
+
+      if (submit && rosterData.submission?.id) {
+        await submitScores(rosterData.submission.id);
+        setSavedMsg("Grades submitted successfully.");
+      } else {
+        setSavedMsg("Draft saved successfully.");
+      }
       setTimeout(() => setSavedMsg(""), 3000);
-    }, 700);
+    } catch (err) {
+      console.error(err);
+      setSavedMsg("Failed to save.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const allEntered = rosterData
+    ? rosterData.students.every(
+        (s) =>
+          grades[s.student_id] !== undefined && grades[s.student_id] !== "",
+      )
+    : false;
+  const numGrades = rosterData
+    ? rosterData.students.map((s) => Number(grades[s.student_id] ?? 0))
+    : [];
+  const avg =
+    allEntered && numGrades.length
+      ? Math.round(numGrades.reduce((a, b) => a + b, 0) / numGrades.length)
+      : null;
+  const highest =
+    allEntered && numGrades.length ? Math.max(...numGrades) : null;
+  const passCount =
+    allEntered && currentAssessment
+      ? numGrades.filter((n) => (n / currentAssessment.max_score) * 100 >= 50)
+          .length
+      : null;
 
   return (
     <div className="space-y-5 p-6 max-w-5xl ">
       <div>
-        <h1 className="font-bold text-2xl text-slate-900">Academics & Results</h1>
+        <h1 className="font-bold text-2xl text-slate-900">
+          Academics & Results
+        </h1>
         <p className="text-sm mt-0.5 text-slate-500">
           Manage subject grading and class report cards.
         </p>
@@ -261,6 +218,13 @@ export default function TeacherGrades() {
             <h2 className="font-semibold mb-5 text-slate-900">
               Select Class & Assessment
             </h2>
+
+            {contextLoading && (
+              <div className="text-sm text-indigo-600 mb-4 animate-pulse">
+                Loading assignments...
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-slate-700">
@@ -270,17 +234,14 @@ export default function TeacherGrades() {
                   value={classId}
                   onChange={(e) => {
                     setClassId(e.target.value);
-                    setSubject(
-                      MY_CLASSES.find((c) => c.id === e.target.value)!
-                        .subjects[0],
-                    );
+                    setAssessmentId("");
                     setGrades({});
                   }}
                   className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
-                  {MY_CLASSES.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+                  {uniqueClasses.map((c) => (
+                    <option key={c.class_id} value={c.class_id}>
+                      {c.class_name}
                     </option>
                   ))}
                 </select>
@@ -290,40 +251,18 @@ export default function TeacherGrades() {
                   Subject
                 </label>
                 <select
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
+                  value={subjectId}
+                  onChange={(e) => {
+                    setSubjectId(e.target.value);
+                    setAssessmentId("");
+                    setGrades({});
+                  }}
                   className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
-                  {cls.subjects.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700">
-                  Academic Session
-                </label>
-                <select
-                  value={session}
-                  onChange={(e) => setSession(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                >
-                  {SESSIONS.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700">
-                  Term
-                </label>
-                <select
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                >
-                  {TERMS.map((t) => (
-                    <option key={t}>{t}</option>
+                  {subjectsForClass.map((s) => (
+                    <option key={s.subject_id} value={s.subject_id}>
+                      {s.subject_name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -331,229 +270,197 @@ export default function TeacherGrades() {
 
             <div>
               <label className="block text-sm font-medium mb-2 text-slate-700">
-                Assessment Type
+                Assessment Component
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {ASSESSMENT_TYPES.map((a) => {
-                  const on = assessmentId === a.id;
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => {
-                        setAssessmentId(a.id);
-                        setGrades({});
-                      }}
-                      className={`p-3 rounded-xl text-left border-2 transition-all ${on ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-transparent hover:border-slate-300"}`}
-                    >
-                      <p
-                        className={`text-sm font-semibold ${on ? "text-indigo-600" : "text-slate-700"}`}
+              {apiLoading && !classAssessments.length ? (
+                <div className="text-sm text-slate-500 flex items-center gap-2">
+                  <Loader2 className="animate-spin w-4 h-4" /> Fetching
+                  assessments...
+                </div>
+              ) : classAssessments.length === 0 ? (
+                <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                  No assessments configured for this subject yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {classAssessments.map((a) => {
+                    const on = assessmentId === a.id;
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => {
+                          setAssessmentId(a.id);
+                          setGrades({});
+                        }}
+                        className={`p-3 rounded-xl text-left border-2 transition-all ${on ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-transparent hover:border-slate-300"}`}
                       >
-                        {a.label}
-                      </p>
-                      <p
-                        className={`text-xs mt-0.5 ${on ? "text-indigo-600" : "text-slate-400"}`}
-                      >
-                        Max {a.max} marks
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+                        <p
+                          className={`text-sm font-semibold ${on ? "text-indigo-600" : "text-slate-700"}`}
+                        >
+                          {a.name}
+                        </p>
+                        <p
+                          className={`text-xs mt-0.5 ${on ? "text-indigo-600" : "text-slate-400"}`}
+                        >
+                          Max {a.max_score} marks
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {existingRecord && (
-              <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-indigo-50">
-                <AlertCircle size={14} className="text-indigo-500 shrink-0" />
-                <p className="text-xs text-indigo-700">
-                  A record already exists for this selection. Proceeding will
-                  update it.
-                </p>
-              </div>
-            )}
-
             <button
+              disabled={!assessmentId || classAssessments.length === 0}
               onClick={() => {
                 setGrades({});
                 setStep("enter");
               }}
-              className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+              className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Enter Grades <ChevronRight size={15} />
             </button>
           </div>
-
-          {gradeRecords.length > 0 && (
-            <div className="bg-white rounded-xl p-5 border border-slate-200">
-              <h3 className="font-semibold mb-3 text-slate-900">
-                Recent Grade Records
-              </h3>
-              <div className="space-y-2">
-                {gradeRecords
-                  .slice()
-                  .reverse()
-                  .slice(0, 5)
-                  .map((r) => (
-                    <button
-                      key={r.id}
-                      onClick={() => {
-                        setClassId(r.classId);
-                        setSubject(r.subject);
-                        setTerm(r.term);
-                        setSession(r.session);
-                        setAssessmentId("ca1");
-                        const loadedGrades: GradeMap = {};
-                        r.grades.forEach((g) => {
-                          loadedGrades[g.studentId] = g.ca1 !== 0 ? g.ca1 : "";
-                        });
-                        setGrades(loadedGrades);
-                        setStep("enter");
-                      }}
-                      className="w-full text-left flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          {r.className} {r.subject}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {r.term} · {r.session} ·{" "}
-                          {new Date(r.savedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${r.submitted ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
-                      >
-                        {r.submitted ? "Submitted" : "Draft"}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
         </>
       )}
 
-      {activeTab === "grading" && step === "enter" && (
+      {activeTab === "grading" && step === "enter" && currentAssessment && (
         <div className="space-y-5">
           <div className="flex items-center gap-3 flex-wrap bg-white p-3 rounded-xl border border-slate-200">
             <button
               onClick={() => setStep("select")}
               className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              ← Change selection
+              Change selection
             </button>
             <span className="text-slate-300">·</span>
             <span className="text-sm font-medium text-slate-700">
-              {cls.name} · {subject} · {assessment.label} · {term} {session}
+              {uniqueClasses.find((c) => c.class_id === classId)?.class_name} ·{" "}
+              {
+                subjectsForClass.find((s) => s.subject_id === subjectId)
+                  ?.subject_name
+              }{" "}
+              · {currentAssessment.name}
             </span>
             <span className="ml-auto px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-              Max {assessment.max} marks / student
+              Max {currentAssessment.max_score} marks / student
             </span>
           </div>
 
           <div className="flex items-start gap-3 p-4 rounded-xl bg-indigo-50 border border-indigo-200">
             <FileText size={16} className="text-indigo-600 mt-0.5 shrink-0" />
             <p className="text-sm text-indigo-900">
-              Enter the {assessment.label} score for each students in the table
-              below.
+              Enter the {currentAssessment.name} score for each student in the
+              table below.
             </p>
           </div>
 
           <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Student
-                  </th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Score / {assessment.max}
-                  </th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    %
-                  </th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Grade
-                  </th>
-                  <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Remark
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {cls.students.map((student) => {
-                  const val = grades[student.id];
-                  const pct =
-                    val !== "" && val !== undefined
-                      ? Math.round((Number(val) / assessment.max) * 100)
-                      : null;
-                  const gs = pct !== null ? getNigerianGradeShort(pct) : null;
-                  return (
-                    <tr
-                      key={student.id}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white ${student.color}`}
-                          >
-                            <span className="font-bold text-[11px]">
-                              {student.initials}
-                            </span>
+            {apiLoading && !rosterData ? (
+              <div className="p-10 text-center text-slate-500 flex flex-col items-center">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-3" />
+                Loading student roster...
+              </div>
+            ) : rosterData?.students.length === 0 ? (
+              <div className="p-10 text-center text-slate-500">
+                No students enrolled in this class.
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Student
+                    </th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Score / {currentAssessment.max_score}
+                    </th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      %
+                    </th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Grade
+                    </th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Remark
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {rosterData?.students.map((student) => {
+                    const val = grades[student.student_id];
+                    const pct =
+                      val !== "" && val !== undefined
+                        ? Math.round(
+                            (Number(val) / currentAssessment.max_score) * 100,
+                          )
+                        : null;
+                    const gs = pct !== null ? getNigerianGradeShort(pct) : null;
+                    return (
+                      <tr
+                        key={student.student_id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-5 py-3">
+                          <div className="flex flex-col">
+                            <p className="text-sm font-medium text-slate-900">
+                              {student.first_name} {student.last_name}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {student.admission_number}
+                            </p>
                           </div>
-                          <p className="text-sm font-medium text-slate-900">
-                            {student.name}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <input
-                          type="number"
-                          min={0}
-                          max={assessment.max}
-                          value={val ?? ""}
-                          onChange={(e) =>
-                            updateGrade(student.id, e.target.value)
-                          }
-                          placeholder=" "
-                          className="w-20 text-center px-2 py-1.5 rounded-lg text-sm font-bold border-2 border-slate-200 outline-none text-slate-900 focus:border-indigo-600 focus:ring-0 transition-colors"
-                        />
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        {pct !== null ? (
+                        </td>
+                        <td className="px-5 py-3 text-center">
+                          <input
+                            type="number"
+                            min={0}
+                            max={currentAssessment.max_score}
+                            value={val ?? ""}
+                            onChange={(e) =>
+                              updateGrade(student.student_id, e.target.value)
+                            }
+                            placeholder="-"
+                            className="w-20 text-center px-2 py-1.5 rounded-lg text-sm font-bold border-2 border-slate-200 outline-none text-slate-900 focus:border-indigo-600 focus:ring-0 transition-colors"
+                          />
+                        </td>
+                        <td className="px-5 py-3 text-center">
+                          {pct !== null ? (
+                            <span
+                              className={`text-sm font-semibold ${pct >= 50 ? "text-emerald-500" : "text-red-500"}`}
+                            >
+                              {pct}%
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-center">
+                          {gs ? (
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${gs.bg} ${gs.color}`}
+                            >
+                              {gs.l}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-center">
                           <span
-                            className={`text-sm font-semibold ${pct >= 50 ? "text-emerald-500" : "text-red-500"}`}
+                            className={`text-xs font-semibold ${pct !== null ? (pct >= 50 ? "text-emerald-500" : "text-red-500") : "text-slate-300"}`}
                           >
-                            {pct}%
+                            {pct !== null ? (pct >= 50 ? "Pass" : "Fail") : ""}
                           </span>
-                        ) : (
-                          <span className="text-slate-300"> </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        {gs ? (
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${gs.bg} ${gs.color}`}
-                          >
-                            {gs.l}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300"> </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <span
-                          className={`text-xs font-semibold ${pct !== null ? (pct >= 50 ? "text-emerald-500" : "text-red-500") : "text-slate-300"}`}
-                        >
-                          {pct !== null ? (pct >= 50 ? "Pass" : "Fail") : ""}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {allEntered && avg !== null && (
@@ -597,34 +504,34 @@ export default function TeacherGrades() {
           )}
 
           {savedMsg && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-              <CheckCircle size={18} className="text-emerald-500 shrink-0" />
-              <p className="text-sm font-semibold text-emerald-800">
-                {savedMsg}
-              </p>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 animate-in fade-in zoom-in duration-200">
+              <CheckCircle className="text-emerald-500" size={20} />
+              <p className="text-sm font-medium text-emerald-800">{savedMsg}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200">
             <button
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border-2 border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors disabled:opacity-50"
             >
-              <Save size={16} /> Save Draft
+              <Save size={16} />
+              Save Draft
             </button>
             <button
               onClick={() => handleSave(true)}
-              disabled={!allEntered || saving}
-              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-colors ${allEntered ? "bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/10" : "bg-slate-300 cursor-not-allowed"}`}
+              disabled={saving || !allEntered}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
-              <CheckCircle size={16} /> Submit Record
+              {saving ? (
+                <Loader2 className="animate-spin w-4 h-4" />
+              ) : (
+                <CheckCircle size={16} />
+              )}
+              Submit to Admin
             </button>
           </div>
-          <p className="text-xs text-center font-medium text-slate-400">
-            Save as draft to continue later. Submit only after all scores are
-            verified from paper scripts.
-          </p>
         </div>
       )}
 

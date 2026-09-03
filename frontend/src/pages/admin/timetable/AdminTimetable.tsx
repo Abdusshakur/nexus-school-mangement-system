@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  Edit3,
-  X,
-  Save,
-  Trash2,
-  Plus,
-} from "lucide-react";
+import { ChevronDown, Edit3, X, Save, Trash2, Plus } from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { Spinner } from "../../../components/ui/Spinner";
 import { getSubjectColors } from "../../../utils/colors";
@@ -19,88 +12,103 @@ import { useTeacherStore } from "../../../store/teacher.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { useSessionStore } from "../../../store/session.store";
 import { toast } from "sonner";
+import { ManagePeriodsModal, type PeriodItem } from "./ManagePeriodsModal";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const ENUM_DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
 
-const PERIODS = [
+const INITIAL_PERIODS: PeriodItem[] = [
   {
     id: 1,
     label: "Period 1",
-    time: "8:00 – 8:50 AM",
     start: "08:00:00",
     end: "08:50:00",
   },
   {
     id: 2,
     label: "Period 2",
-    time: "9:00 – 9:50 AM",
     start: "09:00:00",
     end: "09:50:00",
   },
   {
     id: 3,
     label: "Period 3",
-    time: "10:00 – 10:50 AM",
     start: "10:00:00",
     end: "10:50:00",
   },
   {
     id: 4,
     label: "Break",
-    time: "11:00 – 11:30 AM",
     start: "11:00:00",
     end: "11:30:00",
   },
   {
     id: 5,
     label: "Period 4",
-    time: "11:30 AM – 12:20 PM",
     start: "11:30:00",
     end: "12:20:00",
   },
   {
     id: 6,
     label: "Period 5",
-    time: "12:30 – 1:20 PM",
     start: "12:30:00",
     end: "13:20:00",
   },
   {
     id: 7,
     label: "Lunch",
-    time: "1:20 – 2:00 PM",
     start: "13:20:00",
     end: "14:00:00",
   },
   {
     id: 8,
     label: "Period 6",
-    time: "2:00 – 2:50 PM",
     start: "14:00:00",
     end: "14:50:00",
   },
   {
     id: 9,
     label: "Period 7",
-    time: "3:00 – 3:50 PM",
     start: "15:00:00",
     end: "15:50:00",
   },
 ];
-const BREAK_IDS = new Set([4, 7]);
+const INITIAL_BREAK_IDS = new Set([4, 7]);
+
+function formatTime(timeStr?: string) {
+  if (!timeStr) return "TBD";
+  try {
+    const [h, m] = timeStr.split(":");
+    let hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${m} ${ampm}`;
+  } catch (e) {
+    return timeStr;
+  }
+}
 
 function cellColor(sub: string) {
   return getSubjectColors(sub);
 }
 
 export function AdminTimetable() {
-  const { timetableGrid, loading: timetableLoading, fetchTerms, fetchAllTimetables, saveTimetableCell } =
-    useTimetableStore();
+  const {
+    timetableGrid,
+    loading: timetableLoading,
+    fetchTerms,
+    fetchAllTimetables,
+    saveTimetableCell,
+  } = useTimetableStore();
   const { classes, loading: classLoading, loadClasses } = useClassStore();
   const { teachers, fetchTeachers } = useTeacherStore();
   const { subjects, loadSubjects } = useSubjectStore();
   const { academicSessions, fetchSessions } = useSessionStore();
+
+  const [periods, setPeriods] = useState<PeriodItem[]>(INITIAL_PERIODS);
+  const [breakIds, setBreakIds] = useState<Set<number>>(INITIAL_BREAK_IDS);
+  const [isManagePeriodsOpen, setIsManagePeriodsOpen] = useState(false);
 
   const [selectedTermId, setSelectedTermId] = useState("");
   const [activeDay, setActiveDay] = useState(0);
@@ -114,8 +122,6 @@ export function AdminTimetable() {
   const [editSubject, setEditSubject] = useState("");
   const [editTeacher, setEditTeacher] = useState("");
   const [editRoom, setEditRoom] = useState("");
-  const [editStartTime, setEditStartTime] = useState("");
-  const [editEndTime, setEditEndTime] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -143,14 +149,11 @@ export function AdminTimetable() {
   const handleCellClick = (classId: string, p: number) => {
     const cellKey = `${classId}-${activeDay}-${p}`;
     const existing = timetableGrid[cellKey];
-    const periodData = PERIODS.find((per) => per.id === p);
 
     setEditCell({ classId, period: p, cellKey });
     setEditSubject(existing?.subjectId || existing?.subject || "");
     setEditTeacher(existing?.teacherId || "");
     setEditRoom(existing?.room || "");
-    setEditStartTime(existing?.startTime || periodData?.start || "");
-    setEditEndTime(existing?.endTime || periodData?.end || "");
   };
 
   const handleSaveCell = async () => {
@@ -174,7 +177,7 @@ export function AdminTimetable() {
         room: editRoom || undefined,
       };
 
-      const period = PERIODS.find((p) => p.id === editCell.period);
+      const period = periods.find((p) => p.id === editCell.period);
       if (!period || !period.start || !period.end) {
         throw new Error("Invalid period selected");
       }
@@ -184,15 +187,17 @@ export function AdminTimetable() {
         editCell.classId,
         activeDay,
         ENUM_DAYS[activeDay],
-        editStartTime || period.start,
-        editEndTime || period.end,
+        period.start,
+        period.end,
         editCell.period,
         cell,
       );
       toast.success("Lesson assigned successfully");
       setEditCell(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save assignment");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save assignment",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -207,7 +212,7 @@ export function AdminTimetable() {
 
     setIsSaving(true);
     try {
-      const period = PERIODS.find((p) => p.id === editCell.period);
+      const period = periods.find((p) => p.id === editCell.period);
       if (!period || !period.start || !period.end) {
         throw new Error("Invalid period selected");
       }
@@ -225,7 +230,9 @@ export function AdminTimetable() {
       toast.success("Lesson cleared");
       setEditCell(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to clear assignment");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to clear assignment",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -295,7 +302,13 @@ export function AdminTimetable() {
           <div className="px-6 py-4 text-sm font-semibold flex items-center gap-2 text-slate-900">
             {DAYS[activeDay]}'s Schedule
           </div>
-          <div className="ml-auto px-4">
+          <div className="ml-auto px-4 flex items-center gap-3">
+            <button
+              onClick={() => setIsManagePeriodsOpen(true)}
+              className="text-xs font-medium text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              Manage Period Schedule
+            </button>
             <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600">
               <Edit3 size={12} /> Master Editing
             </span>
@@ -325,84 +338,104 @@ export function AdminTimetable() {
                   <>
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                       <tr key={i}>
-                        <td className="pr-2 py-3"><Skeleton className="h-6 w-16" /></td>
-                        {classes.length > 0 ? (
-                          classes.map((c) => (
-                            <td key={c.id} className="p-1"><Skeleton className="h-[76px] w-full rounded-xl" /></td>
-                          ))
-                        ) : (
-                          [1, 2, 3].map((j) => (
-                            <td key={j} className="p-1"><Skeleton className="h-[76px] w-full rounded-xl" /></td>
-                          ))
-                        )}
+                        <td className="pr-2 py-3">
+                          <Skeleton className="h-6 w-16" />
+                        </td>
+                        {classes.length > 0
+                          ? classes.map((c) => (
+                              <td key={c.id} className="p-1">
+                                <Skeleton className="h-[76px] w-full rounded-xl" />
+                              </td>
+                            ))
+                          : [1, 2, 3].map((j) => (
+                              <td key={j} className="p-1">
+                                <Skeleton className="h-[76px] w-full rounded-xl" />
+                              </td>
+                            ))}
                       </tr>
                     ))}
                   </>
-                ) : PERIODS.map((p) => {
-                  const isBreak = BREAK_IDS.has(p.id);
-                  return (
-                    <tr key={p.id}>
-                      <td className="align-middle pr-2 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                        <p className="text-[11px] font-semibold text-slate-700">
-                          {p.label}
-                        </p>
-                        <p className="text-[10px] text-slate-400">{p.time}</p>
-                      </td>
-                      {isBreak ? (
-                        <td colSpan={classes.length} className="p-1">
-                          <div className="bg-slate-100 rounded-xl px-3 py-2 text-center shadow-inner">
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                              {p.label}
-                            </p>
-                          </div>
-                        </td>
-                      ) : (
-                        classes.map((c) => {
-                          const dpKey = `${c.id}-${activeDay}-${p.id}`;
-                          const cell = timetableGrid[dpKey];
+                ) : (
+                  periods.map((p) => {
+                    const isBreak = breakIds.has(p.id);
 
-                          return (
-                            <td
-                              key={c.id}
-                              className="p-1 align-top cursor-pointer"
-                              onClick={() => handleCellClick(c.id, p.id)}
-                            >
-                              {!cell ? (
-                                <div className="group transition-all hover:bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl min-h-[70px]">
-                                  <Plus
-                                    size={16}
-                                    className="text-slate-300 group-hover:text-indigo-400 transition-colors"
-                                  />
-                                </div>
-                              ) : (
-                                <div
-                                  className={`group relative transition-all hover:shadow-md ${cellColor(cell.subject).bg} border-2 ${cellColor(cell.subject).border} rounded-xl px-2.5 py-2 min-h-[70px]`}
-                                >
-                                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded p-1">
-                                    <Edit3
-                                      size={10}
-                                      className="text-slate-600"
+                    // Dynamically resolve time based on the first cell that has it, or fallback to default
+                    let dynamicTime = `${formatTime(p.start)} - ${formatTime(p.end)}`;
+                    for (const c of classes) {
+                      const dpKey = `${c.id}-${activeDay}-${p.id}`;
+                      const cell = timetableGrid[dpKey];
+                      if (cell && cell.startTime && cell.endTime) {
+                        dynamicTime = `${formatTime(cell.startTime)} - ${formatTime(cell.endTime)}`;
+                        break;
+                      }
+                    }
+
+                    return (
+                      <tr key={p.id}>
+                        <td className="align-middle pr-2 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                          <p className="text-[11px] font-semibold text-slate-700">
+                            {p.label}
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {dynamicTime}
+                          </p>
+                        </td>
+                        {isBreak ? (
+                          <td colSpan={classes.length} className="p-1">
+                            <div className="bg-slate-100 rounded-xl px-3 py-2 text-center shadow-inner">
+                              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                                {p.label}
+                              </p>
+                            </div>
+                          </td>
+                        ) : (
+                          classes.map((c) => {
+                            const dpKey = `${c.id}-${activeDay}-${p.id}`;
+                            const cell = timetableGrid[dpKey];
+
+                            return (
+                              <td
+                                key={c.id}
+                                className="p-1 align-top cursor-pointer"
+                                onClick={() => handleCellClick(c.id, p.id)}
+                              >
+                                {!cell ? (
+                                  <div className="group transition-all hover:bg-slate-50 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl min-h-[70px]">
+                                    <Plus
+                                      size={16}
+                                      className="text-slate-300 group-hover:text-indigo-400 transition-colors"
                                     />
                                   </div>
-                                  <p
-                                    className={`text-[11px] font-bold ${cellColor(cell.subject).text} leading-tight`}
+                                ) : (
+                                  <div
+                                    className={`group relative transition-all hover:shadow-md ${cellColor(cell.subject).bg} border-2 ${cellColor(cell.subject).border} rounded-xl px-2.5 py-2 min-h-[70px]`}
                                   >
-                                    {cell.subject}
-                                  </p>
-                                  <p
-                                    className={`text-[10px] ${cellColor(cell.subject).text} opacity-80 mt-1`}
-                                  >
-                                    {cell.teacherName}
-                                  </p>
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })
-                      )}
-                    </tr>
-                  );
-                })}
+                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded p-1">
+                                      <Edit3
+                                        size={10}
+                                        className="text-slate-600"
+                                      />
+                                    </div>
+                                    <p
+                                      className={`text-[11px] font-bold ${cellColor(cell.subject).text} leading-tight`}
+                                    >
+                                      {cell.subject}
+                                    </p>
+                                    <p
+                                      className={`text-[10px] ${cellColor(cell.subject).text} opacity-80 mt-1`}
+                                    >
+                                      {cell.teacherName}
+                                    </p>
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })
+                        )}
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -416,7 +449,7 @@ export function AdminTimetable() {
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
               <h2 className="font-bold text-[17px] text-slate-900">
                 {DAYS[activeDay]} -{" "}
-                {PERIODS.find((p) => p.id === editCell.period)?.label}
+                {periods.find((p) => p.id === editCell.period)?.label}
               </h2>
               <button
                 onClick={() => setEditCell(null)}
@@ -443,24 +476,43 @@ export function AdminTimetable() {
                   className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-indigo-500 transition-colors"
                 >
                   <option value="">Select a subject...</option>
-                  
+
                   {(() => {
-                    const selectedTeacher = teachers.find(t => t.id === editTeacher);
-                    const assigned = subjects.filter(s => selectedTeacher?.subjects.includes(s.name));
-                    const others = subjects.filter(s => !selectedTeacher?.subjects.includes(s.name));
+                    const selectedTeacher = teachers.find(
+                      (t) => t.id === editTeacher,
+                    );
+                    const assigned = subjects.filter((s) =>
+                      selectedTeacher?.subjects.includes(s.name),
+                    );
+                    const others = subjects.filter(
+                      (s) => !selectedTeacher?.subjects.includes(s.name),
+                    );
 
                     if (!selectedTeacher) {
-                      return subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>);
+                      return subjects.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ));
                     }
 
                     if (assigned.length === 0) {
                       return (
                         <>
-                          <optgroup label="No subjects assigned" className="text-red-500">
-                            <option disabled value="warning">Update profile to assign</option>
+                          <optgroup
+                            label="No subjects assigned"
+                            className="text-red-500"
+                          >
+                            <option disabled value="warning">
+                              Update profile to assign
+                            </option>
                           </optgroup>
                           <optgroup label="All Subjects">
-                            {others.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {others.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
                           </optgroup>
                         </>
                       );
@@ -469,22 +521,32 @@ export function AdminTimetable() {
                     return (
                       <>
                         <optgroup label="Assigned to this Teacher">
-                          {assigned.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          {assigned.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
                         </optgroup>
                         <optgroup label="Other Subjects">
-                          {others.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          {others.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
                         </optgroup>
                       </>
                     );
                   })()}
-                  
+
                   {/* Fallback to some defaults if backend empty */}
                   {subjects.length === 0 &&
-                    ["Mathematics", "English", "Science", "History"].map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
+                    ["Mathematics", "English", "Science", "History"].map(
+                      (s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ),
+                    )}
                 </select>
               </div>
 
@@ -499,22 +561,45 @@ export function AdminTimetable() {
                 >
                   <option value="">Assign a teacher...</option>
                   {(() => {
-                    const selectedSubjectObj = subjects.find(s => s.id === editSubject);
-                    const assigned = teachers.filter(t => selectedSubjectObj && t.subjects.includes(selectedSubjectObj.name));
-                    const others = teachers.filter(t => !selectedSubjectObj || !t.subjects.includes(selectedSubjectObj.name));
+                    const selectedSubjectObj = subjects.find(
+                      (s) => s.id === editSubject,
+                    );
+                    const assigned = teachers.filter(
+                      (t) =>
+                        selectedSubjectObj &&
+                        t.subjects.includes(selectedSubjectObj.name),
+                    );
+                    const others = teachers.filter(
+                      (t) =>
+                        !selectedSubjectObj ||
+                        !t.subjects.includes(selectedSubjectObj.name),
+                    );
 
                     if (!selectedSubjectObj) {
-                      return teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>);
+                      return teachers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ));
                     }
 
                     if (assigned.length === 0) {
                       return (
                         <>
-                          <optgroup label="No teachers assigned" className="text-red-500">
-                            <option disabled value="warning">Assign in teacher profiles</option>
+                          <optgroup
+                            label="No teachers assigned"
+                            className="text-red-500"
+                          >
+                            <option disabled value="warning">
+                              Assign in teacher profiles
+                            </option>
                           </optgroup>
                           <optgroup label="All Teachers">
-                            {others.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            {others.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name}
+                              </option>
+                            ))}
                           </optgroup>
                         </>
                       );
@@ -522,54 +607,26 @@ export function AdminTimetable() {
 
                     return (
                       <>
-                        <optgroup label={`Assigned to ${selectedSubjectObj.name}`}>
-                          {assigned.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        <optgroup
+                          label={`Assigned to ${selectedSubjectObj.name}`}
+                        >
+                          {assigned.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
                         </optgroup>
                         <optgroup label="Other Teachers">
-                          {others.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          {others.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
                         </optgroup>
                       </>
                     );
                   })()}
                 </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={editStartTime}
-                    onChange={(e) => setEditStartTime(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-indigo-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={editEndTime}
-                    onChange={(e) => setEditEndTime(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-indigo-500 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Room (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={editRoom}
-                  onChange={(e) => setEditRoom(e.target.value)}
-                  placeholder="e.g. Room 101"
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-indigo-500 transition-colors"
-                />
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-slate-100">
@@ -604,6 +661,14 @@ export function AdminTimetable() {
           </div>
         </div>
       )}
+      <ManagePeriodsModal
+        isOpen={isManagePeriodsOpen}
+        onClose={() => setIsManagePeriodsOpen(false)}
+        periods={periods}
+        setPeriods={setPeriods}
+        breakIds={breakIds}
+        setBreakIds={setBreakIds}
+      />
     </div>
   );
 }

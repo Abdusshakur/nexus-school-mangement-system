@@ -388,7 +388,7 @@ export function StudentDetailPage() {
                   <input
                     type="text"
                     required
-                    value={editForm.firstName}
+                    value={editForm.firstName || ""}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
@@ -405,7 +405,7 @@ export function StudentDetailPage() {
                   <input
                     type="text"
                     required
-                    value={editForm.lastName}
+                    value={editForm.lastName || ""}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
@@ -423,7 +423,7 @@ export function StudentDetailPage() {
                     Gender
                   </label>
                   <select
-                    value={editForm.gender}
+                    value={editForm.gender || ""}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
@@ -441,7 +441,7 @@ export function StudentDetailPage() {
                     Class/Grade
                   </label>
                   <select
-                    value={editForm.className}
+                    value={editForm.className || ""}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
@@ -467,7 +467,7 @@ export function StudentDetailPage() {
                 <input
                   type="text"
                   required
-                  value={editForm.phoneNumber}
+                  value={editForm.phoneNumber || ""}
                   onChange={(e) =>
                     setEditForm((prev) => ({
                       ...prev,
@@ -485,7 +485,7 @@ export function StudentDetailPage() {
                 <textarea
                   required
                   rows={2}
-                  value={editForm.address}
+                  value={editForm.address || ""}
                   onChange={(e) =>
                     setEditForm((prev) => ({
                       ...prev,

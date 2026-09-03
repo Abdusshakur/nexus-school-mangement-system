@@ -166,8 +166,10 @@ export interface GradingRuleUpdate {
   remark?: string;
 }
 
-// NOTE: Missing GET /rules endpoint in spec. We assume the backend might add it, 
-// or returns rules nested in GradingScaleResponse. If nested, we won't need GET.
+export async function fetchGradingRules(scaleId: string): Promise<GradingRuleResponse[]> {
+  return apiClient.get(`/results/grading-scales/${scaleId}/rules`);
+}
+
 export async function addGradingRule(scaleId: string, payload: GradingRuleCreate): Promise<GradingRuleResponse> {
   return apiClient.post(`/results/grading-scales/${scaleId}/rules`, payload);
 }

@@ -198,7 +198,17 @@ export const useTimetableStore = create<TimetableState>()(
               else if (time === "14:00:00") pIndex = 8;
               else if (time === "15:00:00") pIndex = 9;
 
-              const key = `${entry.day_of_week}-${pIndex}`;
+              const dayStr = entry.day_of_week || "MONDAY";
+              const dayMap: Record<string, number> = {
+                MONDAY: 0,
+                TUESDAY: 1,
+                WEDNESDAY: 2,
+                THURSDAY: 3,
+                FRIDAY: 4,
+              };
+              const dIndex = dayMap[dayStr] ?? 0;
+
+              const key = `${dIndex}-${pIndex}`;
               grid[key] = {
                 subject: entry.subject_name || entry.subject_id,
                 subjectId: entry.subject_id,

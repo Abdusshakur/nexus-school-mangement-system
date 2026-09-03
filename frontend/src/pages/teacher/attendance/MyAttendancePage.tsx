@@ -23,8 +23,9 @@ import {
   type TeacherAttendanceHistoryItem,
 } from "../../../api/teacherContext";
 import { QRScannerModal } from "../../../components/dashboard/QRScannerModal";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
-// Time formater
+// Time formatter
 const formatTime = (isoString?: string) => {
   if (!isoString) return "--:--";
   return new Date(isoString).toLocaleTimeString([], {
@@ -63,6 +64,7 @@ function formatDateDisplay(iso: string): string {
 
 export default function MyAttendancePage() {
   const [todayStatus, setTodayStatus] = useState<any>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
   const [scannerAction, setScannerAction] = useState<
     "CHECK_IN" | "CHECK_OUT" | null
   >(null);
@@ -102,10 +104,13 @@ export default function MyAttendancePage() {
 
   const fetchTodayStatus = async () => {
     try {
+      setLoadingStatus(true);
       const data = await getTeacherTodayStatus();
       setTodayStatus(data);
     } catch (err) {
       console.error("Failed to fetch today status", err);
+    } finally {
+      setLoadingStatus(false);
     }
   };
 
@@ -213,6 +218,30 @@ export default function MyAttendancePage() {
     todayStatus?.status === "CHECKED_OUT";
   const checkInTimeStr = formatTime(todayStatus?.check_in_at);
   const statusStr = todayStatus?.status === "LATE" ? "Late" : "Present";
+
+  if (loadingStatus) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+
+        <Skeleton className="h-[320px] rounded-2xl w-full" />
+
+        <Skeleton className="h-14 rounded-xl w-full" />
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Skeleton className="h-[104px] rounded-xl" />
+          <Skeleton className="h-[104px] rounded-xl" />
+          <Skeleton className="h-[104px] rounded-xl" />
+          <Skeleton className="h-[104px] rounded-xl" />
+        </div>
+
+        <Skeleton className="h-[400px] rounded-2xl w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

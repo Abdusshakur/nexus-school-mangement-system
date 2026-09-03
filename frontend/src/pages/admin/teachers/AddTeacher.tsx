@@ -263,13 +263,25 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
           assignments.push({ class_id: classId, subject_id: subjectId });
         }
       }
-      
+
       if (assignments.length > 0) {
         await assignTeacherContexts(teacherData.id, assignments);
       }
 
-      const colors = ["bg-indigo-500", "bg-emerald-500", "bg-rose-500", "bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500"];
-      const colorIndex = teacherData.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+      const colors = [
+        "bg-indigo-500",
+        "bg-emerald-500",
+        "bg-rose-500",
+        "bg-blue-500",
+        "bg-purple-500",
+        "bg-amber-500",
+        "bg-cyan-500",
+        "bg-pink-500",
+      ];
+      const colorIndex =
+        teacherData.id
+          .split("")
+          .reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
 
       // Construct a mapped teacher object for the confirm screen
       const newTeacher: Teacher = {
@@ -288,7 +300,9 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
         subjects: form.subjects,
         status: "Active",
         defaultPassword: "Teacher@Nexus2026",
-        avatar: formatParentInitials(`${teacherData.first_name} ${teacherData.last_name}`),
+        avatar: formatParentInitials(
+          `${teacherData.first_name} ${teacherData.last_name}`,
+        ),
         avatarColor: colors[colorIndex],
         experience: "0 Years",
         classrooms: form.classes.length,
@@ -526,7 +540,7 @@ export function AddTeacherModal({ onClose }: AddTeacherModalProps) {
               onClick={() => setStep("info")}
               className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
             >
-              ← Back
+              Back
             </button>
             <button
               type="button"

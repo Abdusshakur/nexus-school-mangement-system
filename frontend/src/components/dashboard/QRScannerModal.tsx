@@ -15,6 +15,28 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 }) => {
   const [error, setError] = useState<string | null>(null);
 
+  React.useEffect(() => {
+
+    window.history.pushState({ qrModalOpen: true }, "");
+
+    const handlePopState = () => {
+
+
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+
+
+      if (window.history.state?.qrModalOpen) {
+        window.history.back();
+      }
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
