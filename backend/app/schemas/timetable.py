@@ -3,7 +3,6 @@ from typing import List
 from datetime import time
 from uuid import UUID
 from backend.app.models import DayOfWeek
-
 class TimetableEntryCreate(BaseModel):
     term_id: UUID  
     class_id: UUID
@@ -18,6 +17,17 @@ class TimetableEntryCreate(BaseModel):
         if self.start_time >= self.end_time:
             raise ValueError("Start time must be strictly before end time.")
         return self
+
+
+class TimetableEntryUpdate(BaseModel):
+    """Fields that may be changed on one timetable entry."""
+    term_id: UUID | None = None
+    class_id: UUID | None = None
+    subject_id: UUID | None = None
+    teacher_id: UUID | None = None
+    day_of_week: DayOfWeek | None = None
+    start_time: time | None = None
+    end_time: time | None = None
 
 # ------------------------------------------------------------------
 # NEW: Optimized Schema for Bulk Inserts

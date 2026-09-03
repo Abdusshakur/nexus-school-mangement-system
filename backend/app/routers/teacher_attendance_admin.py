@@ -37,6 +37,7 @@ from backend.app.services.teacher_attendance_service import (
     attendance_duration_minutes,
     get_attendance_settings,
 )
+from backend.app.services.timezone_service import get_school_now, get_school_today
 
 
 router = APIRouter(tags=["Teacher Attendance - Administration"])
@@ -115,7 +116,7 @@ def get_current_qr(
 ):
     statement = select(AttendanceQRSession).where(
         AttendanceQRSession.school_id == context.school_id,
-        AttendanceQRSession.attendance_date == date.today(),
+        AttendanceQRSession.attendance_date == get_school_today(context.school_id, session),
         AttendanceQRSession.is_active.is_(True),
     )
     if qr_type:
@@ -207,11 +208,12 @@ def process_missed_attendance(
     context: CurrentContext = Depends(require_permission("attendance:approve")),
     session: Session = Depends(get_session),
 ):
-    target_date = attendance_date or date.today()
+    school_today = get_school_today(context.school_id, session)
+    target_date = attendance_date or school_today
     settings = get_attendance_settings(context.school_id, session)
     if not settings:
         raise HTTPException(status_code=503, detail="Teacher attendance configuration is not available for this school.")
-    if target_date == date.today() and datetime.now(timezone.utc).time().replace(tzinfo=None) <= settings.check_out_end:
+    if target_date == school_today and get_school_now(context.school_id, session).time().replace(tzinfo=None) <= settings.check_out_end:
         raise HTTPException(status_code=400, detail="Today's attendance cannot be processed before the checkout window closes.")
 
     teachers = session.exec(select(TeacherProfile, User).join(
@@ -400,7 +402,7 @@ def generate_attendance_qr(
     context: CurrentContext = Depends(require_permission("admin:write")),
     session: Session = Depends(get_session),
 ):
-    today = date.today()
+    today = get_school_today(context.school_id, session)
     now = datetime.now(timezone.utc)
     settings = get_attendance_settings(context.school_id, session)
     if not settings:

@@ -152,6 +152,8 @@ class School(SQLModel, table=True):
     city: Optional[str] = None
     state: Optional[str] = None
     country: str = Field(default="Nigeria")
+    # IANA timezone used for attendance dates and configured time windows.
+    timezone: str = Field(default="Africa/Lagos", index=True)
     
     # System Data
     is_active: bool = Field(default=True)
