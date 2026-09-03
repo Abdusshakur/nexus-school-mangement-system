@@ -194,7 +194,7 @@ export default function Register() {
                   type="text"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  placeholder="e.g. John Doe"
+                  placeholder="e.g. Dr. John Makolo"
                   required
                   className="w-full border border-slate-200 rounded-lg px-4 py-3 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-white font-medium"
                 />
