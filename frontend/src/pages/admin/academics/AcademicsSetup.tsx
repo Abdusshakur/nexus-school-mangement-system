@@ -4,15 +4,16 @@ import {
   Users,
   Plus,
   Trash2,
-  AlertCircle,
   X,
   AlertTriangle,
+  CheckCircle,
 } from "lucide-react";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
 import { toast } from "sonner";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ScoreApprovalsTab } from "./ScoreApprovalsTab";
 
 function Modal({
   title,
@@ -42,7 +43,7 @@ function Modal({
 }
 
 export function AcademicsSetup() {
-  const [activeTab, setActiveTab] = useState<"classes" | "subjects">("classes");
+  const [activeTab, setActiveTab] = useState<"classes" | "subjects" | "approvals">("classes");
 
   const {
     classes,
@@ -164,6 +165,17 @@ export function AcademicsSetup() {
               <BookOpen size={18} />
               Subjects
             </button>
+            <button
+              onClick={() => setActiveTab("approvals")}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                activeTab === "approvals"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-slate-200/50"
+              }`}
+            >
+              <CheckCircle size={18} />
+              Score Approvals
+            </button>
           </nav>
         </div>
 
@@ -174,13 +186,17 @@ export function AcademicsSetup() {
               Manage {activeTab}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              {activeTab === "classes"
-                ? "Add or remove class streams (e.g. JSS 1, SS 3 Science)."
-                : "Add or remove subjects offered in the school."}
+              {activeTab === "classes" && "Add or remove class streams (e.g. JSS 1, SS 3 Science)."}
+              {activeTab === "subjects" && "Add or remove subjects offered in the school."}
+              {activeTab === "approvals" && "Review and approve subject scores submitted by teachers."}
             </p>
           </div>
 
-          <form onSubmit={handleAdd} className="flex gap-3 mb-8">
+          {activeTab === "approvals" ? (
+            <ScoreApprovalsTab />
+          ) : (
+            <>
+              <form onSubmit={handleAdd} className="flex gap-3 mb-8">
             <input
               type="text"
               value={newItemName}
@@ -250,14 +266,18 @@ export function AcademicsSetup() {
               ))}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
-              <AlertCircle size={48} className="mb-4 text-slate-300" />
-              <p className="font-medium text-slate-600">No {activeTab} found</p>
-              <p className="text-sm mt-1 text-center max-w-xs">
-                You haven't added any {activeTab} yet. Use the input above to
-                create one.
-              </p>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-100 rounded-xl border-dashed">
+              <div className="w-16 h-16 rounded-full bg-slate-200/50 flex items-center justify-center mb-4">
+                {activeTab === "classes" ? (
+                  <Users size={24} className="text-slate-400" />
+                ) : (
+                  <BookOpen size={24} className="text-slate-400" />
+                )}
+              </div>
+              <p className="text-slate-500 font-medium">No items found.</p>
             </div>
+          )}
+          </>
           )}
         </div>
       </div>

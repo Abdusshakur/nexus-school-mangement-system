@@ -30,8 +30,11 @@ export async function registerSchoolAdmin(payload: {
   password: string;
   first_name: string;
   last_name: string;
-  school_id: string; // From the user input or a generated UUID
+  school_id: string; // From the user generated UUID
   phone_number?: string;
+  school_name?: string;
+  motto?: string;
+  address?: string;
 }): Promise<any> {
   try {
     const response = await axios.post(`${API_BASE}/auth/register`, {

@@ -1,9 +1,5 @@
 import { useState } from "react";
 import {
-  Building2,
-  Mail,
-  Phone,
-  MapPin,
   CheckCircle2,
   Users,
   CalendarCheck,
@@ -134,15 +130,12 @@ export default function RequestDemo() {
                   School Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Building2 className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                  </div>
                   <input
                     required
                     type="text"
                     value={form.schoolName}
                     onChange={(e) => setField("schoolName", e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     placeholder="e.g. Nexus International Academy"
                   />
                 </div>
@@ -179,15 +172,12 @@ export default function RequestDemo() {
                   Work Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                  </div>
                   <input
                     required
                     type="email"
                     value={form.emailAddress}
                     onChange={(e) => setField("emailAddress", e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     placeholder="contact@school.edu"
                   />
                 </div>
@@ -198,15 +188,12 @@ export default function RequestDemo() {
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Phone className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                  </div>
                   <input
                     required
                     type="tel"
                     value={form.phoneNumber}
                     onChange={(e) => setField("phoneNumber", e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     placeholder="+234 800 000 0000"
                   />
                 </div>
@@ -217,15 +204,12 @@ export default function RequestDemo() {
                   Physical Address <span className="text-red-500">*</span>
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 pt-3.5 pointer-events-none">
-                    <MapPin className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                  </div>
                   <textarea
                     required
                     rows={3}
                     value={form.address}
                     onChange={(e) => setField("address", e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all resize-none font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all resize-none font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal"
                     placeholder="Enter full school address..."
                   />
                 </div>
