@@ -82,6 +82,129 @@ class AssessmentSchemeResponse(BaseModel):
     updated_at: datetime
 
 
+class AssessmentSchemeTemplateCreate(BaseModel):
+    name: str = Field(min_length=1)
+    total_weight: float = Field(default=100.0, ge=0, le=100)
+
+
+class AssessmentSchemeTemplateUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    total_weight: Optional[float] = Field(default=None, ge=0, le=100)
+
+
+class AssessmentSchemeTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    school_id: UUID
+    source_global_template_id: Optional[UUID] = None
+    name: str
+    total_weight: float
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class AssessmentTemplateComponentCreate(BaseModel):
+    name: str = Field(min_length=1)
+    type: AssessmentType = AssessmentType.OTHER
+    max_score: float = Field(gt=0)
+    weight: float = Field(ge=0, le=100)
+    sequence: int = Field(default=1, ge=1)
+    is_required: bool = True
+
+
+class AssessmentTemplateComponentUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    type: Optional[AssessmentType] = None
+    max_score: Optional[float] = Field(default=None, gt=0)
+    weight: Optional[float] = Field(default=None, ge=0, le=100)
+    sequence: Optional[int] = Field(default=None, ge=1)
+    is_required: Optional[bool] = None
+
+
+class AssessmentTemplateComponentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    template_id: UUID
+    name: str
+    type: AssessmentType
+    max_score: float
+    weight: float
+    sequence: int
+    is_required: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class AssessmentSchemeTemplateDetailResponse(AssessmentSchemeTemplateResponse):
+    components: List[AssessmentTemplateComponentResponse] = Field(default_factory=list)
+
+
+class ApplyAssessmentTemplateRequest(BaseModel):
+    academic_session_id: UUID
+    academic_term_id: UUID
+
+
+class ApplyAssessmentTemplateResponse(BaseModel):
+    template_id: UUID
+    academic_session_id: UUID
+    academic_term_id: UUID
+    created: int
+    skipped: int
+
+
+class GlobalAssessmentSchemeTemplateCreate(BaseModel):
+    name: str = Field(min_length=1)
+    total_weight: float = Field(default=100.0, ge=0, le=100)
+
+
+class GlobalAssessmentSchemeTemplateUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    total_weight: Optional[float] = Field(default=None, ge=0, le=100)
+
+
+class GlobalAssessmentSchemeTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    total_weight: float
+    is_active: bool
+    created_by: UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+class GlobalAssessmentTemplateComponentCreate(AssessmentTemplateComponentCreate):
+    pass
+
+
+class GlobalAssessmentTemplateComponentUpdate(AssessmentTemplateComponentUpdate):
+    pass
+
+
+class GlobalAssessmentTemplateComponentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    template_id: UUID
+    name: str
+    type: AssessmentType
+    max_score: float
+    weight: float
+    sequence: int
+    is_required: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class AssignGlobalAssessmentTemplateRequest(BaseModel):
+    school_id: UUID
+    name: Optional[str] = Field(default=None, min_length=1)
+
+
 class GradingScaleCreate(BaseModel):
     name: str = Field(min_length=1)
     academic_session_id: Optional[UUID] = None

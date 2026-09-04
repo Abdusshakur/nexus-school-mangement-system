@@ -5,13 +5,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
-from backend.app.core.auth_utils import CurrentContext, require_permission
+from backend.app.core.auth_utils import CurrentContext, require_permission, require_super_admin
 from backend.app.db.database import get_session
 from backend.app.models import (
     AcademicSession,
     AcademicTerm,
     ActivityLog,
     Assessment,
+    AssessmentSchemeTemplate,
+    AssessmentTemplateComponent,
     AssessmentScore,
     AssessmentScoreStatus,
     AssessmentScheme,
@@ -23,6 +25,8 @@ from backend.app.models import (
     GradingScale,
     GradingScaleRule,
     OfficialResultStatus,
+    PlatformActivityLog,
+    School,
     SchoolClass,
     StudentEnrollment,
     StudentProfile,
@@ -33,6 +37,8 @@ from backend.app.models import (
     TermResult,
     User,
     ResultSubmissionStatus,
+    GlobalAssessmentSchemeTemplate,
+    GlobalAssessmentTemplateComponent,
 )
 from backend.app.schemas.results import (
     AssessmentCreate,
@@ -40,6 +46,22 @@ from backend.app.schemas.results import (
     AssessmentSchemeCreate,
     AssessmentSchemeResponse,
     AssessmentSchemeUpdate,
+    AssessmentSchemeTemplateCreate,
+    AssessmentSchemeTemplateDetailResponse,
+    AssessmentSchemeTemplateResponse,
+    AssessmentSchemeTemplateUpdate,
+    AssessmentTemplateComponentCreate,
+    AssessmentTemplateComponentResponse,
+    AssessmentTemplateComponentUpdate,
+    ApplyAssessmentTemplateRequest,
+    ApplyAssessmentTemplateResponse,
+    AssignGlobalAssessmentTemplateRequest,
+    GlobalAssessmentSchemeTemplateCreate,
+    GlobalAssessmentSchemeTemplateResponse,
+    GlobalAssessmentSchemeTemplateUpdate,
+    GlobalAssessmentTemplateComponentCreate,
+    GlobalAssessmentTemplateComponentResponse,
+    GlobalAssessmentTemplateComponentUpdate,
     AssessmentUpdate,
     GradingScaleCreate,
     GradingScaleResponse,
@@ -68,6 +90,9 @@ entry_router = APIRouter(prefix="/results", tags=["Results - Teacher Entry"])
 review_router = APIRouter(prefix="/results", tags=["Results - Administrative Review"])
 publication_router = APIRouter(prefix="/results", tags=["Results - Publication"])
 reports_router = APIRouter(prefix="/results", tags=["Results - Reports"])
+global_configuration_router = APIRouter(
+    prefix="/admin/results", tags=["Global Results Configuration"]
+)
 
 router = APIRouter()
 router.include_router(configuration_router)
@@ -75,6 +100,7 @@ router.include_router(entry_router)
 router.include_router(review_router)
 router.include_router(publication_router)
 router.include_router(reports_router)
+router.include_router(global_configuration_router)
 
 
 def _get_scheme(scheme_id: UUID, school_id: UUID, session: Session) -> AssessmentScheme:
@@ -180,6 +206,708 @@ def _validate_rule_overlap(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Grade range overlaps with the existing '{rule.grade}' range.",
             )
+
+
+def _get_template(template_id: UUID, school_id: UUID, session: Session) -> AssessmentSchemeTemplate:
+    template = session.exec(select(AssessmentSchemeTemplate).where(
+        AssessmentSchemeTemplate.id == template_id,
+        AssessmentSchemeTemplate.school_id == school_id,
+    )).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Assessment scheme template not found.")
+    return template
+
+
+def _get_global_template(
+    template_id: UUID, session: Session
+) -> GlobalAssessmentSchemeTemplate:
+    template = session.get(GlobalAssessmentSchemeTemplate, template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Global assessment scheme template not found.")
+    return template
+
+
+def _ensure_global_draft(template: GlobalAssessmentSchemeTemplate) -> None:
+    if template.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only inactive global assessment scheme templates can be modified.",
+        )
+
+
+def _validate_global_template_weights(
+    template: GlobalAssessmentSchemeTemplate,
+    components: List[GlobalAssessmentTemplateComponent],
+) -> None:
+    if not components:
+        raise HTTPException(status_code=400, detail="A global template must contain at least one component.")
+    total = sum(component.weight for component in components)
+    if round(total, 6) != round(template.total_weight, 6):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Global template component weights must total {template.total_weight:g}; current total is {total:g}.",
+        )
+
+
+def _record_platform_activity(
+    session: Session, activity_type: str, message: str, performed_by: UUID
+) -> None:
+    session.add(PlatformActivityLog(
+        activity_type=activity_type,
+        message=message,
+        performed_by=performed_by,
+    ))
+
+
+@global_configuration_router.post(
+    "/assessment-templates",
+    response_model=GlobalAssessmentSchemeTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create global assessment template",
+)
+def create_global_assessment_template(
+    payload: GlobalAssessmentSchemeTemplateCreate,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Template name cannot be blank.")
+    if session.exec(select(GlobalAssessmentSchemeTemplate).where(
+        GlobalAssessmentSchemeTemplate.name == name,
+    )).first():
+        raise HTTPException(status_code=400, detail="A global assessment template with this name already exists.")
+    template = GlobalAssessmentSchemeTemplate(
+        name=name,
+        total_weight=payload.total_weight,
+        created_by=context.user_id,
+    )
+    session.add(template)
+    _record_platform_activity(
+        session,
+        "GLOBAL_TEMPLATE_CREATED",
+        f"Created global assessment template '{name}'.",
+        context.user_id,
+    )
+    session.commit()
+    session.refresh(template)
+    return template
+
+
+@global_configuration_router.get(
+    "/assessment-templates",
+    response_model=List[GlobalAssessmentSchemeTemplateResponse],
+    summary="List global assessment templates",
+)
+def list_global_assessment_templates(
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    return session.exec(select(GlobalAssessmentSchemeTemplate).order_by(
+        GlobalAssessmentSchemeTemplate.is_active.desc(),
+        GlobalAssessmentSchemeTemplate.created_at.desc(),
+    )).all()
+
+
+@global_configuration_router.patch(
+    "/assessment-templates/{template_id}",
+    response_model=GlobalAssessmentSchemeTemplateResponse,
+    summary="Update global assessment template",
+)
+def update_global_assessment_template(
+    template_id: UUID,
+    payload: GlobalAssessmentSchemeTemplateUpdate,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    template = _get_global_template(template_id, session)
+    _ensure_global_draft(template)
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="At least one template field is required.")
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        if not update_data["name"]:
+            raise HTTPException(status_code=400, detail="Template name cannot be blank.")
+        duplicate = session.exec(select(GlobalAssessmentSchemeTemplate).where(
+            GlobalAssessmentSchemeTemplate.name == update_data["name"],
+            GlobalAssessmentSchemeTemplate.id != template.id,
+        )).first()
+        if duplicate:
+            raise HTTPException(status_code=400, detail="A global assessment template with this name already exists.")
+    for field, value in update_data.items():
+        setattr(template, field, value)
+    template.updated_at = datetime.now(timezone.utc)
+    session.add(template)
+    session.commit()
+    session.refresh(template)
+    return template
+
+
+@global_configuration_router.post(
+    "/assessment-templates/{template_id}/components",
+    response_model=GlobalAssessmentTemplateComponentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add global assessment template component",
+)
+def create_global_template_component(
+    template_id: UUID,
+    payload: GlobalAssessmentTemplateComponentCreate,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    template = _get_global_template(template_id, session)
+    _ensure_global_draft(template)
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Component name cannot be blank.")
+    if session.exec(select(GlobalAssessmentTemplateComponent).where(
+        GlobalAssessmentTemplateComponent.template_id == template.id,
+        GlobalAssessmentTemplateComponent.name == name,
+    )).first():
+        raise HTTPException(status_code=400, detail="A component with this name already exists in the template.")
+    current_total = sum(item.weight for item in session.exec(select(GlobalAssessmentTemplateComponent).where(
+        GlobalAssessmentTemplateComponent.template_id == template.id,
+    )).all())
+    if current_total + payload.weight > template.total_weight:
+        raise HTTPException(status_code=400, detail="Template component weights cannot exceed the template total weight.")
+    component = GlobalAssessmentTemplateComponent(
+        template_id=template.id,
+        name=name,
+        **payload.model_dump(exclude={"name"}),
+    )
+    session.add(component)
+    session.commit()
+    session.refresh(component)
+    return component
+
+
+@global_configuration_router.get(
+    "/assessment-templates/{template_id}/components",
+    response_model=List[GlobalAssessmentTemplateComponentResponse],
+    summary="List global assessment template components",
+)
+def list_global_template_components(
+    template_id: UUID,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    template = _get_global_template(template_id, session)
+    return session.exec(select(GlobalAssessmentTemplateComponent).where(
+        GlobalAssessmentTemplateComponent.template_id == template.id,
+    ).order_by(GlobalAssessmentTemplateComponent.sequence, GlobalAssessmentTemplateComponent.name)).all()
+
+
+@global_configuration_router.patch(
+    "/template-components/{component_id}",
+    response_model=GlobalAssessmentTemplateComponentResponse,
+    summary="Update global template component",
+)
+def update_global_template_component(
+    component_id: UUID,
+    payload: GlobalAssessmentTemplateComponentUpdate,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    component = session.exec(select(GlobalAssessmentTemplateComponent).where(
+        GlobalAssessmentTemplateComponent.id == component_id,
+    )).first()
+    if not component:
+        raise HTTPException(status_code=404, detail="Global assessment template component not found.")
+    template = _get_global_template(component.template_id, session)
+    _ensure_global_draft(template)
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="At least one component field is required.")
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        if not update_data["name"]:
+            raise HTTPException(status_code=400, detail="Component name cannot be blank.")
+        duplicate = session.exec(select(GlobalAssessmentTemplateComponent).where(
+            GlobalAssessmentTemplateComponent.template_id == template.id,
+            GlobalAssessmentTemplateComponent.name == update_data["name"],
+            GlobalAssessmentTemplateComponent.id != component.id,
+        )).first()
+        if duplicate:
+            raise HTTPException(status_code=400, detail="A component with this name already exists in the template.")
+    if "weight" in update_data:
+        other_total = sum(item.weight for item in session.exec(select(GlobalAssessmentTemplateComponent).where(
+            GlobalAssessmentTemplateComponent.template_id == template.id,
+            GlobalAssessmentTemplateComponent.id != component.id,
+        )).all())
+        if other_total + update_data["weight"] > template.total_weight:
+            raise HTTPException(status_code=400, detail="Template component weights cannot exceed the template total weight.")
+    for field, value in update_data.items():
+        setattr(component, field, value)
+    component.updated_at = datetime.now(timezone.utc)
+    session.add(component)
+    session.commit()
+    session.refresh(component)
+    return component
+
+
+@global_configuration_router.post(
+    "/assessment-templates/{template_id}/activate",
+    response_model=GlobalAssessmentSchemeTemplateResponse,
+    summary="Activate global assessment template",
+)
+def activate_global_assessment_template(
+    template_id: UUID,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    template = _get_global_template(template_id, session)
+    components = session.exec(select(GlobalAssessmentTemplateComponent).where(
+        GlobalAssessmentTemplateComponent.template_id == template.id,
+    )).all()
+    _validate_global_template_weights(template, components)
+    template.is_active = True
+    template.updated_at = datetime.now(timezone.utc)
+    session.add(template)
+    _record_platform_activity(
+        session,
+        "GLOBAL_TEMPLATE_ACTIVATED",
+        f"Activated global assessment template '{template.name}'.",
+        context.user_id,
+    )
+    session.commit()
+    session.refresh(template)
+    return template
+
+
+@global_configuration_router.post(
+    "/assessment-templates/{template_id}/assign",
+    response_model=AssessmentSchemeTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Assign global assessment template to a school",
+)
+def assign_global_assessment_template(
+    template_id: UUID,
+    payload: AssignGlobalAssessmentTemplateRequest,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    global_template = _get_global_template(template_id, session)
+    if not global_template.is_active:
+        raise HTTPException(status_code=409, detail="Only an active global template can be assigned.")
+    school = session.get(School, payload.school_id)
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found.")
+    if not school.is_active:
+        raise HTTPException(status_code=409, detail="Cannot assign a template to an inactive school.")
+    school_name = (payload.name or global_template.name).strip()
+    if not school_name:
+        raise HTTPException(status_code=400, detail="School template name cannot be blank.")
+    if session.exec(select(AssessmentSchemeTemplate).where(
+        AssessmentSchemeTemplate.school_id == school.id,
+        AssessmentSchemeTemplate.name == school_name,
+    )).first():
+        raise HTTPException(status_code=409, detail="A school template with this name already exists.")
+    if session.exec(select(AssessmentSchemeTemplate).where(
+        AssessmentSchemeTemplate.school_id == school.id,
+        AssessmentSchemeTemplate.source_global_template_id == global_template.id,
+        AssessmentSchemeTemplate.is_active.is_(True),
+    )).first():
+        raise HTTPException(status_code=409, detail="This global template is already assigned as an active template for the school.")
+    components = session.exec(select(GlobalAssessmentTemplateComponent).where(
+        GlobalAssessmentTemplateComponent.template_id == global_template.id,
+    ).order_by(GlobalAssessmentTemplateComponent.sequence)).all()
+    _validate_global_template_weights(global_template, components)
+    school_template = AssessmentSchemeTemplate(
+        school_id=school.id,
+        source_global_template_id=global_template.id,
+        name=school_name,
+        total_weight=global_template.total_weight,
+        is_active=False,
+    )
+    session.add(school_template)
+    session.flush()
+    for component in components:
+        session.add(AssessmentTemplateComponent(
+            template_id=school_template.id,
+            name=component.name,
+            type=component.type,
+            max_score=component.max_score,
+            weight=component.weight,
+            sequence=component.sequence,
+            is_required=component.is_required,
+        ))
+    _record_platform_activity(
+        session,
+        "GLOBAL_TEMPLATE_ASSIGNED",
+        f"Assigned global assessment template '{global_template.name}' to school '{school.name}'.",
+        context.user_id,
+    )
+    session.commit()
+    session.refresh(school_template)
+    return school_template
+
+
+def _ensure_template_draft(template: AssessmentSchemeTemplate) -> None:
+    if template.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only inactive assessment scheme templates can be modified.",
+        )
+
+
+def _validate_template_weights(
+    template: AssessmentSchemeTemplate,
+    components: List[AssessmentTemplateComponent],
+) -> None:
+    if not components:
+        raise HTTPException(status_code=400, detail="A template must contain at least one component.")
+    total = sum(component.weight for component in components)
+    if round(total, 6) != round(template.total_weight, 6):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Template component weights must total {template.total_weight:g}; current total is {total:g}.",
+        )
+
+
+@configuration_router.post(
+    "/scheme-templates",
+    response_model=AssessmentSchemeTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create assessment scheme template",
+    description="Create an inactive, reusable assessment structure for the current school.",
+)
+def create_scheme_template(
+    payload: AssessmentSchemeTemplateCreate,
+    context: CurrentContext = Depends(require_permission("result:write")),
+    session: Session = Depends(get_session),
+):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Template name cannot be blank.")
+    if session.exec(select(AssessmentSchemeTemplate).where(
+        AssessmentSchemeTemplate.school_id == context.school_id,
+        AssessmentSchemeTemplate.name == name,
+    )).first():
+        raise HTTPException(status_code=400, detail="An assessment scheme template with this name already exists.")
+    template = AssessmentSchemeTemplate(
+        school_id=context.school_id,
+        name=name,
+        total_weight=payload.total_weight,
+    )
+    session.add(template)
+    session.commit()
+    session.refresh(template)
+    return template
+
+
+@configuration_router.get(
+    "/scheme-templates",
+    response_model=List[AssessmentSchemeTemplateResponse],
+    summary="List assessment scheme templates",
+    description="Return assessment scheme templates configured for the current school.",
+)
+def list_scheme_templates(
+    context: CurrentContext = Depends(require_permission("result:read")),
+    session: Session = Depends(get_session),
+):
+    return session.exec(select(AssessmentSchemeTemplate).where(
+        AssessmentSchemeTemplate.school_id == context.school_id,
+    ).order_by(AssessmentSchemeTemplate.is_active.desc(), AssessmentSchemeTemplate.created_at.desc())).all()
+
+
+@configuration_router.get(
+    "/scheme-templates/{template_id}",
+    response_model=AssessmentSchemeTemplateDetailResponse,
+    summary="Get assessment scheme template",
+    description="Return one school assessment scheme template and its components.",
+)
+def get_scheme_template(
+    template_id: UUID,
+    context: CurrentContext = Depends(require_permission("result:read")),
+    session: Session = Depends(get_session),
+):
+    template = _get_template(template_id, context.school_id, session)
+    components = session.exec(select(AssessmentTemplateComponent).where(
+        AssessmentTemplateComponent.template_id == template.id,
+    ).order_by(AssessmentTemplateComponent.sequence, AssessmentTemplateComponent.name)).all()
+    return AssessmentSchemeTemplateDetailResponse(
+        **template.model_dump(),
+        components=components,
+    )
+
+
+@configuration_router.patch(
+    "/scheme-templates/{template_id}",
+    response_model=AssessmentSchemeTemplateResponse,
+    summary="Update assessment scheme template",
+    description="Edit an inactive assessment scheme template.",
+)
+def update_scheme_template(
+    template_id: UUID,
+    payload: AssessmentSchemeTemplateUpdate,
+    context: CurrentContext = Depends(require_permission("result:write")),
+    session: Session = Depends(get_session),
+):
+    template = _get_template(template_id, context.school_id, session)
+    _ensure_template_draft(template)
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="At least one template field is required.")
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        if not update_data["name"]:
+            raise HTTPException(status_code=400, detail="Template name cannot be blank.")
+        duplicate = session.exec(select(AssessmentSchemeTemplate).where(
+            AssessmentSchemeTemplate.school_id == context.school_id,
+            AssessmentSchemeTemplate.name == update_data["name"],
+            AssessmentSchemeTemplate.id != template.id,
+        )).first()
+        if duplicate:
+            raise HTTPException(status_code=400, detail="An assessment scheme template with this name already exists.")
+    for field, value in update_data.items():
+        setattr(template, field, value)
+    template.updated_at = datetime.now(timezone.utc)
+    session.add(template)
+    session.commit()
+    session.refresh(template)
+    return template
+
+
+@configuration_router.post(
+    "/scheme-templates/{template_id}/components",
+    response_model=AssessmentTemplateComponentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add template assessment component",
+    description="Add a weighted component to an inactive assessment scheme template.",
+)
+def create_template_component(
+    template_id: UUID,
+    payload: AssessmentTemplateComponentCreate,
+    context: CurrentContext = Depends(require_permission("result:write")),
+    session: Session = Depends(get_session),
+):
+    template = _get_template(template_id, context.school_id, session)
+    _ensure_template_draft(template)
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Component name cannot be blank.")
+    if session.exec(select(AssessmentTemplateComponent).where(
+        AssessmentTemplateComponent.template_id == template.id,
+        AssessmentTemplateComponent.name == name,
+    )).first():
+        raise HTTPException(status_code=400, detail="A component with this name already exists in the template.")
+    current_total = sum(item.weight for item in session.exec(select(AssessmentTemplateComponent).where(
+        AssessmentTemplateComponent.template_id == template.id,
+    )).all())
+    if current_total + payload.weight > template.total_weight:
+        raise HTTPException(status_code=400, detail="Template component weights cannot exceed the template total weight.")
+    component = AssessmentTemplateComponent(
+        template_id=template.id,
+        name=name,
+        **payload.model_dump(exclude={"name"}),
+    )
+    session.add(component)
+    session.commit()
+    session.refresh(component)
+    return component
+
+
+@configuration_router.get(
+    "/scheme-templates/{template_id}/components",
+    response_model=List[AssessmentTemplateComponentResponse],
+    summary="List template assessment components",
+    description="Return components belonging to an assessment scheme template.",
+)
+def list_template_components(
+    template_id: UUID,
+    context: CurrentContext = Depends(require_permission("result:read")),
+    session: Session = Depends(get_session),
+):
+    template = _get_template(template_id, context.school_id, session)
+    return session.exec(select(AssessmentTemplateComponent).where(
+        AssessmentTemplateComponent.template_id == template.id,
+    ).order_by(AssessmentTemplateComponent.sequence, AssessmentTemplateComponent.name)).all()
+
+
+@configuration_router.patch(
+    "/template-components/{component_id}",
+    response_model=AssessmentTemplateComponentResponse,
+    summary="Update template assessment component",
+    description="Edit a component while its parent template is inactive.",
+)
+def update_template_component(
+    component_id: UUID,
+    payload: AssessmentTemplateComponentUpdate,
+    context: CurrentContext = Depends(require_permission("result:write")),
+    session: Session = Depends(get_session),
+):
+    component = session.exec(
+        select(AssessmentTemplateComponent)
+        .join(AssessmentSchemeTemplate, AssessmentTemplateComponent.template_id == AssessmentSchemeTemplate.id)
+        .where(
+            AssessmentTemplateComponent.id == component_id,
+            AssessmentSchemeTemplate.school_id == context.school_id,
+        )
+    ).first()
+    if not component:
+        raise HTTPException(status_code=404, detail="Assessment template component not found.")
+    template = _get_template(component.template_id, context.school_id, session)
+    _ensure_template_draft(template)
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="At least one component field is required.")
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        if not update_data["name"]:
+            raise HTTPException(status_code=400, detail="Component name cannot be blank.")
+        duplicate = session.exec(select(AssessmentTemplateComponent).where(
+            AssessmentTemplateComponent.template_id == template.id,
+            AssessmentTemplateComponent.name == update_data["name"],
+            AssessmentTemplateComponent.id != component.id,
+        )).first()
+        if duplicate:
+            raise HTTPException(status_code=400, detail="A component with this name already exists in the template.")
+    if "weight" in update_data:
+        other_total = sum(item.weight for item in session.exec(select(AssessmentTemplateComponent).where(
+            AssessmentTemplateComponent.template_id == template.id,
+            AssessmentTemplateComponent.id != component.id,
+        )).all())
+        if other_total + update_data["weight"] > template.total_weight:
+            raise HTTPException(status_code=400, detail="Template component weights cannot exceed the template total weight.")
+    for field, value in update_data.items():
+        setattr(component, field, value)
+    component.updated_at = datetime.now(timezone.utc)
+    session.add(component)
+    session.commit()
+    session.refresh(component)
+    return component
+
+
+@configuration_router.post(
+    "/scheme-templates/{template_id}/activate",
+    response_model=AssessmentSchemeTemplateResponse,
+    summary="Activate assessment scheme template",
+    description="Validate and activate one school-level assessment scheme template.",
+)
+def activate_scheme_template(
+    template_id: UUID,
+    context: CurrentContext = Depends(require_permission("result:write")),
+    session: Session = Depends(get_session),
+):
+    template = _get_template(template_id, context.school_id, session)
+    components = session.exec(select(AssessmentTemplateComponent).where(
+        AssessmentTemplateComponent.template_id == template.id,
+    )).all()
+    _validate_template_weights(template, components)
+    active_templates = session.exec(select(AssessmentSchemeTemplate).where(
+        AssessmentSchemeTemplate.school_id == context.school_id,
+        AssessmentSchemeTemplate.is_active.is_(True),
+        AssessmentSchemeTemplate.id != template.id,
+    )).all()
+    for active_template in active_templates:
+        active_template.is_active = False
+        active_template.updated_at = datetime.now(timezone.utc)
+        session.add(active_template)
+    template.is_active = True
+    template.updated_at = datetime.now(timezone.utc)
+    session.add(template)
+    session.commit()
+    session.refresh(template)
+    return template
+
+
+@configuration_router.post(
+    "/scheme-templates/{template_id}/apply",
+    response_model=ApplyAssessmentTemplateResponse,
+    summary="Apply assessment scheme template to school",
+    description="Create draft schemes for every class-subject combination in the school for a session and term.",
+)
+def apply_scheme_template(
+    template_id: UUID,
+    payload: ApplyAssessmentTemplateRequest,
+    context: CurrentContext = Depends(require_permission("result:write")),
+    session: Session = Depends(get_session),
+):
+    template = _get_template(template_id, context.school_id, session)
+    if not template.is_active:
+        raise HTTPException(status_code=409, detail="Only an active template can be applied.")
+    school = session.get(School, context.school_id)
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found.")
+    if not school.is_active:
+        raise HTTPException(status_code=409, detail="Cannot apply a template to an inactive school.")
+    components = session.exec(select(AssessmentTemplateComponent).where(
+        AssessmentTemplateComponent.template_id == template.id,
+    ).order_by(AssessmentTemplateComponent.sequence)).all()
+    _validate_template_weights(template, components)
+
+    academic_session = session.exec(select(AcademicSession).where(
+        AcademicSession.id == payload.academic_session_id,
+        AcademicSession.school_id == context.school_id,
+    )).first()
+    if not academic_session:
+        raise HTTPException(status_code=404, detail="Academic session not found.")
+    academic_term = session.exec(select(AcademicTerm).where(
+        AcademicTerm.id == payload.academic_term_id,
+        AcademicTerm.school_id == context.school_id,
+        AcademicTerm.session_id == academic_session.id,
+    )).first()
+    if not academic_term:
+        raise HTTPException(status_code=404, detail="Academic term not found for this session.")
+
+    classes = session.exec(select(SchoolClass).where(SchoolClass.school_id == context.school_id)).all()
+    subjects = session.exec(select(Subject).where(Subject.school_id == context.school_id)).all()
+    created = 0
+    skipped = 0
+    for school_class in classes:
+        for subject in subjects:
+            existing = session.exec(select(AssessmentScheme).where(
+                AssessmentScheme.school_id == context.school_id,
+                AssessmentScheme.academic_session_id == academic_session.id,
+                AssessmentScheme.academic_term_id == academic_term.id,
+                AssessmentScheme.class_id == school_class.id,
+                AssessmentScheme.subject_id == subject.id,
+                AssessmentScheme.name == template.name,
+            )).first()
+            if existing:
+                skipped += 1
+                continue
+            scheme = AssessmentScheme(
+                school_id=context.school_id,
+                academic_session_id=academic_session.id,
+                academic_term_id=academic_term.id,
+                class_id=school_class.id,
+                subject_id=subject.id,
+                name=template.name,
+                class_name=school_class.name,
+                subject_name=subject.name,
+                academic_session_name=academic_session.name,
+                academic_term_name=academic_term.name,
+                total_weight=template.total_weight,
+                status=AssessmentSchemeStatus.DRAFT,
+            )
+            session.add(scheme)
+            session.flush()
+            for component in components:
+                session.add(Assessment(
+                    scheme_id=scheme.id,
+                    name=component.name,
+                    type=component.type,
+                    max_score=component.max_score,
+                    weight=component.weight,
+                    sequence=component.sequence,
+                    is_required=component.is_required,
+                    status=AssessmentStatus.ACTIVE,
+                ))
+            created += 1
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Assessment scheme generation failed and was rolled back.")
+    return ApplyAssessmentTemplateResponse(
+        template_id=template.id,
+        academic_session_id=academic_session.id,
+        academic_term_id=academic_term.id,
+        created=created,
+        skipped=skipped,
+    )
 
 
 @configuration_router.post("/schemes", response_model=AssessmentSchemeResponse, status_code=status.HTTP_201_CREATED, summary="Create assessment scheme", description="Create a draft assessment scheme for one class, subject, academic session, and term.")

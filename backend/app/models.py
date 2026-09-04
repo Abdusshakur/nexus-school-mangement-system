@@ -504,6 +504,17 @@ class ActivityLog(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class PlatformActivityLog(SQLModel, table=True):
+    """Audit log for platform-level actions that are not school-scoped."""
+    __tablename__ = "platform_activity_logs"  # pyright: ignore[reportIncompatibleVariableOverride]
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    activity_type: str
+    message: str
+    performed_by: UUID = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 # ==================================================================
 # 4. TEACHER / STAFF ATTENDANCE MODELS (QR WORKFLOW)
 # ==================================================================
@@ -633,6 +644,89 @@ class AssessmentScheme(SQLModel, table=True):
     total_weight: float = Field(default=100.0)
     status: AssessmentSchemeStatus = Field(default=AssessmentSchemeStatus.DRAFT)
     version: int = Field(default=1)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AssessmentSchemeTemplate(SQLModel, table=True):
+    """Reusable school-level assessment structure used to create schemes."""
+    __tablename__ = "assessment_scheme_templates"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id", "name", name="uq_assessment_scheme_template_school_name"
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    source_global_template_id: Optional[UUID] = Field(
+        default=None, foreign_key="global_assessment_scheme_templates.id", index=True
+    )
+    name: str = Field(index=True)
+    total_weight: float = Field(default=100.0)
+    is_active: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GlobalAssessmentSchemeTemplate(SQLModel, table=True):
+    """Platform-owned assessment structure that can be copied to schools."""
+    __tablename__ = "global_assessment_scheme_templates"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("name", name="uq_global_assessment_scheme_template_name"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field(index=True)
+    total_weight: float = Field(default=100.0)
+    is_active: bool = Field(default=False, index=True)
+    created_by: UUID = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GlobalAssessmentTemplateComponent(SQLModel, table=True):
+    """One weighted component belonging to a global assessment template."""
+    __tablename__ = "global_assessment_template_components"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "template_id", "name", name="uq_global_assessment_template_component_name"
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    template_id: UUID = Field(
+        foreign_key="global_assessment_scheme_templates.id", index=True
+    )
+    name: str = Field(index=True)
+    type: AssessmentType = Field(default=AssessmentType.OTHER)
+    max_score: float
+    weight: float
+    sequence: int = Field(default=1)
+    is_required: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AssessmentTemplateComponent(SQLModel, table=True):
+    """One weighted component belonging to a reusable assessment template."""
+    __tablename__ = "assessment_template_components"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "template_id", "name", name="uq_assessment_template_component_name"
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    template_id: UUID = Field(
+        foreign_key="assessment_scheme_templates.id", index=True
+    )
+    name: str = Field(index=True)
+    type: AssessmentType = Field(default=AssessmentType.OTHER)
+    max_score: float
+    weight: float
+    sequence: int = Field(default=1)
+    is_required: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
