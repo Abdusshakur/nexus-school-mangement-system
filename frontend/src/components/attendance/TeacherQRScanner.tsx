@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   RefreshCw,
   Users,
@@ -10,6 +10,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { useQRAttendanceStore } from "../../store/qrAttendance.store";
 import { useTeacherStore } from "../../store/teacher.store";
+import { useTeacherAttendanceAdminStore } from "../../store/teacherAttendanceAdmin.store";
 import { Spinner } from "../ui/Spinner";
 import { Skeleton } from "../ui/Skeleton";
 
@@ -27,16 +28,19 @@ interface TeacherQRScannerProps {
 }
 
 export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
-  const { teacherCheckIns, currentQRSession, generateQRSession } =
-    useQRAttendanceStore();
-  const { teachers, loading, fetchTeachers } = useTeacherStore();
+  const { currentQRSession, generateQRSession } = useQRAttendanceStore();
+  const { teachers, loading: teachersLoading, fetchTeachers } = useTeacherStore();
+  const { records, loading: recordsLoading, loadRecords } = useTeacherAttendanceAdminStore();
 
   const [timeLeft, setTimeLeft] = useState(30);
   const [qrType, setQrType] = useState<"CHECK_IN" | "CHECK_OUT">("CHECK_IN");
 
+  const todayISO = new Date().toISOString().slice(0, 10);
+
   useEffect(() => {
     fetchTeachers();
-  }, [fetchTeachers]);
+    loadRecords(todayISO);
+  }, [fetchTeachers, loadRecords, todayISO]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -62,37 +66,40 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
     return () => clearInterval(timer);
   }, [currentQRSession, isAdmin, generateQRSession, qrType]);
 
-  const todayISO = new Date().toISOString().slice(0, 10);
   const totalTeachers = teachers.length;
+  const loading = teachersLoading || recordsLoading;
 
-  const teacherStatus = teachers.map((t) => {
-    let record = teacherCheckIns.find(
-      (c) => c.teacherId === t.id && c.date === todayISO,
-    );
+  const teacherStatus = useMemo(() => {
+    return teachers.map((t) => {
+      // Find the record for this teacher
+      const record = records.find(
+        (r) => r.teacher_id === t.id && r.attendance_date === todayISO,
+      );
+      return { teacher: t, record };
+    });
+  }, [teachers, records, todayISO]);
 
-    return { teacher: t, record };
-  });
-
-  const checkedInCount = teacherStatus.filter((t) => t.record).length;
+  const checkedInCount = teacherStatus.filter((t) => t.record && t.record.status !== "MISSED_CHECK_IN").length;
   const presentToday = teacherStatus.filter(
-    (t) => t.record?.status === "present",
+    (t) => t.record?.status === "CHECKED_IN" || t.record?.status === "CHECKED_OUT",
   ).length;
   const lateToday = teacherStatus.filter(
-    (t) => t.record?.status === "late",
+    (t) => t.record?.status === "LATE",
   ).length;
-  const absentToday = totalTeachers - checkedInCount;
+  const absentToday = teacherStatus.filter(
+    (t) => !t.record || t.record.status === "MISSED_CHECK_IN",
+  ).length;
 
   const qrToken = currentQRSession?.token;
   const displayDate = currentQRSession?.date
     ? formatDate(currentQRSession.date)
     : formatDate(todayISO);
 
+  // Note: teacherRates is hard to accurately calculate from only today's records.
+  // Normally this would be a separate API call. We will use a mock calculation based on today.
   const teacherRates = teachers.map((t) => {
-    const allCheckIns = teacherCheckIns.filter((c) => c.teacherId === t.id);
-    const rate =
-      allCheckIns.length > 0
-        ? Math.min(100, Math.round((allCheckIns.length / 20) * 100))
-        : 0;
+    const record = records.find((r) => r.teacher_id === t.id);
+    const rate = record && record.status !== "MISSED_CHECK_IN" ? 100 : 0;
     return { teacher: t, rate };
   });
 
@@ -102,13 +109,16 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   const getStatusBadge = (record: (typeof teacherStatus)[0]["record"]) => {
     if (!record)
       return { label: "Not yet", bg: "bg-slate-100", text: "text-slate-500" };
-    if (record.status === "present")
+    if (record.status === "CHECKED_IN" || record.status === "CHECKED_OUT")
       return {
         label: "Present",
         bg: "bg-emerald-100",
         text: "text-emerald-800",
       };
-    return { label: "Late", bg: "bg-amber-100", text: "text-amber-800" };
+    if (record.status === "LATE")
+      return { label: "Late", bg: "bg-amber-100", text: "text-amber-800" };
+    
+    return { label: "Absent", bg: "bg-red-100", text: "text-red-800" };
   };
 
   return (
@@ -385,9 +395,14 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
                         {teacher.dept}
                       </td>
                       <td
-                        className={`px-5 py-3.5 text-[13px] ${record ? "font-mono text-slate-700" : "text-slate-400"}`}
+                        className={`px-5 py-3.5 text-[13px] ${record && record.check_in_at ? "font-mono text-slate-700" : "text-slate-400"}`}
                       >
-                        {record ? record.checkInTime : "—"}
+                        {record && record.check_in_at
+                          ? new Date(record.check_in_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
                       </td>
                       <td className="px-5 py-3.5">
                         <span
