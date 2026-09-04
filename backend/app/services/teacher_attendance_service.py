@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from backend.app.models import School, TeacherAttendanceSettings
+from backend.app.services.timezone_service import to_school_time
 
 
 DEFAULT_TEACHER_ATTENDANCE_SETTINGS = {
@@ -65,7 +66,10 @@ def validate_attendance_window(
             detail="Teacher attendance configuration is not available for this school.",
         )
 
-    current_time = now.time().replace(tzinfo=None)
+    school = session.exec(select(School).where(School.id == school_id)).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found.")
+    current_time = to_school_time(now, school.timezone).time().replace(tzinfo=None)
     if attendance_type == "CHECK_IN":
         start, end = settings.check_in_start, settings.check_in_end
         if not start <= current_time <= end:

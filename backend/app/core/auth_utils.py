@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 
 # Import get_session and models inside functions to avoid circular imports
 from backend.app.db.database import get_session
-from backend.app.models import Role 
+from backend.app.models import Permission, Role, RolePermissionLink
 
 load_dotenv()
 
@@ -132,3 +132,33 @@ def require_permission(required_permission: str):
         return context
 
     return permission_checker
+
+
+def require_super_admin(required_permission: str = "global_template:manage"):
+    """Allow platform-level actions only to a super-admin with the permission."""
+    def super_admin_checker(
+        context: CurrentContext = Depends(get_current_context),
+        session: Session = Depends(get_session),
+    ) -> CurrentContext:
+        role = session.get(Role, context.role_id)
+        if not role or role.name.lower() not in {"super_admin", "superadmin"}:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Super administrator access is required.",
+            )
+        permission = session.exec(
+            select(Permission)
+            .join(RolePermissionLink, RolePermissionLink.permission_id == Permission.id)
+            .where(
+                RolePermissionLink.role_id == role.id,
+                Permission.name == required_permission,
+            )
+        ).first()
+        if not permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing required permission: {required_permission}",
+            )
+        return context
+
+    return super_admin_checker

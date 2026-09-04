@@ -12,7 +12,12 @@ from backend.app.models import (
     TimetableEntry, SchoolClass, Subject, TeacherProfile, 
     AcademicTerm, TeacherAssignment, AssignmentStatus 
 )
-from backend.app.schemas.timetable import TimetableEntryCreate, TimetableEntryResponse, BulkTimetableRequest
+from backend.app.schemas.timetable import (
+    TimetableEntryCreate,
+    TimetableEntryUpdate,
+    TimetableEntryResponse,
+    BulkTimetableRequest,
+)
 
 router = APIRouter(prefix="/timetable", tags=["Timetable Engine"])
 
@@ -110,6 +115,128 @@ def create_timetable_entry(
         teacher_id=db_teacher.id,
         teacher_name=f"{db_teacher.first_name} {db_teacher.last_name}"
     )
+
+
+@router.patch("/{entry_id}", response_model=TimetableEntryResponse)
+def update_timetable_entry(
+    entry_id: UUID,
+    request: TimetableEntryUpdate,
+    context: CurrentContext = Depends(require_permission("timetable:write")),
+    session: Session = Depends(get_session),
+):
+    """Update one timetable entry after revalidating its full schedule contract."""
+    entry = session.exec(
+        select(TimetableEntry).where(
+            TimetableEntry.id == entry_id,
+            TimetableEntry.school_id == context.school_id,
+        )
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Timetable entry not found.")
+
+    values = {
+        "term_id": entry.term_id,
+        "class_id": entry.class_id,
+        "subject_id": entry.subject_id,
+        "teacher_id": entry.teacher_id,
+        "day_of_week": entry.day_of_week,
+        "start_time": entry.start_time,
+        "end_time": entry.end_time,
+    }
+    values.update(request.model_dump(exclude_unset=True))
+    if values["start_time"] >= values["end_time"]:
+        raise HTTPException(status_code=422, detail="Start time must be strictly before end time.")
+
+    db_class = session.exec(select(SchoolClass).where(
+        SchoolClass.id == values["class_id"], SchoolClass.school_id == context.school_id
+    )).first()
+    db_subject = session.exec(select(Subject).where(
+        Subject.id == values["subject_id"], Subject.school_id == context.school_id
+    )).first()
+    db_teacher = session.exec(select(TeacherProfile).where(
+        TeacherProfile.id == values["teacher_id"], TeacherProfile.school_id == context.school_id
+    )).first()
+    db_term = session.exec(select(AcademicTerm).where(
+        AcademicTerm.id == values["term_id"], AcademicTerm.school_id == context.school_id
+    )).first()
+    if not all([db_class, db_subject, db_teacher, db_term]):
+        raise HTTPException(status_code=400, detail="Invalid Class, Subject, Teacher, or Term ID provided for your school.")
+
+    assignment = session.exec(select(TeacherAssignment).where(
+        TeacherAssignment.school_id == context.school_id,
+        TeacherAssignment.teacher_id == values["teacher_id"],
+        TeacherAssignment.class_id == values["class_id"],
+        TeacherAssignment.subject_id == values["subject_id"],
+        TeacherAssignment.term_id == values["term_id"],
+        TeacherAssignment.status == AssignmentStatus.ACTIVE,
+    )).first()
+    if not assignment:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Cannot schedule: {db_teacher.last_name} is not actively assigned to teach {db_subject.name} to {db_class.name} this term.",
+        )
+
+    overlap_filters = [
+        TimetableEntry.school_id == context.school_id,
+        TimetableEntry.id != entry_id,
+        TimetableEntry.term_id == values["term_id"],
+        TimetableEntry.day_of_week == values["day_of_week"],
+        TimetableEntry.start_time < values["end_time"],
+        TimetableEntry.end_time > values["start_time"],
+    ]
+    class_clash = session.exec(select(TimetableEntry).where(
+        *overlap_filters, TimetableEntry.class_id == values["class_id"]
+    )).first()
+    if class_clash:
+        raise HTTPException(status_code=409, detail=f"{db_class.name} already has a lesson scheduled during this time slot.")
+
+    teacher_clash = session.exec(select(TimetableEntry).where(
+        *overlap_filters, TimetableEntry.teacher_id == values["teacher_id"]
+    )).first()
+    if teacher_clash:
+        raise HTTPException(status_code=409, detail=f"Teacher {db_teacher.last_name} is already teaching another class during this time slot.")
+
+    for field, value in values.items():
+        setattr(entry, field, value)
+    entry.session_id = assignment.session_id
+    session.add(entry)
+    session.commit()
+    session.refresh(entry)
+
+    return TimetableEntryResponse(
+        id=entry.id,
+        term_id=entry.term_id,
+        term_name=db_term.name if isinstance(db_term.name, str) else db_term.name.value,
+        day_of_week=entry.day_of_week,
+        start_time=entry.start_time,
+        end_time=entry.end_time,
+        class_id=db_class.id,
+        class_name=db_class.name,
+        subject_id=db_subject.id,
+        subject_name=db_subject.name,
+        teacher_id=db_teacher.id,
+        teacher_name=f"{db_teacher.first_name} {db_teacher.last_name}",
+    )
+
+
+@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_timetable_entry(
+    entry_id: UUID,
+    context: CurrentContext = Depends(require_permission("timetable:write")),
+    session: Session = Depends(get_session),
+):
+    """Permanently remove one timetable entry in the current school."""
+    entry = session.exec(
+        select(TimetableEntry).where(
+            TimetableEntry.id == entry_id,
+            TimetableEntry.school_id == context.school_id,
+        )
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Timetable entry not found.")
+    session.delete(entry)
+    session.commit()
+    return None
 
 @router.post("/bulk", status_code=status.HTTP_201_CREATED)
 def create_bulk_timetable(

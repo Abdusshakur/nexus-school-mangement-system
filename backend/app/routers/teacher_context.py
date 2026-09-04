@@ -34,6 +34,7 @@ from backend.app.services.teacher_attendance_service import (
     attendance_duration_minutes,
     validate_attendance_window,
 )
+from backend.app.services.timezone_service import get_school_today
 
 
 
@@ -232,7 +233,7 @@ def validate_qr_scan(raw_token: str, expected_type: QRType, context: CurrentCont
         raise HTTPException(status_code=400, detail=f"Wrong QR Code type. Expected {expected_type.value}.")
 
     now = datetime.now(timezone.utc)
-    if qr_session.attendance_date != date.today():
+    if qr_session.attendance_date != get_school_today(context.school_id, session):
         raise HTTPException(status_code=400, detail="This QR code is not valid for today.")
 
     valid_from = qr_session.valid_from
@@ -253,7 +254,7 @@ def get_my_status_today(
     session: Session = Depends(get_session)
 ):
     teacher, _ = get_current_teacher_profile(context, session)
-    today = date.today()
+    today = get_school_today(context.school_id, session)
 
     daily_record = session.exec(
         select(TeacherDailyAttendance).where(
@@ -342,7 +343,7 @@ def get_my_attendance_stats(
     context: CurrentContext = Depends(require_permission("teacher:read")),
     session: Session = Depends(get_session),
 ):
-    today = date.today()
+    today = get_school_today(context.school_id, session)
     selected_year = year if year is not None else today.year
     selected_month = month if month is not None else today.month
     month_start = date(selected_year, selected_month, 1)
@@ -400,7 +401,7 @@ def scan_check_in(
 ):
     teacher, _ = get_current_teacher_profile(context, session)
     now = datetime.now(timezone.utc)
-    today = date.today()
+    today = get_school_today(context.school_id, session)
     active_session, active_term = get_active_term_and_session(context.school_id, session)
 
     # 1. Validate the Token
@@ -461,7 +462,7 @@ def scan_check_out(
 ):
     teacher, _ = get_current_teacher_profile(context, session)
     now = datetime.now(timezone.utc)
-    today = date.today()
+    today = get_school_today(context.school_id, session)
     active_session, active_term = get_active_term_and_session(context.school_id, session)
 
     # 1. Validate Token
