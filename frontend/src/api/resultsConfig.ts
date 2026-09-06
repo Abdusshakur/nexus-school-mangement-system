@@ -177,3 +177,80 @@ export async function addGradingRule(scaleId: string, payload: GradingRuleCreate
 export async function updateGradingRule(ruleId: string, payload: GradingRuleUpdate): Promise<GradingRuleResponse> {
   return apiClient.patch(`/results/grading-rules/${ruleId}`, payload);
 }
+
+// ==========================================
+// SCHEME TEMPLATES (GLOBAL TEMPLATES)
+// ==========================================
+
+export interface AssessmentSchemeTemplateResponse {
+  id: string;
+  school_id: string;
+  name: string;
+  total_weight: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssessmentSchemeTemplateCreate {
+  name: string;
+  total_weight: number;
+}
+
+export interface AssessmentSchemeTemplateUpdate {
+  name?: string;
+  total_weight?: number;
+}
+
+export interface AssessmentTemplateComponentResponse {
+  id: string;
+  template_id: string;
+  name: string;
+  type: string;
+  max_score: number;
+  weight: number;
+  sequence: number;
+  is_required: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssessmentTemplateComponentCreate {
+  name: string;
+  type: string;
+  max_score: number;
+  weight: number;
+  sequence: number;
+  is_required: boolean;
+}
+
+export async function fetchSchemeTemplates(): Promise<AssessmentSchemeTemplateResponse[]> {
+  return apiClient.get("/results/scheme-templates");
+}
+
+export async function createSchemeTemplate(payload: AssessmentSchemeTemplateCreate): Promise<AssessmentSchemeTemplateResponse> {
+  return apiClient.post("/results/scheme-templates", payload);
+}
+
+export async function updateSchemeTemplate(templateId: string, payload: AssessmentSchemeTemplateUpdate): Promise<AssessmentSchemeTemplateResponse> {
+  return apiClient.patch(`/results/scheme-templates/${templateId}`, payload);
+}
+
+export async function fetchTemplateComponents(templateId: string): Promise<AssessmentTemplateComponentResponse[]> {
+  return apiClient.get(`/results/scheme-templates/${templateId}/components`);
+}
+
+export async function addTemplateComponent(templateId: string, payload: AssessmentTemplateComponentCreate): Promise<AssessmentTemplateComponentResponse> {
+  return apiClient.post(`/results/scheme-templates/${templateId}/components`, payload);
+}
+
+export async function activateSchemeTemplate(templateId: string): Promise<AssessmentSchemeTemplateResponse> {
+  return apiClient.post(`/results/scheme-templates/${templateId}/activate`);
+}
+
+export async function applySchemeTemplate(templateId: string, academic_session_id: string, academic_term_id: string): Promise<{ template_id: string; created: number; skipped: number }> {
+  return apiClient.post(`/results/scheme-templates/${templateId}/apply`, {
+    academic_session_id,
+    academic_term_id
+  });
+}

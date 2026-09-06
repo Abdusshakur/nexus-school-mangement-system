@@ -84,7 +84,11 @@ apiClient.interceptors.response.use(
           errorMsg = typeof backendMessage === "string" ? backendMessage : "An unexpected error occurred. Please try again.";
       }
     } else {
-      errorMsg = error.message || "A network error occurred. Please try again.";
+      if (error.message && error.message.includes("is not valid JSON")) {
+        errorMsg = "Received an invalid response from the server. The system might be busy or restarting.";
+      } else {
+        errorMsg = error.message || "A network error occurred. Please try again.";
+      }
     }
 
     if (errorMsg !== "Session expired or unauthorized.") {

@@ -4,11 +4,26 @@ import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { Spinner } from "../../../../../components/ui/Spinner";
 import { CreateSchemeModal } from "./CreateSchemeModal";
 import { SchemeComponents } from "./SchemeComponents";
+import { toast } from "sonner";
 
 export function AssessmentSchemesList() {
-  const { schemes, loading, loadSchemes } = useResultsConfigStore();
+  const { schemes, loading, loadSchemes, editScheme } = useResultsConfigStore();
   const [showModal, setShowModal] = useState(false);
   const [expandedSchemeId, setExpandedSchemeId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const handleToggleStatus = async (scheme: any) => {
+    try {
+      setTogglingId(scheme.id);
+      const newStatus = scheme.status === "ACTIVE" ? "DRAFT" : "ACTIVE";
+      await editScheme(scheme.id, { status: newStatus });
+      toast.success(`Scheme ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`);
+    } catch (err: any) {
+      // Error handled by global interceptor
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   useEffect(() => {
     loadSchemes();
@@ -17,7 +32,7 @@ export function AssessmentSchemesList() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <button 
+        <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm"
         >
@@ -32,48 +47,82 @@ export function AssessmentSchemesList() {
         </div>
       ) : schemes.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-          <p className="text-slate-500 text-sm">No assessment schemes configured yet.</p>
+          <p className="text-slate-500 text-sm">
+            No assessment schemes configured yet.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
           {schemes.map((scheme) => {
             const isExpanded = expandedSchemeId === scheme.id;
             return (
-              <div key={scheme.id} className="border border-slate-200 rounded-lg bg-white shadow-sm overflow-hidden">
-                <div 
+              <div
+                key={scheme.id}
+                className="border border-slate-200 rounded-lg bg-white shadow-sm overflow-hidden"
+              >
+                <div
                   className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
-                  onClick={() => setExpandedSchemeId(isExpanded ? null : scheme.id)}
+                  onClick={() =>
+                    setExpandedSchemeId(isExpanded ? null : scheme.id)
+                  }
                 >
                   <div className="flex items-center gap-3">
                     <div className="text-slate-400">
-                      {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                      {isExpanded ? (
+                        <ChevronDown size={20} />
+                      ) : (
+                        <ChevronRight size={20} />
+                      )}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900">{scheme.name}</h3>
+                      <h3 className="font-bold text-slate-900">
+                        {scheme.name}
+                      </h3>
                       <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
                         <span className="font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
                           {scheme.class_id ? scheme.class_name : "All Classes"}
                         </span>
-                        • 
+
                         <span className="font-semibold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
-                          {scheme.subject_id ? scheme.subject_name : "All Subjects"}
+                          {scheme.subject_id
+                            ? scheme.subject_name
+                            : "All Subjects"}
                         </span>
-                        • 
                         <span>{scheme.academic_term_name}</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${scheme.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold ${scheme.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : scheme.status === "DRAFT" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700"}`}
+                    >
                       {scheme.status}
                     </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStatus(scheme);
+                      }}
+                      disabled={togglingId === scheme.id}
+                      className={`px-3 py-1 rounded-md text-xs font-bold border transition-colors ${
+                        scheme.status === "ACTIVE" 
+                          ? "border-amber-200 text-amber-700 hover:bg-amber-50" 
+                          : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      } ${togglingId === scheme.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {togglingId === scheme.id ? 'Loading...' : scheme.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                    </button>
                     <span className="text-xs font-bold text-slate-600 border border-slate-200 px-2 py-1 rounded-md">
                       Weight: {scheme.total_weight}%
                     </span>
                   </div>
                 </div>
                 {isExpanded && (
-                  <SchemeComponents schemeId={scheme.id} totalTargetWeight={scheme.total_weight} schemeStatus={scheme.status} />
+                  <SchemeComponents
+                    schemeId={scheme.id}
+                    totalTargetWeight={scheme.total_weight}
+                    schemeStatus={scheme.status}
+                  />
                 )}
               </div>
             );

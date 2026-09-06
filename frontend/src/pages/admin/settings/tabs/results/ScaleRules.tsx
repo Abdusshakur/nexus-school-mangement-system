@@ -13,8 +13,10 @@ export function ScaleRules({ scaleId }: ScaleRulesProps) {
   const [rules, setRules] = useState<GradingRuleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>(null);
   
-  const { loadGradingRules, createNewGradingRule } = useResultsConfigStore();
+  const { loadGradingRules, createNewGradingRule, editGradingRule } = useResultsConfigStore();
   
   const [newRule, setNewRule] = useState({
     grade: "",
@@ -66,6 +68,26 @@ export function ScaleRules({ scaleId }: ScaleRulesProps) {
     }
   };
 
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !editForm) return;
+
+    if (editForm.minimum_percentage >= editForm.maximum_percentage) {
+      toast.error("Minimum percentage must be less than maximum percentage");
+      return;
+    }
+
+    try {
+      const updated = await editGradingRule(editingId, editForm);
+      setRules(rules.map(r => r.id === editingId ? updated : r).sort((a, b) => b.minimum_percentage - a.minimum_percentage));
+      setEditingId(null);
+      setEditForm(null);
+      toast.success("Rule updated successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update rule");
+    }
+  };
+
   if (loading) {
     return <div className="p-4 flex justify-center"><Spinner className="w-5 h-5 text-indigo-600" /></div>;
   }
@@ -82,21 +104,62 @@ export function ScaleRules({ scaleId }: ScaleRulesProps) {
         )}
         
         {rules.map((rule) => (
-          <div key={rule.id} className="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800 text-lg">{rule.grade}</span>
-                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  {rule.remark}
+          editingId === rule.id ? (
+            <form key={rule.id} onSubmit={handleEdit} className="bg-white border border-indigo-200 p-4 rounded-lg shadow-sm space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Grade</label>
+                  <input required type="text" value={editForm.grade} onChange={e => setEditForm({...editForm, grade: e.target.value.toUpperCase()})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Min %</label>
+                  <input required type="number" min="0" max="100" step="0.1" value={editForm.minimum_percentage} onChange={e => setEditForm({...editForm, minimum_percentage: parseFloat(e.target.value) || 0})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Max %</label>
+                  <input required type="number" min="0" max="100" step="0.1" value={editForm.maximum_percentage} onChange={e => setEditForm({...editForm, maximum_percentage: parseFloat(e.target.value) || 0})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Remark</label>
+                  <input required type="text" value={editForm.remark} onChange={e => setEditForm({...editForm, remark: e.target.value})} placeholder="e.g. Excellent" className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onClick={() => { setEditingId(null); setEditForm(null); }} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+                <button type="submit" className="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700">Save Changes</button>
+              </div>
+            </form>
+          ) : (
+            <div key={rule.id} className="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 text-lg">{rule.grade}</span>
+                  <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    {rule.remark}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+                  {rule.minimum_percentage} <Percent size={12} /> - {rule.maximum_percentage} <Percent size={12} />
                 </span>
+                <button
+                  onClick={() => {
+                    setEditingId(rule.id);
+                    setEditForm({
+                      grade: rule.grade,
+                      minimum_percentage: rule.minimum_percentage,
+                      maximum_percentage: rule.maximum_percentage,
+                      remark: rule.remark,
+                    });
+                  }}
+                  className="px-3 py-1 rounded-md text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Edit
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
-                {rule.minimum_percentage} <Percent size={12} /> - {rule.maximum_percentage} <Percent size={12} />
-              </span>
-            </div>
-          </div>
+          )
         ))}
 
         {adding ? (
@@ -104,7 +167,7 @@ export function ScaleRules({ scaleId }: ScaleRulesProps) {
             <div className="grid grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Grade</label>
-                <input required type="text" placeholder="A, B, C..." value={newRule.grade} onChange={e => setNewRule({...newRule, grade: e.target.value})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500" />
+                <input required type="text" placeholder="A, B, C..." value={newRule.grade} onChange={e => setNewRule({...newRule, grade: e.target.value.toUpperCase()})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500 uppercase" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Min %</label>

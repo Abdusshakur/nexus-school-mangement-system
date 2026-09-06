@@ -95,7 +95,7 @@ export function SessionDetailView({
               <StatusBadge status={session.status} />
             </div>
             <p className="text-sm mt-0.5 text-slate-500">
-              {session.name} • {fmtDate(session.startDate)} –{" "}
+              {session.name} {fmtDate(session.startDate)} –{" "}
               {fmtDate(session.endDate)}
             </p>
           </div>

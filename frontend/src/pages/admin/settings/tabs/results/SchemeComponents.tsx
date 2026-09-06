@@ -105,7 +105,7 @@ export function SchemeComponents({ schemeId, totalTargetWeight, schemeStatus }: 
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Max Score: {comp.max_score} • Sequence: {comp.sequence}
+                Max Score: {comp.max_score}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -128,8 +128,10 @@ export function SchemeComponents({ schemeId, totalTargetWeight, schemeStatus }: 
                 <select value={newComponent.type} onChange={e => setNewComponent({...newComponent, type: e.target.value})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500">
                   <option value="CONTINUOUS_ASSESSMENT">Continuous Assessment</option>
                   <option value="EXAM">Exam</option>
+                  <option value="ASSIGNMENT">Assignment</option>
                   <option value="PROJECT">Project</option>
-                  <option value="PRACTICAL">Practical</option>
+                  <option value="MIDTERM">Midterm</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
               <div>

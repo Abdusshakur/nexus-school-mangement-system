@@ -127,7 +127,7 @@ export function GradingScaleRules({ scaleId }: GradingScaleRulesProps) {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Grade (e.g. A, B)</label>
-                <input required type="text" value={ruleForm.grade} onChange={e => setRuleForm({...ruleForm, grade: e.target.value.toUpperCase()})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500" />
+                <input required type="text" value={ruleForm.grade} onChange={e => setRuleForm({...ruleForm, grade: e.target.value.toUpperCase()})} className="w-full text-sm border border-slate-200 rounded-md p-2 focus:ring-2 focus:ring-indigo-500 uppercase" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Min %</label>
