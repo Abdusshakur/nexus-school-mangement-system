@@ -234,45 +234,45 @@ export function ClassAttendanceView() {
             </div>
           ) : (
             <div className="overflow-x-auto w-full">
-            <table className="w-full min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-50">
-                  {["Student", "Parent", "Class", "Time Sent", "Status"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {notifHistory.map((n) => (
-                  <tr key={n.id} className="border-t border-slate-100">
-                    <td className="px-5 py-3 text-sm font-medium text-slate-900">
-                      {n.studentName}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-slate-500">
-                      {n.parentName}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-slate-500">
-                      {n.class}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-slate-500">
-                      {n.sentAt}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                        Sent
-                      </span>
-                    </td>
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="bg-slate-50">
+                    {["Student", "Parent", "Class", "Time Sent", "Status"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {notifHistory.map((n) => (
+                    <tr key={n.id} className="border-t border-slate-100">
+                      <td className="px-5 py-3 text-sm font-medium text-slate-900">
+                        {n.studentName}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-500">
+                        {n.parentName}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-500">
+                        {n.class}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-500">
+                        {n.sentAt}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                          Sent
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -281,139 +281,169 @@ export function ClassAttendanceView() {
       {tab === "classes" && !selectedClass && (
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
           <div className="overflow-x-auto w-full">
-          <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="bg-slate-50">
-                {[
-                  "Class",
-                  "Class Teacher",
-                  "Total",
-                  "Present",
-                  "Absent",
-                  "Rate",
-                  "Submitted",
-                  "Status",
-                  "",
-                ].map((h, i) => (
-                  <th
-                    key={h || i}
-                    className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading && !dailySummary ? (
-                <>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <tr key={i} className="border-b border-slate-100 last:border-0">
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-20" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-12" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
-                      <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
-                      <td className="px-4 py-4 text-right"><Skeleton className="h-8 w-8 rounded-lg ml-auto" /></td>
-                    </tr>
-                  ))}
-                </>
-              ) : !dailySummary?.classes ||
-                dailySummary.classes.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    No classes found.
-                  </td>
-                </tr>
-              ) : (
-                dailySummary.classes.map((cls) => {
-                  const submitted =
-                    cls.session_status === "SUBMITTED" ||
-                    cls.session_status === "APPROVED";
-                  const rb = rateBadge(cls.attendance_rate_percentage);
-
-                  return (
-                    <tr
-                      key={cls.class_id}
-                      className="border-t border-slate-100 hover:bg-slate-50 transition-colors"
+            <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="bg-slate-50">
+                  {[
+                    "Class",
+                    "Class Teacher",
+                    "Total",
+                    "Present",
+                    "Absent",
+                    "Rate",
+                    "Submitted",
+                    "Status",
+                    "",
+                  ].map((h, i) => (
+                    <th
+                      key={h || i}
+                      className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
                     >
-                      <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                        {cls.class_name}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-500">
-                        {cls.form_teacher_name || "Unassigned"}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-slate-700">
-                        {cls.total_students}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-emerald-500">
-                        {submitted ? cls.total_present : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-red-500">
-                        {submitted ? cls.total_absent : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {submitted ? (
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-semibold ${rb}`}
-                          >
-                            {cls.attendance_rate_percentage}%
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {submitted ? (
-                          cls.submitted_at ? (
-                            <span className="text-xs font-medium text-slate-500 whitespace-nowrap flex items-center gap-1.5">
-                              <Clock size={12} className="text-slate-400" />
-                              {new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "numeric" }).format(new Date(cls.submitted_at))}
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading && !dailySummary ? (
+                  <>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-slate-100 last:border-0"
+                      >
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-12" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-12" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-12" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-6 w-24 rounded-full" />
+                        </td>
+                        <td className="px-4 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <Skeleton className="h-8 w-8 rounded-lg ml-auto" />
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                ) : !dailySummary?.classes ||
+                  dailySummary.classes.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="py-12 text-center text-slate-400"
+                    >
+                      No classes found.
+                    </td>
+                  </tr>
+                ) : (
+                  dailySummary.classes.map((cls) => {
+                    const submitted =
+                      cls.session_status === "SUBMITTED" ||
+                      cls.session_status === "APPROVED";
+                    const rb = rateBadge(cls.attendance_rate_percentage);
+
+                    return (
+                      <tr
+                        key={cls.class_id}
+                        className="border-t border-slate-100 hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-4 py-3 text-sm font-semibold text-slate-900">
+                          {cls.class_name}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-500">
+                          {cls.form_teacher_name || "Unassigned"}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                          {cls.total_students}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-emerald-500">
+                          {submitted ? cls.total_present : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-red-500">
+                          {submitted ? cls.total_absent : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {submitted ? (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${rb}`}
+                            >
+                              {cls.attendance_rate_percentage}%
                             </span>
                           ) : (
-                            <span className="text-xs font-medium text-slate-500">—</span>
-                          )
-                        ) : (
-                          <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
-                            <Clock size={12} /> Pending
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {submitted ? (
-                          <span
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${cls.session_status === "APPROVED"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : cls.session_status === "REJECTED"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-indigo-100 text-indigo-700"
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {submitted ? (
+                            cls.submitted_at ? (
+                              <span className="text-xs font-medium text-slate-500 whitespace-nowrap flex items-center gap-1.5">
+                                <Clock size={12} className="text-slate-400" />
+                                {new Intl.DateTimeFormat("en-US", {
+                                  hour: "numeric",
+                                  minute: "numeric",
+                                }).format(new Date(cls.submitted_at))}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-medium text-slate-500">
+                                —
+                              </span>
+                            )
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
+                              <Clock size={12} /> Pending
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {submitted ? (
+                            <span
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                cls.session_status === "APPROVED"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : cls.session_status === "REJECTED"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-indigo-100 text-indigo-700"
                               }`}
-                          >
-                            {cls.session_status}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {submitted && (
-                          <button
-                            onClick={() => setSelectedClass(cls.class_id)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-500 hover:bg-indigo-100 transition-colors"
-                          >
-                            View Sheet
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                            >
+                              {cls.session_status}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {submitted && (
+                            <button
+                              onClick={() => setSelectedClass(cls.class_id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-500 hover:bg-indigo-100 transition-colors"
+                            >
+                              View Sheet
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -436,9 +466,9 @@ export function ClassAttendanceView() {
               </h2>
               <p className="text-sm text-slate-500">
                 Class Teacher: {selectedCls.form_teacher_name || "Unassigned"} ·
-                {activeSessionSubmittedAt && ` Submitted ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "numeric" }).format(new Date(activeSessionSubmittedAt))} · `}
-                Status:{" "}
-                {activeSessionStatus || selectedCls.session_status}
+                {activeSessionSubmittedAt &&
+                  ` Submitted ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "numeric" }).format(new Date(activeSessionSubmittedAt))} · `}
+                Status: {activeSessionStatus || selectedCls.session_status}
               </p>
             </div>
 
@@ -495,102 +525,115 @@ export function ClassAttendanceView() {
 
           <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
             <div className="overflow-x-auto w-full">
-            <table className="w-full min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="w-10 px-4 py-3" />
-                  {["Adm. Number", "Student Name", "Status", "Remarks"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {loading && activeClassRoster.length === 0 ? (
-                  <>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i} className="border-b border-slate-100 last:border-0">
-                        <td className="px-4 py-3"><Skeleton className="h-10 w-10 rounded-full" /></td>
-                        <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
-                        <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
-                        <td className="px-4 py-3"><Skeleton className="h-6 w-20 rounded-full" /></td>
-                        {activeSessionStatus === "PENDING" && (
-                          <td className="px-4 py-3 text-right"><Skeleton className="h-5 w-5 ml-auto" /></td>
-                        )}
-                      </tr>
-                    ))}
-                  </>
-                ) : activeClassRoster.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="py-12 text-center text-slate-400"
-                    >
-                      No students found.
-                    </td>
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="w-10 px-4 py-3" />
+                    {["Adm. Number", "Student Name", "Status", "Remarks"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
-                ) : (
-                  activeClassRoster.map((student) => {
-                    const isAbsent = student.status === "ABSENT";
-                    const studentId = student.id || student.student_id;
-                    const checked = selectedAbsent.has(studentId);
-                    const initials =
-                      `${student.first_name?.[0] || ""}${student.last_name?.[0] || ""}`.toUpperCase();
-
-                    return (
-                      <tr
-                        key={studentId}
-                        className={`border-t border-slate-100 ${checked ? "bg-amber-50" : "hover:bg-slate-50 transition-colors"}`}
-                      >
-                        <td className="px-4 py-2.5 text-center">
-                          {isAbsent && (
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleAbsent(studentId)}
-                              className="w-4 h-4 rounded accent-amber-500"
-                            />
+                </thead>
+                <tbody>
+                  {loading && activeClassRoster.length === 0 ? (
+                    <>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <tr
+                          key={i}
+                          className="border-b border-slate-100 last:border-0"
+                        >
+                          <td className="px-4 py-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Skeleton className="h-4 w-32" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Skeleton className="h-4 w-24" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Skeleton className="h-6 w-20 rounded-full" />
+                          </td>
+                          {activeSessionStatus === "PENDING" && (
+                            <td className="px-4 py-3 text-right">
+                              <Skeleton className="h-5 w-5 ml-auto" />
+                            </td>
                           )}
-                        </td>
-                        <td className="px-4 py-2.5 font-mono text-xs text-slate-500">
-                          {student.admission_number}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${getAvatarColor(studentId)}`}
-                            >
-                              <span className="text-white font-semibold text-[10px]">
-                                {initials}
+                        </tr>
+                      ))}
+                    </>
+                  ) : activeClassRoster.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-12 text-center text-slate-400"
+                      >
+                        No students found.
+                      </td>
+                    </tr>
+                  ) : (
+                    activeClassRoster.map((student) => {
+                      const isAbsent = student.status === "ABSENT";
+                      const studentId = student.id || student.student_id;
+                      const checked = selectedAbsent.has(studentId);
+                      const initials =
+                        `${student.first_name?.[0] || ""}${student.last_name?.[0] || ""}`.toUpperCase();
+
+                      return (
+                        <tr
+                          key={studentId}
+                          className={`border-t border-slate-100 ${checked ? "bg-amber-50" : "hover:bg-slate-50 transition-colors"}`}
+                        >
+                          <td className="px-4 py-2.5 text-center">
+                            {isAbsent && (
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleAbsent(studentId)}
+                                className="w-4 h-4 rounded accent-amber-500"
+                              />
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono text-xs text-slate-500">
+                            {student.admission_number}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${getAvatarColor(studentId)}`}
+                              >
+                                <span className="text-white font-semibold text-[10px]">
+                                  {initials}
+                                </span>
+                              </div>
+                              <span className="text-sm font-medium text-slate-900">
+                                {student.first_name} {student.last_name}
                               </span>
                             </div>
-                            <span className="text-sm font-medium text-slate-900">
-                              {student.first_name} {student.last_name}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${isAbsent ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"}`}
+                            >
+                              {isAbsent ? "Absent" : "Present"}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${isAbsent ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"}`}
-                          >
-                            {isAbsent ? "Absent" : "Present"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-sm text-slate-400">
-                          {student.remarks || "—"}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                          </td>
+                          <td className="px-4 py-2.5 text-sm text-slate-400">
+                            {student.remarks || "—"}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

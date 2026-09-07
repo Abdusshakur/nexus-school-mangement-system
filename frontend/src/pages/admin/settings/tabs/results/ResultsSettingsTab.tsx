@@ -25,33 +25,30 @@ export function ResultsSettingsTab() {
       <div className="flex border-b border-slate-200 px-6 mt-4">
         <button
           onClick={() => setActiveSubTab("templates")}
-          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
-            activeSubTab === "templates"
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeSubTab === "templates"
               ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+            }`}
         >
           <GraduationCap size={16} />
           Global Scheme Templates
         </button>
         <button
           onClick={() => setActiveSubTab("schemes")}
-          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
-            activeSubTab === "schemes"
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeSubTab === "schemes"
               ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+            }`}
         >
           <GraduationCap size={16} />
           All Class Schemes
         </button>
         <button
           onClick={() => setActiveSubTab("scales")}
-          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
-            activeSubTab === "scales"
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeSubTab === "scales"
               ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+            }`}
         >
           <Percent size={16} />
           Grading Scales

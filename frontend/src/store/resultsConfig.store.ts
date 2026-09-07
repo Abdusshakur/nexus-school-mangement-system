@@ -99,7 +99,7 @@ interface ResultsConfigState {
   ) => Promise<GradingRuleResponse>;
 }
 
-export const useResultsConfigStore = create<ResultsConfigState>((set, get) => ({
+export const useResultsConfigStore = create<ResultsConfigState>((set) => ({
   schemes: [],
   components: {},
   gradingScales: [],

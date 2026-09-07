@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Check, AlertCircle } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { Spinner } from "../../../../../components/ui/Spinner";
 import { fetchActiveSummary } from "../../../../../api/academics";
 import { useResultsConfigStore } from "../../../../../store/resultsConfig.store";
