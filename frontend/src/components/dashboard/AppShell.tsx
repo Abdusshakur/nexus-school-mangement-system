@@ -11,7 +11,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { user } = useAuthStore();
   const role = user?.role || "admin";
-  
+
   const bgClass = role === "teacher" ? "bg-slate-50" : "bg-indigo-50";
 
   return (

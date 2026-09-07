@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Check, AlertCircle } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { Spinner } from "../../../../../components/ui/Spinner";
 import { fetchActiveSummary } from "../../../../../api/academics";
 import { useResultsConfigStore } from "../../../../../store/resultsConfig.store";
@@ -35,9 +35,9 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
     loadSubjects();
     fetchActiveSummary()
       .then((summary) => {
-        if (summary.active_session)
-          setActiveSessionId(summary.active_session.id);
-        if (summary.active_term) setActiveTermId(summary.active_term.id);
+        if (summary.session_id)
+          setActiveSessionId(summary.session_id);
+        if (summary.term_id) setActiveTermId(summary.term_id);
         setLoading(false);
       })
       .catch((err) => {
@@ -64,8 +64,8 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
       await createNewScheme({
         academic_session_id: activeSessionId,
         academic_term_id: activeTermId,
-        class_id: selectedClassId || null,
-        subject_id: selectedSubjectId || null,
+        class_id: selectedClassId,
+        subject_id: selectedSubjectId,
         name: formData.name,
         total_weight: formData.total_weight,
         status: "DRAFT",
@@ -79,7 +79,6 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
     }
   };
 
-  const isGlobal = !selectedClassId && !selectedSubjectId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -135,11 +134,12 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
                       Class (Optional)
                     </label>
                     <select
+                      required
                       value={selectedClassId}
                       onChange={(e) => setSelectedClassId(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
                     >
-                      <option value="">All Classes (Global)</option>
+                      <option value="" disabled>Select a Class</option>
                       {classes.map((cls) => (
                         <option key={cls.id} value={cls.id}>
                           {cls.name}
@@ -152,11 +152,12 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
                       Subject (Optional)
                     </label>
                     <select
+                      required
                       value={selectedSubjectId}
                       onChange={(e) => setSelectedSubjectId(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
                     >
-                      <option value="">All Subjects (Global)</option>
+                      <option value="" disabled>Select a Subject</option>
                       {subjects.map((sub) => (
                         <option key={sub.id} value={sub.id}>
                           {sub.name}
@@ -185,26 +186,14 @@ export function CreateSchemeModal({ onClose }: CreateSchemeModalProps) {
                 </div>
               </div>
 
-              {isGlobal ? (
-                <div className="bg-indigo-50 text-indigo-800 p-4 rounded-xl border border-indigo-100 flex gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                    <Check size={16} className="text-indigo-600" />
-                  </div>
-                  <p>
-                    This scheme will serve as the <strong>global default</strong>{" "}
-                    for all classes and subjects in the current academic term.
-                  </p>
+              <div className="bg-indigo-50 text-indigo-800 p-4 rounded-xl border border-indigo-100 flex gap-3 text-sm">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                  <Check size={16} className="text-indigo-600" />
                 </div>
-              ) : (
-                <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-100 flex gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                    <AlertCircle size={16} className="text-amber-600" />
-                  </div>
-                  <p>
-                    This scheme will act as a <strong>specific override</strong>. It will only apply when the selected class and subject match.
-                  </p>
-                </div>
-              )}
+                <p>
+                  This scheme will apply specifically to the selected class and subject.
+                </p>
+              </div>
             </form>
           </div>
         )}

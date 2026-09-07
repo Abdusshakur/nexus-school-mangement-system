@@ -25,8 +25,8 @@ export function CreateGradingScaleModal({ onClose }: CreateGradingScaleModalProp
   useEffect(() => {
     fetchActiveSummary()
       .then((summary) => {
-        if (summary.active_session) setActiveSessionId(summary.active_session.id);
-        if (summary.active_term) setActiveTermId(summary.active_term.id);
+        if (summary.session_id) setActiveSessionId(summary.session_id);
+        if (summary.term_id) setActiveTermId(summary.term_id);
         setLoading(false);
       })
       .catch((err) => {

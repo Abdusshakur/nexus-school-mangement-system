@@ -82,11 +82,10 @@ export function Sidebar() {
                     setAttendanceOpen(!attendanceOpen);
                   }
                 }}
-                className={`flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded-lg transition-colors duration-150 ${
-                  active || (isAttendanceParent && isAttendanceSubroute)
+                className={`flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded-lg transition-colors duration-150 ${active || (isAttendanceParent && isAttendanceSubroute)
                     ? `${theme.activeLink} text-white`
                     : `${theme.inactiveText} ${theme.hoverLink}`
-                }`}
+                  }`}
               >
                 <item.icon size={18} className="shrink-0" />
                 {!collapsed && (
@@ -125,20 +124,18 @@ export function Sidebar() {
                       >
                         {/* T - connector  */}
                         <div
-                          className={`absolute left-4 top-1/2 w-3 border-l border-b border-indigo-500/35 ${
-                            isLast
+                          className={`absolute left-4 top-1/2 w-3 border-l border-b border-indigo-500/35 ${isLast
                               ? "h-[50%] -translate-y-full rounded-bl-[3px]"
                               : "h-[1px] -translate-y-1/2"
-                          }`}
+                            }`}
                         />
                         <Link
                           to={sub.href}
                           title={sub.label}
-                          className={`flex items-center gap-2 rounded-md transition-colors duration-150 ml-8 mb-0.5 px-2.5 py-1.5 flex-1 ${
-                            subActive
+                          className={`flex items-center gap-2 rounded-md transition-colors duration-150 ml-8 mb-0.5 px-2.5 py-1.5 flex-1 ${subActive
                               ? "bg-indigo-500/20 text-white"
                               : "text-indigo-200 hover:bg-white/10 hover:text-white"
-                          }`}
+                            }`}
                         >
                           <sub.icon size={13} className="shrink-0 opacity-85" />
                           <span className="text-xs font-medium">

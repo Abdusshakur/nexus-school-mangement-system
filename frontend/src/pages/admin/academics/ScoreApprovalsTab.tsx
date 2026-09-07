@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   CheckCircle,
-
-
   Eye,
-
   ChevronDown,
   ChevronRight,
   UserCircle2,
@@ -23,7 +20,8 @@ function SubmissionDetailsModal({
   submissionId: string;
   onClose: () => void;
 }) {
-  const { submissionDetails, loadingDetails, loadSubmissionDetails } = useAdminResultsStore();
+  const { submissionDetails, loadingDetails, loadSubmissionDetails } =
+    useAdminResultsStore();
   const details = submissionDetails[submissionId];
   const isLoading = loadingDetails[submissionId];
 
@@ -36,7 +34,9 @@ function SubmissionDetailsModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
           <Spinner size="lg" className="text-indigo-600" />
-          <p className="text-slate-500 font-medium text-sm">Loading details...</p>
+          <p className="text-slate-500 font-medium text-sm">
+            Loading details...
+          </p>
         </div>
       </div>
     );
@@ -54,7 +54,10 @@ function SubmissionDetailsModal({
               {assessment.name} Results
             </h2>
             <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
-              <span className="font-semibold text-slate-700">{submission.class_name}</span> • {submission.subject_name}
+              <span className="font-semibold text-slate-700">
+                {submission.class_name}
+              </span>
+              {submission.subject_name}
             </p>
           </div>
           <button
@@ -71,34 +74,50 @@ function SubmissionDetailsModal({
             <table className="w-full text-left border-collapse whitespace-nowrap min-w-[600px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-32">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-24">Score</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Remarks</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Student Name
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-32">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-24">
+                    Score
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Remarks
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {students.map((student) => (
-                  <tr key={student.student_id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr
+                    key={student.student_id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
                           <UserCircle size={16} />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{student.first_name} {student.last_name}</p>
-                          <p className="text-xs text-slate-500">{student.admission_number}</p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {student.first_name} {student.last_name}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {student.admission_number}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold tracking-wide ${student.score_status === "PRESENT"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : student.score_status === "ABSENT"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-orange-100 text-orange-700"
-                          }`}
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold tracking-wide ${
+                          student.score_status === "PRESENT"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : student.score_status === "ABSENT"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-orange-100 text-orange-700"
+                        }`}
                       >
                         {student.score_status}
                       </span>
@@ -109,13 +128,18 @@ function SubmissionDetailsModal({
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600 italic">
-                      {student.remarks || <span className="text-slate-300">No remarks</span>}
+                      {student.remarks || (
+                        <span className="text-slate-300">No remarks</span>
+                      )}
                     </td>
                   </tr>
                 ))}
                 {students.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-slate-500"
+                    >
                       No student data available.
                     </td>
                   </tr>
@@ -129,16 +153,24 @@ function SubmissionDetailsModal({
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-white">
           <p className="text-sm text-slate-500 flex items-center gap-2">
             <UserCircle2 size={16} />
-            Submitted by <span className="font-semibold text-slate-700">{submission.teacher_name}</span>
+            Submitted by{" "}
+            <span className="font-semibold text-slate-700">
+              {submission.teacher_name}
+            </span>
           </p>
-
         </div>
       </div>
     </div>
   );
 }
 export function ScoreApprovalsTab() {
-  const { submissions, loadingSubmissions, loadSubmissions, approveScoreSubmission, approvingId } = useAdminResultsStore();
+  const {
+    submissions,
+    loadingSubmissions,
+    loadSubmissions,
+    approveScoreSubmission,
+    approvingId,
+  } = useAdminResultsStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewDetailsId, setViewDetailsId] = useState<string | null>(null);
 
@@ -193,7 +225,6 @@ export function ScoreApprovalsTab() {
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <h3 className="font-bold text-slate-900">Submitted Subject Scores</h3>
-
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -220,12 +251,13 @@ export function ScoreApprovalsTab() {
                     </button>
                     <div>
                       <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        {sub.class_name} • {sub.subject_name}
+                        {sub.class_name} {sub.subject_name}
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${isApproved
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-blue-100 text-blue-700"
-                            }`}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${
+                            isApproved
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
                         >
                           {sub.status}
                         </span>
@@ -278,7 +310,8 @@ export function ScoreApprovalsTab() {
                 {isExpanded && (
                   <div className="px-14 pb-5 pt-2 bg-slate-50/50">
                     <p className="text-sm text-slate-500 italic mb-4">
-                      Click the button below to view a detailed breakdown of all student scores, remarks, and statuses for this submission.
+                      Click the button below to view a detailed breakdown of all
+                      student scores, remarks, and statuses for this submission.
                     </p>
                     <div className="flex justify-end">
                       <button
