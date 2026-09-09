@@ -13,7 +13,17 @@ from sqlmodel import Session, select
 
 # Import get_session and models inside functions to avoid circular imports
 from backend.app.db.database import get_session
-from backend.app.models import Permission, Role, RolePermissionLink
+from backend.app.models import (
+    MembershipStatus,
+    Permission,
+    Role,
+    RolePermissionLink,
+    School,
+    SchoolStatus,
+    User,
+    UserSchoolLink,
+    UserStatus,
+)
 
 load_dotenv()
 
@@ -98,6 +108,15 @@ def get_current_context(token: str = Depends(oauth2_scheme)) -> CurrentContext:
         role_id=UUID(role_id_str) 
     )
 
+
+def get_active_context(
+    context: CurrentContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> CurrentContext:
+    """Resolve a token and confirm its user, school, and membership are active."""
+    _ensure_active_membership(context, session)
+    return context
+
 def require_permission(required_permission: str):
     """
     RBAC Gatekeeper: Checks if the user's current role has the required permission.
@@ -107,6 +126,7 @@ def require_permission(required_permission: str):
         context: CurrentContext = Depends(get_current_context),
         session: Session = Depends(get_session)
     ) -> CurrentContext:
+        _ensure_active_membership(context, session)
         
         # 1. Fetch the user's role from the DB
         role = session.exec(
@@ -140,6 +160,7 @@ def require_super_admin(required_permission: str = "global_template:manage"):
         context: CurrentContext = Depends(get_current_context),
         session: Session = Depends(get_session),
     ) -> CurrentContext:
+        _ensure_active_membership(context, session)
         role = session.get(Role, context.role_id)
         if not role or role.name.lower() not in {"super_admin", "superadmin"}:
             raise HTTPException(
@@ -162,3 +183,37 @@ def require_super_admin(required_permission: str = "global_template:manage"):
         return context
 
     return super_admin_checker
+
+
+def _ensure_active_membership(context: CurrentContext, session: Session) -> None:
+    """Reject credentials whose user, school, or membership is no longer active."""
+    user = session.get(User, context.user_id)
+    if not user or not user.is_active or user.status != UserStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is not active.",
+        )
+
+    school = session.get(School, context.school_id)
+    if not school or not school.is_active or school.status != SchoolStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="School access is not active.",
+        )
+
+    membership = session.exec(
+        select(UserSchoolLink).where(
+            UserSchoolLink.user_id == context.user_id,
+            UserSchoolLink.school_id == context.school_id,
+            UserSchoolLink.role_id == context.role_id,
+        )
+    ).first()
+    if (
+        not membership
+        or not membership.is_active
+        or membership.status != MembershipStatus.ACTIVE
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="School membership is not active.",
+        )
