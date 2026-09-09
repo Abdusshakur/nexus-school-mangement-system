@@ -19,7 +19,7 @@ from backend.app.models import (
     StudentProfile,
 )
 # 👇 1. Import the new Gatekeeper and RBAC dependencies
-from backend.app.core.auth_utils import CurrentContext, get_current_context, require_permission 
+from backend.app.core.auth_utils import CurrentContext, get_active_context, require_permission 
 
 from backend.app.schemas.academic import (
     AcademicEntityCreate, AcademicEntityResponse, AcademicEntityUpdate,
@@ -569,7 +569,7 @@ def get_all_terms_and_sessions(
 
 @router.get("/active-summary", response_model=ActiveContextSummary)
 def get_active_school_context(
-    context: CurrentContext = Depends(get_current_context),
+    context: CurrentContext = Depends(get_active_context),
     db: Session = Depends(get_session),
 ):
     """Fetches the current term and session, plus tenant-scoped dashboard stats."""

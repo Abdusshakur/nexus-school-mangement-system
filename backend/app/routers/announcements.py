@@ -23,7 +23,7 @@ from backend.app.models import (
     UserSchoolLink,
 )
 # 👇 1. Import the Gatekeeper
-from backend.app.core.auth_utils import CurrentContext, require_permission, get_current_context
+from backend.app.core.auth_utils import CurrentContext, require_permission, get_active_context
 from backend.app.schemas.announcement import AnnouncementCreate, AnnouncementResponse, AnnouncementUpdate
 from backend.app.services.parent_relationship_service import get_current_parent_profile
 
@@ -126,7 +126,7 @@ def get_smart_announcement_feed(
     priority: Optional[PriorityEnum] = Query(None, description="Filter by priority (e.g. HIGH, MEDIUM)"),
     audience: Optional[str] = Query(None, description="Filter by target audience (e.g. ALL, JSS 1)"),
     session: Session = Depends(get_session),
-    context: CurrentContext = Depends(get_current_context) # 👈 1. Gatekeeper handles auth
+    context: CurrentContext = Depends(get_active_context) # 👈 1. Gatekeeper handles auth
 ):
     """Returns a filtered feed of announcements based on the user's role and active school."""
     
@@ -206,7 +206,7 @@ def get_smart_announcement_feed(
 def get_single_announcement(
     announcement_id: UUID,
     session: Session = Depends(get_session),
-    context: CurrentContext = Depends(get_current_context) # 👈 Gatekeeper
+    context: CurrentContext = Depends(get_active_context) # 👈 Gatekeeper
 ):
     """Fetches a single announcement. Hides drafts from non-authors."""
     

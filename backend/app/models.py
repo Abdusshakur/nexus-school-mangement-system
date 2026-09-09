@@ -2,6 +2,7 @@ from datetime import datetime, timezone, date, time
 from enum import Enum
 from typing import List, Optional
 from uuid import UUID, uuid4
+from sqlalchemy import Index, text
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 # ==================================================================
@@ -12,6 +13,35 @@ class UserRole(str, Enum):
     TEACHER = "teacher"
     PARENT = "parent"
     STUDENT = "student"
+
+
+class SchoolStatus(str, Enum):
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    ACTIVE = "ACTIVE"
+    SUSPENDED = "SUSPENDED"
+    REJECTED = "REJECTED"
+    ARCHIVED = "ARCHIVED"
+
+
+class UserStatus(str, Enum):
+    PENDING_ACTIVATION = "PENDING_ACTIVATION"
+    ACTIVE = "ACTIVE"
+    SUSPENDED = "SUSPENDED"
+    DEACTIVATED = "DEACTIVATED"
+
+
+class MembershipStatus(str, Enum):
+    PENDING = "PENDING"
+    ACTIVE = "ACTIVE"
+    SUSPENDED = "SUSPENDED"
+    REVOKED = "REVOKED"
+
+
+class ApplicationStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
 
 class RelationshipType(str, Enum):
     MOTHER = "MOTHER"
@@ -157,6 +187,7 @@ class School(SQLModel, table=True):
     
     # System Data
     is_active: bool = Field(default=True)
+    status: SchoolStatus = Field(default=SchoolStatus.ACTIVE, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class SchoolSettings(SQLModel, table=True):
@@ -186,6 +217,7 @@ class User(SQLModel, table=True):
     school_id: Optional[UUID] = Field(default=None, foreign_key="school.id")
     
     is_active: bool = True
+    status: UserStatus = Field(default=UserStatus.ACTIVE, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -198,7 +230,40 @@ class UserSchoolLink(SQLModel, table=True):
     
     role_id: UUID = Field(foreign_key="role.id")
     is_active: bool = Field(default=True)
+    status: MembershipStatus = Field(default=MembershipStatus.ACTIVE, index=True)
+    is_owner: bool = Field(default=False, index=True)
+    activated_at: Optional[datetime] = None
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class SchoolApplication(SQLModel, table=True):
+    """Public school onboarding request awaiting platform review."""
+    __tablename__ = "school_applications"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        Index(
+            "uq_pending_school_application",
+            "school_id",
+            unique=True,
+            postgresql_where=text("status = 'PENDING'"),
+            sqlite_where=text("status = 'PENDING'"),
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    applicant_user_id: UUID = Field(foreign_key="user.id", index=True)
+    status: ApplicationStatus = Field(default=ApplicationStatus.PENDING, index=True)
+
+    # These are display snapshots; the foreign keys remain authoritative.
+    school_name: str
+    applicant_name: str
+
+    reviewed_by: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    reviewed_by_name: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ==================================================================

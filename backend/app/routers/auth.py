@@ -10,10 +10,13 @@ from backend.app.core.auth_utils import (
     hash_password,
     verify_password,
     get_current_context,
+    get_active_context,
+    require_permission,
     CurrentContext
 )
 from backend.app.db.database import get_session
 from backend.app.models import (
+    MembershipStatus, School, SchoolStatus, UserStatus,
     User, UserSchoolLink, Role, 
     StudentProfile, ParentProfile, TeacherProfile, AdminProfile
 )
@@ -58,9 +61,21 @@ class LoginResponse(BaseModel):
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRegisterResponse)
 def register_user(
     request: UserRegisterRequest, 
+    context: CurrentContext = Depends(require_permission("admin:write")),
     session: Session = Depends(get_session)
 ):
-    """Registers a central user identity and links them to a school."""
+    """Register a user inside the current active school workspace."""
+
+    if request.school_id != context.school_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Users can only be registered in the current school.",
+        )
+    if request.role_name.lower() in {"super_admin", "superadmin"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super administrator accounts cannot be created through this endpoint.",
+        )
     
     # 1. Verify the Role exists in the DB
     role = session.exec(select(Role).where(Role.name == request.role_name.lower())).first()
@@ -75,7 +90,11 @@ def register_user(
     # 3. Create Global User
     new_user = User(
         email=request.email,
-        password_hash=hash_password(request.password)
+        password_hash=hash_password(request.password),
+        role_id=role.id,
+        school_id=context.school_id,
+        status=UserStatus.ACTIVE,
+        is_active=True,
     )
     session.add(new_user)
     session.flush()  
@@ -83,8 +102,11 @@ def register_user(
     # 4. Link User to the School
     user_link = UserSchoolLink(
         user_id=new_user.id,
-        school_id=request.school_id,
-        role_id=role.id
+        school_id=context.school_id,
+        role_id=role.id,
+        status=MembershipStatus.ACTIVE,
+        is_active=True,
+        activated_at=new_user.created_at,
     )
     session.add(user_link)
     session.flush()
@@ -112,7 +134,7 @@ def register_user(
         payload={
             "user_id": str(new_user.id),
             "email": new_user.email,
-            "school_id": str(request.school_id),
+            "school_id": str(context.school_id),
             "profile_id": str(profile_id) if profile_id else None,
         },
     )
@@ -121,7 +143,7 @@ def register_user(
     return UserRegisterResponse(
         user_id=new_user.id,
         email=new_user.email,
-        school_id=request.school_id,
+        school_id=context.school_id,
         profile_id=profile_id,
     )
 
@@ -143,15 +165,32 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not user.is_active or user.status != UserStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account is not active.",
+        )
+
     # 2. Find their School Workspaces & Role Link
     active_link = session.exec(
-        select(UserSchoolLink).where(UserSchoolLink.user_id == user.id)
+        select(UserSchoolLink).where(
+            UserSchoolLink.user_id == user.id,
+            UserSchoolLink.is_active.is_(True),
+            UserSchoolLink.status == MembershipStatus.ACTIVE,
+        )
     ).first()
 
     if not active_link:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account is not linked to any school. Please contact support."
+        )
+
+    school = session.get(School, active_link.school_id)
+    if not school or not school.is_active or school.status != SchoolStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="School access is not active.",
         )
         
     # Fetch the actual Role object to get its string name
@@ -198,7 +237,7 @@ def login_for_access_token(
 
 @router.get("/me")
 def get_current_user_profile(
-    context: CurrentContext = Depends(get_current_context), # 👈 The Gatekeeper is in charge now!
+    context: CurrentContext = Depends(get_active_context), # 👈 The Gatekeeper is in charge now!
     session: Session = Depends(get_session)
 ):
     """Safely decodes any validated user token and reads back account tracking details."""
