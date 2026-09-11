@@ -6,12 +6,12 @@ import {
   Clock,
   XCircle,
   TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useQRAttendanceStore } from "../../store/qrAttendance.store";
 import { useTeacherStore } from "../../store/teacher.store";
 import { useTeacherAttendanceAdminStore } from "../../store/teacherAttendanceAdmin.store";
-import { Spinner } from "../ui/Spinner";
 import { Skeleton } from "../ui/Skeleton";
 
 function formatDate(iso: string): string {
@@ -28,7 +28,7 @@ interface TeacherQRScannerProps {
 }
 
 export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
-  const { currentQRSession, generateQRSession } = useQRAttendanceStore();
+  const { currentQRSession, generateQRSession, fetchCurrentQRSession } = useQRAttendanceStore();
   const { teachers, loading: teachersLoading, fetchTeachers } = useTeacherStore();
   const { records, loading: recordsLoading, loadRecords } = useTeacherAttendanceAdminStore();
 
@@ -43,10 +43,20 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
   }, [fetchTeachers, loadRecords, todayISO]);
 
   useEffect(() => {
+    let mounted = true;
     if (isAdmin) {
-      generateQRSession(qrType);
+      const loadQR = async () => {
+        await fetchCurrentQRSession();
+        if (!mounted) return;
+        // If it failed to fetch (e.g. no current session), generate one
+        if (!useQRAttendanceStore.getState().currentQRSession) {
+          await generateQRSession(qrType);
+        }
+      };
+      loadQR();
     }
-  }, [qrType, isAdmin, generateQRSession]);
+    return () => { mounted = false; };
+  }, [qrType, isAdmin, generateQRSession, fetchCurrentQRSession]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -90,13 +100,10 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
     (t) => !t.record || t.record.status === "MISSED_CHECK_IN",
   ).length;
 
-  const qrToken = currentQRSession?.token;
   const displayDate = currentQRSession?.date
     ? formatDate(currentQRSession.date)
     : formatDate(todayISO);
 
-  // Note: teacherRates is hard to accurately calculate from only today's records.
-  // Normally this would be a separate API call. We will use a mock calculation based on today.
   const teacherRates = teachers.map((t) => {
     const record = records.find((r) => r.teacher_id === t.id);
     const rate = record && record.status !== "MISSED_CHECK_IN" ? 100 : 0;
@@ -117,7 +124,9 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
       };
     if (record.status === "LATE")
       return { label: "Late", bg: "bg-amber-100", text: "text-amber-800" };
-    
+    if (record.status === "MISSED_CHECK_OUT")
+      return { label: "Missed Checkout", bg: "bg-amber-100", text: "text-amber-800" };
+
     return { label: "Absent", bg: "bg-red-100", text: "text-red-800" };
   };
 
@@ -138,12 +147,12 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
           <div className="bg-white p-2 sm:p-3 border-2 border-slate-900 rounded-xl flex items-center justify-center shadow-sm shrink-0 w-[200px] h-[200px] sm:w-[248px] sm:h-[248px]">
             {loading ? (
               <Skeleton className="w-full h-full rounded-lg" />
-            ) : qrToken ? (
-              <QRCodeSVG value={qrToken} width="100%" height="100%" level="H" />
+            ) : currentQRSession ? (
+              <QRCodeSVG value={currentQRSession.token} width="100%" height="100%" level="H" />
             ) : (
-              <div className="flex flex-col items-center justify-center text-slate-400 gap-3">
-                <Spinner size="lg" className="text-indigo-500" />
-                <span className="text-xs font-semibold">Generating...</span>
+              <div className="flex flex-col items-center justify-center text-slate-400 gap-3 text-center px-4">
+                <AlertCircle size={24} className="text-slate-300" />
+                <span className="text-xs font-semibold">No active QR code.<br />Click 'Regenerate' to create one.</span>
               </div>
             )}
           </div>
@@ -399,9 +408,9 @@ export function TeacherQRScanner({ isAdmin = false }: TeacherQRScannerProps) {
                       >
                         {record && record.check_in_at
                           ? new Date(record.check_in_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "—"}
                       </td>
                       <td className="px-5 py-3.5">

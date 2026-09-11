@@ -19,6 +19,10 @@ export async function createTimetableEntry(payload: TimetableCreatePayload): Pro
   return apiClient.post("/timetable/", payload);
 }
 
+export async function updateTimetableEntry(entryId: string, payload: Partial<TimetableCreatePayload>): Promise<any> {
+  return apiClient.patch(`/timetable/${entryId}`, payload);
+}
+
 export async function createBulkTimetable(payload: TimetableBulkCreatePayload): Promise<any> {
   return apiClient.post("/timetable/bulk", payload);
 }

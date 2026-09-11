@@ -86,17 +86,6 @@ export async function reopenAttendance(sessionId: string, reason?: string): Prom
   return apiClient.post(`/attendance/${sessionId}/reopen`, { reason });
 }
 
-export async function teacherCheckIn(token: string): Promise<any> {
-  return apiClient.post("/teachers/check-in", { token });
-}
-
-export async function teacherCheckOut(token: string): Promise<any> {
-  return apiClient.post("/teachers/check-out", { token });
-}
-
-export async function getTeacherTodayStatus(): Promise<any> {
-  return apiClient.get("/teachers/me/today");
-}
 
 export async function generateAttendanceQR(qrType: "CHECK_IN" | "CHECK_OUT"): Promise<{ raw_token: string, expires_at: string, qr_type: string }> {
   return apiClient.post("/attendance/qr/generate", { qr_type: qrType });

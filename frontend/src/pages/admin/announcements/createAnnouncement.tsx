@@ -4,10 +4,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { Spinner } from "../../../components/ui/Spinner";
 import { useAnnouncementStore } from "../../../store/announcement.store";
+import { useClassStore } from "../../../store/class.store";
+import { useEffect } from "react";
 
 export function CreateAnnouncement() {
   const navigate = useNavigate();
   const { postAnnouncement } = useAnnouncementStore();
+  const { classes, loadClasses } = useClassStore();
+
+  useEffect(() => {
+    loadClasses().catch(console.error);
+  }, [loadClasses]);
+
   const [form, setForm] = useState<{
     title: string;
     body: string;
@@ -106,22 +114,19 @@ export function CreateAnnouncement() {
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
                   <option value="">Select…</option>
-                  {[
-                    "All",
-                    "All Students",
-                    "All Parents",
-                    "All Teachers",
-                    "JSS 1",
-                    "JSS 2",
-                    "JSS 3",
-                    "SS 1",
-                    "SS 2",
-                    "SS 3",
-                  ].map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
+                  <optgroup label="General">
+                    <option value="ALL">All Users</option>
+                    <option value="TEACHERS">All Teachers</option>
+                    <option value="STUDENTS">All Students</option>
+                    <option value="PARENTS">All Parents</option>
+                  </optgroup>
+                  <optgroup label="Specific Classes">
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.name}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
               <div>

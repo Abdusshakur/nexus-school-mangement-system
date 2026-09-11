@@ -9,7 +9,7 @@ interface SubjectState {
   error: string | null;
 
   loadSubjects: (force?: boolean) => Promise<void>;
-  addSubject: (name: string) => Promise<void>;
+  addSubject: (name: string) => Promise<AcademicSubject>;
   editSubject: (subjectId: string, name: string) => Promise<void>;
   removeSubject: (subjectId: string) => Promise<void>;
 }
@@ -42,6 +42,7 @@ export const useSubjectStore = create<SubjectState>()(
             subjects: [...state.subjects, newSubject],
             loading: false,
           }));
+          return newSubject;
         } catch (error: any) {
           set({ error: error.message, loading: false });
           throw error;

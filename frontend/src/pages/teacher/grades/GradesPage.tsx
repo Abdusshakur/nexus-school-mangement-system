@@ -10,7 +10,7 @@ import { useGradeStore } from "../../../store/grade.store";
 import { useTeacherContextStore } from "../../../store/teacherContext.store";
 import { ReportCardsTab } from "./ReportCardsTab";
 
-function getNigerianGradeShort(pct: number) {
+function getGradeShort(pct: number) {
   if (pct >= 75)
     return { l: "A1", bg: "bg-emerald-100", color: "text-emerald-800" };
   if (pct >= 70)
@@ -54,7 +54,16 @@ export default function TeacherGrades() {
   const [subjectId, setSubjectId] = useState("");
   const [assessmentId, setAssessmentId] = useState("");
 
-  const [grades, setGrades] = useState<Record<string, number | "">>({});
+  const [entries, setEntries] = useState<
+    Record<
+      string,
+      {
+        score: number | "";
+        status: "PRESENT" | "ABSENT" | "EXCUSED" | "MISSING";
+        remarks: string;
+      }
+    >
+  >({});
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
 
@@ -104,24 +113,58 @@ export default function TeacherGrades() {
     if (assessmentId && step === "enter") {
       loadRoster(assessmentId)
         .then((data) => {
-          const initialGrades: Record<string, number | ""> = {};
+          const initialEntries: Record<string, any> = {};
           data.students.forEach((s) => {
-            initialGrades[s.student_id] =
-              s.score !== null && s.score !== undefined ? s.score : "";
+            initialEntries[s.student_id] = {
+              score: s.score !== null && s.score !== undefined ? s.score : "",
+              status: s.score_status || "MISSING",
+              remarks: s.remarks || "",
+            };
           });
-          setGrades(initialGrades);
+          setEntries(initialEntries);
         })
         .catch(console.error);
     }
   }, [assessmentId, step, loadRoster]);
 
-  const updateGrade = (studentId: string, val: string) => {
-    if (!currentAssessment) return;
-    const num =
-      val === ""
-        ? ""
-        : Math.max(0, Math.min(currentAssessment.max_score, Number(val)));
-    setGrades((prev) => ({ ...prev, [studentId]: num }));
+  const updateEntry = (
+    studentId: string,
+    field: "score" | "status" | "remarks",
+    val: string
+  ) => {
+    setEntries((prev) => {
+      const current = prev[studentId] || { score: "", status: "MISSING", remarks: "" };
+      let newScore = current.score;
+      let newStatus = current.status;
+      let newRemarks = current.remarks;
+
+      if (field === "score") {
+        if (val === "") {
+          newScore = "";
+        } else if (currentAssessment) {
+          newScore = Math.max(0, Math.min(currentAssessment.max_score, Number(val)));
+          if (newStatus === "MISSING") {
+            newStatus = "PRESENT";
+          }
+        }
+      } else if (field === "status") {
+        newStatus = val as any;
+        if (val === "ABSENT" || val === "EXCUSED") {
+          newScore = "";
+        }
+      } else if (field === "remarks") {
+        newRemarks = val;
+      }
+
+      return {
+        ...prev,
+        [studentId]: {
+          score: newScore,
+          status: newStatus,
+          remarks: newRemarks,
+        },
+      };
+    });
   };
 
   const handleSave = async (submit: boolean) => {
@@ -130,12 +173,17 @@ export default function TeacherGrades() {
     try {
       const payload = {
         scores: rosterData.students.map((s) => {
-          const val = grades[s.student_id];
+          const entry = entries[s.student_id] || { score: "", status: "MISSING", remarks: "" };
+          let finalStatus = entry.status;
+          if (finalStatus === "PRESENT" && entry.score === "") {
+            finalStatus = "MISSING";
+          }
+
           return {
             student_id: s.student_id,
-            score: val === "" ? null : Number(val),
-            score_status:
-              val === "" ? ("MISSING" as const) : ("PRESENT" as const),
+            score: finalStatus === "PRESENT" && entry.score !== "" ? Number(entry.score) : null,
+            score_status: finalStatus,
+            remarks: entry.remarks || null,
           };
         }),
       };
@@ -151,31 +199,38 @@ export default function TeacherGrades() {
       setTimeout(() => setSavedMsg(""), 3000);
     } catch (err) {
       console.error(err);
-      setSavedMsg("Failed to save.");
     } finally {
       setSaving(false);
     }
   };
 
   const allEntered = rosterData
-    ? rosterData.students.every(
-        (s) =>
-          grades[s.student_id] !== undefined && grades[s.student_id] !== "",
-      )
+    ? rosterData.students.every((s) => {
+      const entry = entries[s.student_id];
+      if (!entry) return false;
+      if (entry.status === "PRESENT" && entry.score === "") return false;
+      if (entry.status === "MISSING") return false;
+      return true;
+    })
     : false;
+
   const numGrades = rosterData
-    ? rosterData.students.map((s) => Number(grades[s.student_id] ?? 0))
+    ? rosterData.students
+      .map((s) => entries[s.student_id])
+      .filter((e) => e && e.status === "PRESENT" && e.score !== "")
+      .map((e) => Number(e.score))
     : [];
+
   const avg =
-    allEntered && numGrades.length
+    numGrades.length > 0
       ? Math.round(numGrades.reduce((a, b) => a + b, 0) / numGrades.length)
       : null;
-  const highest =
-    allEntered && numGrades.length ? Math.max(...numGrades) : null;
+
+  const highest = numGrades.length > 0 ? Math.max(...numGrades) : null;
+
   const passCount =
-    allEntered && currentAssessment
-      ? numGrades.filter((n) => (n / currentAssessment.max_score) * 100 >= 50)
-          .length
+    currentAssessment && numGrades.length > 0
+      ? numGrades.filter((n) => (n / currentAssessment.max_score) * 100 >= 50).length
       : null;
 
   return (
@@ -192,21 +247,19 @@ export default function TeacherGrades() {
       <div className="flex items-center gap-6 border-b border-slate-200">
         <button
           onClick={() => setActiveTab("grading")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "grading"
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "grading"
               ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+            }`}
         >
           Subject Grading
         </button>
         <button
           onClick={() => setActiveTab("report_cards")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "report_cards"
+          className={`pb-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "report_cards"
               ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
+            }`}
         >
           Class Report Cards
         </button>
@@ -235,7 +288,7 @@ export default function TeacherGrades() {
                   onChange={(e) => {
                     setClassId(e.target.value);
                     setAssessmentId("");
-                    setGrades({});
+                    setEntries({});
                   }}
                   className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
@@ -255,7 +308,7 @@ export default function TeacherGrades() {
                   onChange={(e) => {
                     setSubjectId(e.target.value);
                     setAssessmentId("");
-                    setGrades({});
+                    setEntries({});
                   }}
                   className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
@@ -291,7 +344,7 @@ export default function TeacherGrades() {
                         type="button"
                         onClick={() => {
                           setAssessmentId(a.id);
-                          setGrades({});
+                          setEntries({});
                         }}
                         className={`p-3 rounded-xl text-left border-2 transition-all ${on ? "border-indigo-600 bg-indigo-50" : "border-slate-200 bg-transparent hover:border-slate-300"}`}
                       >
@@ -315,7 +368,7 @@ export default function TeacherGrades() {
             <button
               disabled={!assessmentId || classAssessments.length === 0}
               onClick={() => {
-                setGrades({});
+                setEntries({});
                 setStep("enter");
               }}
               className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -375,6 +428,9 @@ export default function TeacherGrades() {
                       Student
                     </th>
                     <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Status
+                    </th>
+                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Score / {currentAssessment.max_score}
                     </th>
                     <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -383,21 +439,22 @@ export default function TeacherGrades() {
                     <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Grade
                     </th>
-                    <th className="text-center px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Remark
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {rosterData?.students.map((student) => {
-                    const val = grades[student.student_id];
+                    const entry = entries[student.student_id] || { score: "", status: "MISSING", remarks: "" };
+                    const val = entry.score;
+                    const status = entry.status;
                     const pct =
-                      val !== "" && val !== undefined
-                        ? Math.round(
-                            (Number(val) / currentAssessment.max_score) * 100,
-                          )
+                      status === "PRESENT" && val !== ""
+                        ? Math.round((Number(val) / currentAssessment.max_score) * 100)
                         : null;
-                    const gs = pct !== null ? getNigerianGradeShort(pct) : null;
+                    const gs = pct !== null ? getGradeShort(pct) : null;
+
                     return (
                       <tr
                         key={student.student_id}
@@ -414,23 +471,31 @@ export default function TeacherGrades() {
                           </div>
                         </td>
                         <td className="px-5 py-3 text-center">
+                          <select
+                            value={status === "MISSING" ? "PRESENT" : status}
+                            onChange={(e) => updateEntry(student.student_id, "status", e.target.value)}
+                            className="text-xs font-medium bg-white border border-slate-200 rounded p-1.5 focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="PRESENT">Present</option>
+                            <option value="ABSENT">Absent</option>
+                            <option value="EXCUSED">Excused</option>
+                          </select>
+                        </td>
+                        <td className="px-5 py-3 text-center">
                           <input
                             type="number"
                             min={0}
                             max={currentAssessment.max_score}
-                            value={val ?? ""}
-                            onChange={(e) =>
-                              updateGrade(student.student_id, e.target.value)
-                            }
+                            value={val}
+                            disabled={status === "ABSENT" || status === "EXCUSED"}
+                            onChange={(e) => updateEntry(student.student_id, "score", e.target.value)}
                             placeholder="-"
-                            className="w-20 text-center px-2 py-1.5 rounded-lg text-sm font-bold border-2 border-slate-200 outline-none text-slate-900 focus:border-indigo-600 focus:ring-0 transition-colors"
+                            className="w-20 text-center px-2 py-1.5 rounded-lg text-sm font-bold border-2 border-slate-200 outline-none text-slate-900 focus:border-indigo-600 focus:ring-0 transition-colors disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-100"
                           />
                         </td>
                         <td className="px-5 py-3 text-center">
                           {pct !== null ? (
-                            <span
-                              className={`text-sm font-semibold ${pct >= 50 ? "text-emerald-500" : "text-red-500"}`}
-                            >
+                            <span className={`text-sm font-semibold ${pct >= 50 ? "text-emerald-500" : "text-red-500"}`}>
                               {pct}%
                             </span>
                           ) : (
@@ -439,21 +504,21 @@ export default function TeacherGrades() {
                         </td>
                         <td className="px-5 py-3 text-center">
                           {gs ? (
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${gs.bg} ${gs.color}`}
-                            >
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${gs.bg} ${gs.color}`}>
                               {gs.l}
                             </span>
                           ) : (
                             <span className="text-slate-300">-</span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-center">
-                          <span
-                            className={`text-xs font-semibold ${pct !== null ? (pct >= 50 ? "text-emerald-500" : "text-red-500") : "text-slate-300"}`}
-                          >
-                            {pct !== null ? (pct >= 50 ? "Pass" : "Fail") : ""}
-                          </span>
+                        <td className="px-5 py-3">
+                          <input
+                            type="text"
+                            value={entry.remarks}
+                            onChange={(e) => updateEntry(student.student_id, "remarks", e.target.value)}
+                            placeholder="Optional remark..."
+                            className="w-full text-xs px-2 py-1.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          />
                         </td>
                       </tr>
                     );

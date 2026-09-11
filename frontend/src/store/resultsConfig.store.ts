@@ -6,6 +6,7 @@ import type {
   AssessmentSchemeCreate,
   AssessmentSchemeUpdate,
   AssessmentComponentCreate,
+  AssessmentComponentUpdate,
   GradingScaleCreate,
   GradingScaleUpdate,
   GradingRuleResponse,
@@ -16,6 +17,7 @@ import type {
   AssessmentSchemeTemplateUpdate,
   AssessmentTemplateComponentResponse,
   AssessmentTemplateComponentCreate,
+  AssessmentTemplateComponentUpdate,
 } from "../api/resultsConfig";
 import {
   fetchSchemes,
@@ -23,6 +25,7 @@ import {
   updateScheme,
   fetchSchemeAssessments,
   addAssessmentComponent,
+  updateAssessmentComponent,
   fetchGradingScales,
   createGradingScale,
   updateGradingScale,
@@ -34,6 +37,7 @@ import {
   updateSchemeTemplate,
   fetchTemplateComponents,
   addTemplateComponent,
+  updateTemplateComponent,
   activateSchemeTemplate,
   applySchemeTemplate,
 } from "../api/resultsConfig";
@@ -70,6 +74,7 @@ interface ResultsConfigState {
 
   loadTemplateComponents: (templateId: string) => Promise<AssessmentTemplateComponentResponse[]>;
   addTemplateComponent: (templateId: string, payload: AssessmentTemplateComponentCreate) => Promise<AssessmentTemplateComponentResponse>;
+  editTemplateComponent: (templateId: string, componentId: string, payload: AssessmentTemplateComponentUpdate) => Promise<AssessmentTemplateComponentResponse>;
 
   loadSchemeComponents: (
     schemeId: string,
@@ -77,6 +82,11 @@ interface ResultsConfigState {
   addSchemeComponent: (
     schemeId: string,
     payload: AssessmentComponentCreate,
+  ) => Promise<AssessmentComponentResponse>;
+  editSchemeComponent: (
+    schemeId: string,
+    componentId: string,
+    payload: AssessmentComponentUpdate,
   ) => Promise<AssessmentComponentResponse>;
 
   loadGradingScales: () => Promise<void>;
@@ -193,6 +203,22 @@ export const useResultsConfigStore = create<ResultsConfigState>((set) => ({
     return newComponent;
   },
 
+  editTemplateComponent: async (templateId, componentId, payload) => {
+    const updated = await updateTemplateComponent(componentId, payload);
+    set((state) => {
+      const existing = state.templateComponents[templateId] || [];
+      return {
+        templateComponents: {
+          ...state.templateComponents,
+          [templateId]: existing.map(c => c.id === componentId ? updated : c).sort(
+            (a, b) => a.sequence - b.sequence,
+          ),
+        }
+      };
+    });
+    return updated;
+  },
+
   createNewScheme: async (payload) => {
     set({ loading: true });
     try {
@@ -243,6 +269,22 @@ export const useResultsConfigStore = create<ResultsConfigState>((set) => ({
       };
     });
     return newComponent;
+  },
+
+  editSchemeComponent: async (schemeId, componentId, payload) => {
+    const updated = await updateAssessmentComponent(componentId, payload);
+    set((state) => {
+      const existing = state.components[schemeId] || [];
+      return {
+        components: {
+          ...state.components,
+          [schemeId]: existing.map(c => c.id === componentId ? updated : c).sort(
+            (a, b) => a.sequence - b.sequence,
+          ),
+        }
+      };
+    });
+    return updated;
   },
 
   loadGradingScales: async () => {

@@ -1,22 +1,28 @@
 import { useState, useEffect } from "react";
-import { 
-  Search, 
-  AlertCircle, 
-  Clock, 
+import {
+  Search,
+  AlertCircle,
+  Clock,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from "lucide-react";
 import { TeacherQRScanner } from "../../../components/attendance/TeacherQRScanner";
 import { useTeacherAttendanceAdminStore } from "../../../store/teacherAttendanceAdmin.store";
 import { TeacherAttendanceCorrectionModal } from "./components/TeacherAttendanceCorrectionModal";
 import type { TeacherAttendanceAdminItem } from "../../../api/teacherAttendanceAdmin";
+import { fetchTeacherAttendanceList } from "../../../api/teacherAttendanceAdmin";
+import { useTeacherStore } from "../../../store/teacher.store";
 import { Spinner } from "../../../components/ui/Spinner";
+import { useNavigate } from "react-router-dom";
 
 export function AdminTeacherAttendance() {
+  const navigate = useNavigate();
   const { records, loading, loadRecords, processMissed } = useTeacherAttendanceAdminStore();
   const [processingMissed, setProcessingMissed] = useState(false);
   const [showProcessModal, setShowProcessModal] = useState(false);
-  
+
+
   const [dateFilter, setDateFilter] = useState(() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -28,22 +34,78 @@ export function AdminTeacherAttendance() {
   const [statusFilter, setStatusFilter] = useState("");
 
   const [selectedRecord, setSelectedRecord] = useState<TeacherAttendanceAdminItem | null>(null);
+  const [unprocessedDays, setUnprocessedDays] = useState<string[]>([]);
 
   useEffect(() => {
     loadRecords(dateFilter, undefined, statusFilter || undefined);
   }, [dateFilter, statusFilter, loadRecords]);
 
+  useEffect(() => {
+    let mounted = true;
+    const checkUnprocessed = async () => {
+      await useTeacherStore.getState().fetchTeachers();
+
+      const getPastWorkingDays = (count: number) => {
+        const days: string[] = [];
+        const d = new Date();
+        while (days.length < count) {
+          d.setDate(d.getDate() - 1);
+          const dayOfWeek = d.getDay();
+          if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip weekends
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            days.push(`${yyyy}-${mm}-${dd}`);
+          }
+        }
+        return days;
+      };
+
+      const daysToCheck = getPastWorkingDays(5); // Check the last 5 working days
+
+      try {
+        const foundUnprocessed: string[] = [];
+        const teacherCount = useTeacherStore.getState().teachers.length;
+
+        // Fetch all 5 days concurrently
+        await Promise.all(daysToCheck.map(async (dayDate) => {
+          const pastRecords = await fetchTeacherAttendanceList(dayDate);
+          if (!mounted) return;
+
+          const isUnprocessed = teacherCount > 0 && (pastRecords.length < teacherCount || pastRecords.some(r => r.status === "CHECKED_IN" || r.status === "NOT_STARTED"));
+          if (isUnprocessed) {
+            foundUnprocessed.push(dayDate);
+          }
+        }));
+
+        if (!mounted) return;
+        if (foundUnprocessed.length > 0) {
+          // Sort chronologically (oldest first)
+          foundUnprocessed.sort((a, b) => a.localeCompare(b));
+          setUnprocessedDays(foundUnprocessed);
+        }
+      } catch (err) {
+        console.error("Failed to check unprocessed days", err);
+      }
+    };
+    checkUnprocessed();
+    return () => { mounted = false; };
+  }, []);
+
   const handleProcessMissed = async () => {
-    setShowProcessModal(false);
     setProcessingMissed(true);
     try {
       await processMissed(dateFilter);
+      setShowProcessModal(false);
+      if (unprocessedDays.includes(dateFilter)) {
+        setUnprocessedDays(prev => prev.filter(d => d !== dateFilter));
+      }
     } finally {
       setProcessingMissed(false);
     }
   };
 
-  const filteredRecords = records.filter(record => 
+  const filteredRecords = records.filter(record =>
     record.teacher_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -53,8 +115,11 @@ export function AdminTeacherAttendance() {
   };
 
   const getStatusBadge = (status: string, isLate: boolean) => {
-    if (status === "MISSED_CHECK_IN" || status === "MISSED_CHECK_OUT") {
+    if (status === "MISSED_CHECK_IN") {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700"><AlertCircle size={12} /> Absent</span>;
+    }
+    if (status === "MISSED_CHECK_OUT") {
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700"><AlertTriangle size={12} /> Missed Checkout</span>;
     }
     if (isLate || status === "LATE") {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700"><AlertTriangle size={12} /> Late</span>;
@@ -68,7 +133,30 @@ export function AdminTeacherAttendance() {
   return (
     <div className="flex-1 bg-slate-50/50 min-h-screen">
       <main className="p-8 max-w-7xl mx-auto space-y-6">
-        
+
+        {unprocessedDays.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-amber-600 mt-0.5 shrink-0" size={18} />
+              <div>
+                <h3 className="text-sm font-bold text-amber-900">Action Required: Unprocessed Absentees</h3>
+                <p className="text-sm text-amber-700 mt-0.5">
+                  You forgot to process teacher absentees for the following days: <strong>{unprocessedDays.join(", ")}</strong>.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setDateFilter(unprocessedDays[0]); // Start with oldest unprocessed day
+                setShowProcessModal(true);
+              }}
+              className="shrink-0 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold rounded-lg transition-colors border border-amber-300 shadow-sm"
+            >
+              Process {unprocessedDays[0]}
+            </button>
+          </div>
+        )}
+
         {/* Header Area */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -76,6 +164,13 @@ export function AdminTeacherAttendance() {
             <p className="text-sm text-slate-500 mt-1">Monitor and manage daily staff attendance records.</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/admin/attendance/teacher-history")}
+              className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm"
+            >
+              <History size={16} />
+              View History
+            </button>
             <button
               onClick={() => setShowProcessModal(true)}
               disabled={processingMissed}
@@ -189,12 +284,20 @@ export function AdminTeacherAttendance() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => setSelectedRecord(record)}
-                          className="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          Manual Correction
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => navigate(`/admin/attendance/teacher-history?teacherId=${record.teacher_id}`)}
+                            className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+                          >
+                            History
+                          </button>
+                          <button
+                            onClick={() => setSelectedRecord(record)}
+                            className="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                          >
+                            Manual Correction
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -206,48 +309,48 @@ export function AdminTeacherAttendance() {
       </main>
 
       {/* Modal */}
-        {selectedRecord && (
-          <TeacherAttendanceCorrectionModal
-            teacherRecord={selectedRecord}
-            onClose={() => setSelectedRecord(null)}
-          />
-        )}
+      {selectedRecord && (
+        <TeacherAttendanceCorrectionModal
+          teacherRecord={selectedRecord}
+          onClose={() => setSelectedRecord(null)}
+        />
+      )}
 
-        {/* Process Absentees Modal */}
-        {showProcessModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-6">
-                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
-                  <AlertTriangle size={24} />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900 mb-2">
-                  Process Absentees?
-                </h2>
-                <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                  Are you sure you want to process missed attendance for <span className="font-bold text-slate-700">{dateFilter}</span>? Teachers without a check-in will be permanently marked as absent.
-                </p>
-                
-                <div className="flex gap-3 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowProcessModal(false)}
-                    className="px-4 py-2.5 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleProcessMissed}
-                    className="px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm"
-                  >
-                    Process Absentees
-                  </button>
-                </div>
+      {/* Process Absentees Modal */}
+      {showProcessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                <AlertTriangle size={24} />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">
+                Process Absentees?
+              </h2>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                Are you sure you want to process missed attendance for <span className="font-bold text-slate-700">{dateFilter}</span>? Teachers without a check-in will be permanently marked as absent.
+              </p>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowProcessModal(false)}
+                  className="px-4 py-2.5 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProcessMissed}
+                  className="px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm"
+                >
+                  Process Absentees
+                </button>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }
