@@ -20,6 +20,7 @@ from backend.app.schemas.teacher import (
     AssignSubjectsRequest, AssignSubjectsResponse,
     TeacherDetailResponse, AssignedClassItem, AssignedSubjectItem, BulkTeacherAssignmentRequest
 )
+from backend.app.services.curriculum_service import validate_class_subject_access
 
 router = APIRouter(prefix="/teachers", tags=["Teacher Management"])
 
@@ -236,6 +237,15 @@ def update_teacher_assignments(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Class or Subject ID provided does not exist in your school."
             )
+
+        validate_class_subject_access(
+            class_id=target_class.id,
+            subject_id=target_subject.id,
+            academic_session_id=current_session.id,
+            academic_term_id=current_term.id,
+            school_id=context.school_id,
+            session=session,
+        )
 
         # Create the time-locked V2 Contract
         new_assignment = TeacherAssignment(

@@ -495,6 +495,22 @@ class Subject(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class ClassGroup(SQLModel, table=True):
+    """Curriculum category shared by the school's actual classes."""
+    __tablename__ = "class_groups"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint("school_id", "name", name="uq_class_group_name_per_school"),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    name: str = Field(index=True)
+    description: Optional[str] = None
+    is_active: bool = Field(default=True, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class SchoolClass(SQLModel, table=True):
     """Represents a class room/grade level (e.g., JSS 1A, SS 2 Science)."""
     __tablename__ = "classes"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -503,6 +519,7 @@ class SchoolClass(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     school_id: UUID = Field(foreign_key="school.id", index=True)
     name: str = Field(index=True)
+    group_id: Optional[UUID] = Field(default=None, foreign_key="class_groups.id", index=True)
     # Optional link to a designated form teacher
     form_teacher_id: Optional[UUID] = Field(default=None, foreign_key="teacherprofile.id", index=True)
     
@@ -567,6 +584,32 @@ class ActivityLog(SQLModel, table=True):
     message: str
     performed_by: UUID = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GroupSubject(SQLModel, table=True):
+    """A subject offered by a class group for one academic context."""
+    __tablename__ = "group_subjects"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "group_id",
+            "subject_id",
+            "academic_session_id",
+            "academic_term_id",
+            name="uq_group_subject_per_academic_context",
+        ),
+    )
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    school_id: UUID = Field(foreign_key="school.id", index=True)
+    group_id: UUID = Field(foreign_key="class_groups.id", index=True)
+    subject_id: UUID = Field(foreign_key="subject.id", index=True)
+    academic_session_id: UUID = Field(foreign_key="academicsession.id", index=True)
+    academic_term_id: UUID = Field(foreign_key="academicterm.id", index=True)
+    is_required: bool = Field(default=True)
+    is_active: bool = Field(default=True, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class PlatformActivityLog(SQLModel, table=True):

@@ -20,6 +20,67 @@ class AcademicEntityResponse(BaseModel):
     name: str
 
 
+class ClassCreate(BaseModel):
+    name: str = Field(min_length=1)
+    group_id: Optional[UUID] = None
+
+
+class ClassUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    group_id: Optional[UUID] = None
+
+
+class ClassGroupCreate(BaseModel):
+    name: str = Field(min_length=1)
+    description: Optional[str] = None
+
+
+class ClassGroupUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ClassGroupResponse(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    is_active: bool
+
+
+class GroupSubjectCreate(BaseModel):
+    subject_id: UUID
+    academic_session_id: UUID
+    academic_term_id: UUID
+    is_required: bool = True
+
+
+class GroupSubjectUpdate(BaseModel):
+    is_required: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
+class GroupSubjectResponse(BaseModel):
+    id: UUID
+    group_id: UUID
+    subject_id: UUID
+    subject_name: str
+    subject_code: Optional[str] = None
+    academic_session_id: UUID
+    academic_term_id: UUID
+    is_required: bool
+    is_active: bool
+
+
+class ClassSubjectResponse(BaseModel):
+    class_id: UUID
+    class_name: str
+    group_id: Optional[UUID] = None
+    group_name: Optional[str] = None
+    curriculum_configured: bool
+    subjects: List[GroupSubjectResponse] = Field(default_factory=list)
+
+
 class SubjectCreate(BaseModel):
     name: str = Field(min_length=1)
     code: Optional[str] = None
@@ -48,6 +109,9 @@ class ClassWithTeacherResponse(BaseModel):
     name: str
     form_teacher_id: Optional[UUID] = None
     form_teacher_name: str
+    group_id: Optional[UUID] = None
+    group_name: Optional[str] = None
+    curriculum_configured: bool = False
 
 # ==========================================
 # ACADEMIC SESSION SCHEMAS (The Year)
