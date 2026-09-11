@@ -15,7 +15,7 @@ import {
   getTeacherTodayStatus,
   teacherCheckIn,
   teacherCheckOut,
-} from "../../../api/attendance";
+} from "../../../api/teacherContext";
 import {
   fetchMyAttendanceStats,
   fetchMyAttendanceHistory,

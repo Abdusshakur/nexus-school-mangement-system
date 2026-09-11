@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import type { AcademicClass } from "../api/academics";
-import { fetchClasses, createClass, deleteClass, assignFormTeacher } from "../api/academics";
+import { fetchClasses, createClass, updateClass, deleteClass, assignFormTeacher } from "../api/academics";
 
 function sortClasses(classes: AcademicClass[]): AcademicClass[] {
   const getWeight = (prefix: string) => {
@@ -41,7 +41,8 @@ interface ClassState {
   error: string | null;
 
   loadClasses: (force?: boolean) => Promise<void>;
-  addClass: (name: string) => Promise<void>;
+  addClass: (name: string, groupId?: string) => Promise<void>;
+  editClass: (classId: string, name: string, groupId?: string) => Promise<void>;
   removeClass: (classId: string) => Promise<void>;
   assignClassTeacher: (classId: string, teacherId: string) => Promise<void>;
   removeClassTeacher: (classId: string) => Promise<void>;
@@ -94,12 +95,31 @@ export const useClassStore = create<ClassState>()(
         }
       },
 
-      addClass: async (name) => {
+      addClass: async (name, groupId) => {
         set({ loading: true, error: null });
         try {
-          const newClass = await createClass({ name });
+          if (!groupId) {
+            throw new Error("A class must be assigned to a Class Group.");
+          }
+          const newClass = await createClass({ name, group_id: groupId });
           set((state) => ({
             classes: sortClasses([...state.classes, newClass]),
+            loading: false,
+          }));
+        } catch (error: any) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      editClass: async (classId, name, groupId) => {
+        set({ loading: true, error: null });
+        try {
+          const payload: any = { name };
+          if (groupId !== undefined) payload.group_id = groupId;
+          const updatedClass = await updateClass(classId, payload);
+          set((state) => ({
+            classes: sortClasses(state.classes.map(c => c.id === classId ? updatedClass : c)),
             loading: false,
           }));
         } catch (error: any) {

@@ -60,19 +60,19 @@ export const adminResultsApi = {
     return response.data;
   },
 
-  // Get details (including all student scores) for a specific submission
+  // Get details of all student scores for a specific submission
   fetchSubmissionDetails: async (submissionId: string): Promise<SubmissionDetailsResponse> => {
     const response = await client.get(`/results/submissions/${submissionId}`);
     return response.data;
   },
 
-  // Approve a score submission
+  // Approve score submission
   approveSubmission: async (submissionId: string): Promise<ScoreSubmission> => {
     const response = await client.post(`/results/submissions/${submissionId}/approve`);
     return response.data;
   },
 
-  // Reject a score submission
+  // Reject score submission
   rejectSubmission: async (submissionId: string, reason: string): Promise<ScoreSubmission> => {
     const response = await client.post(`/results/submissions/${submissionId}/reject`, {
       reason,

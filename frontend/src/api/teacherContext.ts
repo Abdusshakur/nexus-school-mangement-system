@@ -77,4 +77,14 @@ export const fetchMyAttendanceHistory = async (start_date?: string, end_date?: s
   return apiClient.get("/teachers/me/history", { params });
 };
 
+export async function teacherCheckIn(token: string): Promise<any> {
+  return apiClient.post("/teachers/check-in", { token });
+}
 
+export async function teacherCheckOut(token: string): Promise<any> {
+  return apiClient.post("/teachers/check-out", { token });
+}
+
+export async function getTeacherTodayStatus(): Promise<any> {
+  return apiClient.get("/teachers/me/today");
+}

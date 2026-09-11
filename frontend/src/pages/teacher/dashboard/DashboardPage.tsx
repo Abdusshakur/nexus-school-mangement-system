@@ -22,7 +22,7 @@ import { useSessionStore } from "../../../store/session.store";
 import { useTeacherContextStore } from "../../../store/teacherContext.store";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { getTeacherTodayStatus, teacherCheckIn, teacherCheckOut } from "../../../api/attendance";
+import { getTeacherTodayStatus, teacherCheckIn, teacherCheckOut } from "../../../api/teacherContext";
 import { QRScannerModal } from "../../../components/dashboard/QRScannerModal";
 import { ScanFace } from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";

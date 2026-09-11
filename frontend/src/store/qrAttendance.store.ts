@@ -18,6 +18,7 @@ interface TeacherAttendanceState {
   teacherCheckIns: TeacherCheckIn[];
   currentQRSession: QRSession | null;
   loading: boolean;
+  fetchCurrentQRSession: () => Promise<void>;
   generateQRSession: (qrType?: "CHECK_IN" | "CHECK_OUT") => Promise<void>;
   markAttendance: (teacherId: string, status: "present" | "late") => void;
 }
@@ -25,11 +26,30 @@ interface TeacherAttendanceState {
 // Cleaned up mock utilities
 
 import { generateAttendanceQR } from "../api/attendance";
+import { fetchCurrentTeacherQR } from "../api/teacherAttendanceAdmin";
 
 export const useQRAttendanceStore = create<TeacherAttendanceState>((set) => ({
   teacherCheckIns: [],
   currentQRSession: null,
   loading: false,
+
+  fetchCurrentQRSession: async () => {
+    try {
+      set({ loading: true });
+      const response = await fetchCurrentTeacherQR();
+      set({
+        currentQRSession: {
+          token: response.token,
+          date: new Date().toISOString().slice(0, 10),
+          expiresAt: response.expires_at.endsWith('Z') ? response.expires_at : `${response.expires_at}Z`,
+        },
+        loading: false,
+      });
+    } catch (err) {
+      console.error("Failed to fetch current QR token", err);
+      set({ loading: false });
+    }
+  },
 
   generateQRSession: async (qrType = "CHECK_IN") => {
     try {

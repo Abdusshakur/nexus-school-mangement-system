@@ -14,11 +14,13 @@ interface AdminResultsState {
   loadingDetails: Record<string, boolean>;
 
   approvingId: string | null;
+  rejectingId: string | null;
   error: string | null;
 
   loadSubmissions: () => Promise<void>;
   loadSubmissionDetails: (submissionId: string) => Promise<void>;
   approveScoreSubmission: (submissionId: string, className: string) => Promise<void>;
+  rejectScoreSubmission: (submissionId: string, className: string, reason: string) => Promise<void>;
 }
 
 export const useAdminResultsStore = create<AdminResultsState>((set, get) => ({
@@ -27,12 +29,14 @@ export const useAdminResultsStore = create<AdminResultsState>((set, get) => ({
   submissionDetails: {},
   loadingDetails: {},
   approvingId: null,
+  rejectingId: null,
   error: null,
 
   loadSubmissions: async () => {
     set({ loadingSubmissions: true, error: null });
     try {
       const data = await adminResultsApi.fetchSubmissions();
+      
       set({ submissions: data || [], loadingSubmissions: false });
     } catch (err: any) {
       set({
@@ -50,6 +54,8 @@ export const useAdminResultsStore = create<AdminResultsState>((set, get) => ({
     set((state) => ({
       loadingDetails: { ...state.loadingDetails, [submissionId]: true },
     }));
+
+
 
     try {
       const data = await adminResultsApi.fetchSubmissionDetails(submissionId);
@@ -81,6 +87,25 @@ export const useAdminResultsStore = create<AdminResultsState>((set, get) => ({
     } catch (err: any) {
       set({ approvingId: null });
       toast.error(err.response?.data?.message || "Failed to approve scores");
+    }
+  },
+
+  rejectScoreSubmission: async (submissionId: string, className: string, reason: string) => {
+    set({ rejectingId: submissionId });
+    try {
+      const updatedSubmission = await adminResultsApi.rejectSubmission(submissionId, reason);
+
+      set((state) => ({
+        submissions: state.submissions.map((s) =>
+          s.id === submissionId ? updatedSubmission : s
+        ),
+        rejectingId: null,
+      }));
+
+      toast.success(`Scores for ${className} have been rejected.`);
+    } catch (err: any) {
+      set({ rejectingId: null });
+      toast.error(err.response?.data?.message || "Failed to reject scores");
     }
   },
 }));

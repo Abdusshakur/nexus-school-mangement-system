@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, AlertCircle, CheckCircle, UploadCloud } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, UploadCloud, Edit2 } from "lucide-react";
 import { Spinner } from "../../../../../components/ui/Spinner";
 import { useResultsConfigStore } from "../../../../../store/resultsConfig.store";
 import type { AssessmentTemplateComponentResponse } from "../../../../../api/resultsConfig";
@@ -25,9 +25,18 @@ export function TemplateComponents({
   const [activating, setActivating] = useState(false);
   const [applying, setApplying] = useState(false);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    type: "CONTINUOUS_ASSESSMENT",
+    max_score: 100,
+    weight: 0,
+  });
+
   const {
     loadTemplateComponents,
     addTemplateComponent,
+    editTemplateComponent,
     activateTemplate,
     applyTemplate,
   } = useResultsConfigStore();
@@ -82,6 +91,38 @@ export function TemplateComponents({
       toast.success("Component added to template");
     } catch (err: any) {
       toast.error(err.message || "Failed to add component");
+    }
+  };
+
+  const startEdit = (comp: AssessmentTemplateComponentResponse) => {
+    setEditingId(comp.id);
+    setEditForm({
+      name: comp.name,
+      type: comp.type,
+      max_score: comp.max_score,
+      weight: comp.weight,
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent, componentId: string) => {
+    e.preventDefault();
+    if (!editForm.name || editForm.weight <= 0) return;
+
+    const originalComponent = components.find(c => c.id === componentId);
+    if (!originalComponent) return;
+
+    const weightDifference = editForm.weight - originalComponent.weight;
+    if (currentTotalWeight + weightDifference > totalTargetWeight) {
+      toast.error(`Cannot exceed template's total target weight of ${totalTargetWeight}%`);
+      return;
+    }
+
+    try {
+      await editTemplateComponent(templateId, componentId, editForm);
+      setEditingId(null);
+      toast.success("Component updated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update component");
     }
   };
 
@@ -157,29 +198,103 @@ export function TemplateComponents({
         )}
 
         {components.map((comp) => (
-          <div
-            key={comp.id}
-            className="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-lg shadow-sm"
-          >
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800 text-sm">
-                  {comp.name}
-                </span>
-                <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                  {comp.type.replace(/_/g, " ")}
-                </span>
+          editingId === comp.id ? (
+            <form
+              key={comp.id}
+              onSubmit={(e) => handleEditSubmit(e, comp.id)}
+              className="bg-white border border-indigo-200 p-3 rounded-lg shadow-sm space-y-3"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">
+                    Name
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full text-xs font-semibold text-slate-900 border border-slate-200 rounded-md p-1.5 focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">
+                    Max Score
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    value={editForm.max_score}
+                    onChange={(e) => setEditForm({ ...editForm, max_score: parseInt(e.target.value) || 0 })}
+                    className="w-full text-xs font-semibold text-slate-900 border border-slate-200 rounded-md p-1.5 focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">
+                    Weight (%)
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={editForm.weight}
+                    onChange={(e) => setEditForm({ ...editForm, weight: parseInt(e.target.value) || 0 })}
+                    className="w-full text-xs font-semibold text-slate-900 border border-slate-200 rounded-md p-1.5 focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Max Score: {comp.max_score}
-              </p>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingId(null)}
+                  className="px-2 py-1 text-[10px] uppercase font-bold text-slate-500 hover:bg-slate-100 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-1 bg-indigo-600 text-white rounded text-[10px] uppercase font-bold hover:bg-indigo-700"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div
+              key={comp.id}
+              className="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-lg shadow-sm"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 text-sm">
+                    {comp.name}
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                    {comp.type.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Max Score: {comp.max_score}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+                  {comp.weight}%
+                </span>
+                {!isActive && (
+                  <button
+                    onClick={() => startEdit(comp)}
+                    className="text-slate-400 hover:text-indigo-600 transition-colors"
+                    title="Edit Component"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
-                {comp.weight}%
-              </span>
-            </div>
-          </div>
+          )
         ))}
 
         {adding ? (

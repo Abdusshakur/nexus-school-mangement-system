@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
-import type { Announcement } from "./data";
 import { useAnnouncementStore } from "../../../store/announcement.store";
 import { CreateAnnouncement } from "./CreateAnnouncement";
 import { AnnouncementList } from "./AnnouncementList";
@@ -13,7 +12,7 @@ export default function TeacherAnnouncements() {
     fetchAnnouncements().catch(console.error);
   }, [fetchAnnouncements]);
 
-  const handlePost = (ann: Omit<Announcement, "id">) => {
+  const handlePost = (ann: { title: string; content: string; audience: string; category: string; priority: "LOW" | "MEDIUM" | "HIGH" }) => {
     postAnnouncement(ann).catch(console.error);
     setIsPosting(false);
   };

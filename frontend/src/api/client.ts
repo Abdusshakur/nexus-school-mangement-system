@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
 import { toast } from "sonner";
@@ -38,22 +37,29 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 400:
-          errorMsg = typeof backendMessage === "string" ? backendMessage : "The information provided is invalid. Please check your inputs and try again.";
+          errorMsg =
+            typeof backendMessage === "string"
+              ? backendMessage
+              : "The information provided is invalid. Please check your inputs and try again.";
           break;
         case 401:
           useAuthStore.getState().logout();
           errorMsg = "Your session has expired. Please log in again.";
           toast.error(errorMsg);
           window.location.href = "/login";
-          return Promise.reject(new Error(errorMsg)); // Fast exit
+          return Promise.reject(new Error(errorMsg));
         case 403:
           errorMsg = "You do not have permission to perform this action.";
           break;
         case 404:
-          errorMsg = "The requested record could not be found. It may have been deleted.";
+          errorMsg =
+            "The requested record could not be found. It may have been deleted.";
           break;
         case 409:
-          errorMsg = typeof backendMessage === "string" ? backendMessage : "This record already exists in the system.";
+          errorMsg =
+            typeof backendMessage === "string"
+              ? backendMessage
+              : "This record already exists in the system.";
           break;
         case 422:
           if (Array.isArray(data?.detail)) {
@@ -78,16 +84,22 @@ apiClient.interceptors.response.use(
         case 502:
         case 503:
         case 504:
-          errorMsg = "The system is currently undergoing maintenance. Please try again in a few minutes.";
+          errorMsg =
+            "The system is currently undergoing maintenance. Please try again in a few minutes.";
           break;
         default:
-          errorMsg = typeof backendMessage === "string" ? backendMessage : "An unexpected error occurred. Please try again.";
+          errorMsg =
+            typeof backendMessage === "string"
+              ? backendMessage
+              : "An unexpected error occurred. Please try again.";
       }
     } else {
       if (error.message && error.message.includes("is not valid JSON")) {
-        errorMsg = "Received an invalid response from the server. The system might be busy or restarting.";
+        errorMsg =
+          "Received an invalid response from the server. The system might be busy or restarting.";
       } else {
-        errorMsg = error.message || "A network error occurred. Please try again.";
+        errorMsg =
+          error.message || "A network error occurred. Please try again.";
       }
     }
 
@@ -95,7 +107,7 @@ apiClient.interceptors.response.use(
       toast.error(errorMsg);
     }
     return Promise.reject(new Error(errorMsg));
-  }
+  },
 );
 
 export default apiClient;

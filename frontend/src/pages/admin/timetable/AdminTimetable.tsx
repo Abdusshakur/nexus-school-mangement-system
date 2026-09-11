@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, Edit3, X, Save, Trash2, Plus } from "lucide-react";
+import { ChevronDown, Edit3, X, Save, Plus, Trash2 } from "lucide-react";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { Spinner } from "../../../components/ui/Spinner";
 import { getSubjectColors } from "../../../utils/colors";
@@ -284,11 +284,10 @@ export function AdminTimetable() {
             <button
               key={day}
               onClick={() => setActiveDay(idx)}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${
-                activeDay === idx
+              className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer ${activeDay === idx
                   ? "bg-white text-indigo-600 shadow-sm ring-1 ring-black/5"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
-              }`}
+                }`}
             >
               {day}
             </button>
@@ -343,15 +342,15 @@ export function AdminTimetable() {
                         </td>
                         {classes.length > 0
                           ? classes.map((c) => (
-                              <td key={c.id} className="p-1">
-                                <Skeleton className="h-[76px] w-full rounded-xl" />
-                              </td>
-                            ))
+                            <td key={c.id} className="p-1">
+                              <Skeleton className="h-[76px] w-full rounded-xl" />
+                            </td>
+                          ))
                           : [1, 2, 3].map((j) => (
-                              <td key={j} className="p-1">
-                                <Skeleton className="h-[76px] w-full rounded-xl" />
-                              </td>
-                            ))}
+                            <td key={j} className="p-1">
+                              <Skeleton className="h-[76px] w-full rounded-xl" />
+                            </td>
+                          ))}
                       </tr>
                     ))}
                   </>
@@ -646,16 +645,13 @@ export function AdminTimetable() {
                     </>
                   )}
                 </button>
-                {timetableGrid[editCell.cellKey] && (
-                  <button
-                    onClick={handleClearCell}
-                    disabled={isSaving}
-                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center cursor-pointer"
-                    title="Clear lesson"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
+                <button
+                  onClick={handleClearCell}
+                  disabled={isSaving}
+                  className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer border border-rose-200"
+                >
+                  <Trash2 size={16} /> Clear
+                </button>
               </div>
             </div>
           </div>

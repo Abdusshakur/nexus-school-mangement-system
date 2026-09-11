@@ -8,10 +8,62 @@ import {
   BookOpen,
   X,
   UserCircle,
+  XCircle,
 } from "lucide-react";
 import { Spinner } from "../../../components/ui/Spinner";
 
 import { useAdminResultsStore } from "../../../store/adminResults.store";
+function RejectSubmissionModal({
+  className,
+  onClose,
+  onReject,
+  rejecting,
+}: {
+  className: string;
+  onClose: () => void;
+  onReject: (reason: string) => void;
+  rejecting: boolean;
+}) {
+  const [reason, setReason] = useState("");
+  
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Reject Scores for {className}</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Please provide a reason for rejecting these scores. This will be sent back to the teacher so they can correct it.
+        </p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g., Exam 1 scores are unusually low, please double check..."
+          className="w-full h-32 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none text-sm mb-6"
+        />
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={rejecting}
+            className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onReject(reason)}
+            disabled={!reason.trim() || rejecting}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+          >
+            {rejecting ? (
+              <Spinner size="sm" className="text-white" />
+            ) : (
+              <XCircle size={16} />
+            )}
+            Reject Scores
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SubmissionDetailsModal({
   submissionId,
@@ -169,10 +221,13 @@ export function ScoreApprovalsTab() {
     loadingSubmissions,
     loadSubmissions,
     approveScoreSubmission,
+    rejectScoreSubmission,
     approvingId,
+    rejectingId,
   } = useAdminResultsStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewDetailsId, setViewDetailsId] = useState<string | null>(null);
+  const [rejectingSub, setRejectingSub] = useState<{ id: string; className: string } | null>(null);
 
   useEffect(() => {
     loadSubmissions();
@@ -197,7 +252,7 @@ export function ScoreApprovalsTab() {
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5">
           <p className="text-sm font-semibold text-indigo-800">
             Pending Approvals
@@ -213,12 +268,6 @@ export function ScoreApprovalsTab() {
           <p className="text-3xl font-black text-emerald-600 mt-1">
             {(submissions || []).filter((s) => s.status === "APPROVED").length}
           </p>
-        </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
-          <p className="text-sm font-semibold text-slate-700">
-            Awaiting Submission
-          </p>
-          <p className="text-3xl font-black text-slate-600 mt-1">14</p>
         </div>
       </div>
 
@@ -256,6 +305,8 @@ export function ScoreApprovalsTab() {
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${
                             isApproved
                               ? "bg-emerald-100 text-emerald-700"
+                              : sub.status === "REJECTED"
+                              ? "bg-rose-100 text-rose-700"
                               : "bg-blue-100 text-blue-700"
                           }`}
                         >
@@ -276,30 +327,44 @@ export function ScoreApprovalsTab() {
 
                   <div className="flex items-center gap-8">
                     <div
-                      className="w-40 flex justify-end"
+                      className="flex justify-end"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {!isApproved ? (
-                        <button
-                          onClick={() => handleApprove(sub.id, sub.class_name)}
-                          disabled={approvingId === sub.id}
-                          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
-                        >
-                          {approvingId === sub.id ? (
-                            <>
-                              <Spinner size="sm" className="text-white" />
-                              Approving...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle size={16} />
-                              Approve All
-                            </>
-                          )}
-                        </button>
-                      ) : (
+                      {!isApproved && sub.status !== "REJECTED" ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleApprove(sub.id, sub.class_name)}
+                            disabled={approvingId === sub.id}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                          >
+                            {approvingId === sub.id ? (
+                              <>
+                                <Spinner size="sm" className="text-white" />
+                                Approving...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle size={16} />
+                                Approve
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setRejectingSub({ id: sub.id, className: sub.class_name })}
+                            disabled={approvingId === sub.id}
+                            className="flex items-center justify-center p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Reject Submission"
+                          >
+                            <XCircle size={20} />
+                          </button>
+                        </div>
+                      ) : isApproved ? (
                         <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold px-4 py-2 bg-emerald-50 rounded-lg">
                           <CheckCircle size={16} /> Approved
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-rose-600 text-sm font-semibold px-4 py-2 bg-rose-50 rounded-lg">
+                          <XCircle size={16} /> Rejected
                         </div>
                       )}
                     </div>
@@ -341,6 +406,18 @@ export function ScoreApprovalsTab() {
         <SubmissionDetailsModal
           submissionId={viewDetailsId}
           onClose={() => setViewDetailsId(null)}
+        />
+      )}
+
+      {rejectingSub && (
+        <RejectSubmissionModal
+          className={rejectingSub.className}
+          rejecting={rejectingId === rejectingSub.id}
+          onClose={() => setRejectingSub(null)}
+          onReject={async (reason) => {
+            await rejectScoreSubmission(rejectingSub.id, rejectingSub.className, reason);
+            setRejectingSub(null);
+          }}
         />
       )}
     </div>

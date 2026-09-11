@@ -1,16 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Send } from "lucide-react";
-import type { Announcement } from "./data";
+import { useClassStore } from "../../../store/class.store";
 
 interface Props {
-  onPost: (ann: Omit<Announcement, "id">) => void;
+  onPost: (ann: { title: string; content: string; audience: string; category: string; priority: "LOW" | "MEDIUM" | "HIGH" }) => void;
   onCancel: () => void;
 }
 
 export function CreateAnnouncement({ onPost, onCancel }: Props) {
+  const { classes, loadClasses } = useClassStore();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [target, setTarget] = useState("All Classes");
+  const [audience, setAudience] = useState("ALL");
+  const [category, setCategory] = useState("GENERAL");
+  const [priority, setPriority] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
+
+  useEffect(() => {
+    loadClasses().catch(console.error);
+  }, [loadClasses]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,14 +26,16 @@ export function CreateAnnouncement({ onPost, onCancel }: Props) {
     onPost({
       title,
       content,
-      target,
-      author: "Dr. Eleanor Kim",
-      date: "Just now",
+      audience,
+      category,
+      priority,
     });
 
     setTitle("");
     setContent("");
-    setTarget("All Classes");
+    setAudience("ALL");
+    setCategory("GENERAL");
+    setPriority("MEDIUM");
   };
 
   return (
@@ -38,8 +47,8 @@ export function CreateAnnouncement({ onPost, onCancel }: Props) {
         Create New Announcement
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-3">
           <label className="block text-slate-700 text-xs font-bold mb-1.5 uppercase tracking-wider">
             Announcement Title
           </label>
@@ -52,25 +61,51 @@ export function CreateAnnouncement({ onPost, onCancel }: Props) {
             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
           />
         </div>
+
         <div>
           <label className="block text-slate-700 text-xs font-bold mb-1.5 uppercase tracking-wider">
-            Target Class
+            Audience (Target Class)
           </label>
           <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all h-12 bg-slate-50"
           >
-            <option value="All Classes">All Classes</option>
-            <option value="Advanced Mathematics III">
-              Advanced Mathematics III
-            </option>
-            <option value="Physics & Thermodynamics">
-              Physics & Thermodynamics
-            </option>
-            <option value="Computer Programming II">
-              Computer Programming II
-            </option>
+            <option value="ALL">All Classes</option>
+            {classes.map(cls => (
+              <option key={cls.id} value={cls.name}>{cls.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-slate-700 text-xs font-bold mb-1.5 uppercase tracking-wider">
+            Category
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all h-12 bg-slate-50"
+          >
+            <option value="GENERAL">General</option>
+            <option value="ACADEMICS">Academics</option>
+            <option value="EVENTS">Events</option>
+            <option value="ALERTS">Alerts</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-slate-700 text-xs font-bold mb-1.5 uppercase tracking-wider">
+            Priority
+          </label>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as "LOW" | "MEDIUM" | "HIGH")}
+            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all h-12 bg-slate-50"
+          >
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
           </select>
         </div>
       </div>

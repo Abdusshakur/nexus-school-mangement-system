@@ -65,3 +65,11 @@ export const processMissedTeacherAttendance = async (date?: string): Promise<any
   
   return apiClient.post(`/teacher-attendance/missed/process?${params.toString()}`);
 };
+
+export const fetchCurrentTeacherQR = async (): Promise<{ token: string, expires_at: string, qr_type: string }> => {
+  return apiClient.get("/teacher-attendance/qr/current");
+};
+
+export const fetchTeacherAttendanceHistory = async (teacherId: string): Promise<TeacherAttendanceAdminItem[]> => {
+  return apiClient.get(`/teacher-attendance/${teacherId}`);
+};

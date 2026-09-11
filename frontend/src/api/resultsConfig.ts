@@ -51,9 +51,9 @@ export async function updateScheme(schemeId: string, payload: AssessmentSchemeUp
   return apiClient.patch(`/results/schemes/${schemeId}`, payload);
 }
 
-// ==========================================
+
 // ASSESSMENTS (COMPONENTS OF SCHEME)
-// ==========================================
+
 export interface AssessmentComponentResponse {
   id: string;
   scheme_id: string;
@@ -100,9 +100,9 @@ export async function updateAssessmentComponent(assessmentId: string, payload: A
   return apiClient.patch(`/results/assessments/${assessmentId}`, payload);
 }
 
-// ==========================================
+
 // GRADING SCALES
-// ==========================================
+
 export interface GradingScaleResponse {
   id: string;
   school_id: string;
@@ -140,9 +140,9 @@ export async function updateGradingScale(scaleId: string, payload: GradingScaleU
   return apiClient.patch(`/results/grading-scales/${scaleId}`, payload);
 }
 
-// ==========================================
+
 // GRADING RULES
-// ==========================================
+
 export interface GradingRuleResponse {
   id: string;
   grading_scale_id: string;
@@ -178,9 +178,8 @@ export async function updateGradingRule(ruleId: string, payload: GradingRuleUpda
   return apiClient.patch(`/results/grading-rules/${ruleId}`, payload);
 }
 
-// ==========================================
+
 // SCHEME TEMPLATES (GLOBAL TEMPLATES)
-// ==========================================
 
 export interface AssessmentSchemeTemplateResponse {
   id: string;
@@ -224,6 +223,15 @@ export interface AssessmentTemplateComponentCreate {
   is_required: boolean;
 }
 
+export interface AssessmentTemplateComponentUpdate {
+  name?: string;
+  type?: string;
+  max_score?: number;
+  weight?: number;
+  sequence?: number;
+  is_required?: boolean;
+}
+
 export async function fetchSchemeTemplates(): Promise<AssessmentSchemeTemplateResponse[]> {
   return apiClient.get("/results/scheme-templates");
 }
@@ -242,6 +250,10 @@ export async function fetchTemplateComponents(templateId: string): Promise<Asses
 
 export async function addTemplateComponent(templateId: string, payload: AssessmentTemplateComponentCreate): Promise<AssessmentTemplateComponentResponse> {
   return apiClient.post(`/results/scheme-templates/${templateId}/components`, payload);
+}
+
+export async function updateTemplateComponent(componentId: string, payload: AssessmentTemplateComponentUpdate): Promise<AssessmentTemplateComponentResponse> {
+  return apiClient.patch(`/results/template-components/${componentId}`, payload);
 }
 
 export async function activateSchemeTemplate(templateId: string): Promise<AssessmentSchemeTemplateResponse> {
