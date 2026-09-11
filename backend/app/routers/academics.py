@@ -3,31 +3,37 @@ from sqlmodel import Session, select
 from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, timezone
 from sqlalchemy import func
 
 from backend.app.db.database import get_session
 from backend.app.models import (
     AcademicSession,
     AcademicTerm,
-    AttendanceSession,
+    ClassGroup,
+    GroupSubject,
     SchoolClass,
-    StudentEnrollment,
     Subject,
-    TeacherAssignment,
     TeacherProfile,
-    TimetableEntry,
     StudentProfile,
 )
 # 👇 1. Import the new Gatekeeper and RBAC dependencies
 from backend.app.core.auth_utils import CurrentContext, get_active_context, require_permission 
 
 from backend.app.schemas.academic import (
-    AcademicEntityCreate, AcademicEntityResponse, AcademicEntityUpdate,
     SubjectCreate, SubjectUpdate, SubjectResponse,
     FormTeacherAssignRequest, ClassWithTeacherResponse,
     AcademicSessionCreate, AcademicSessionResponse, 
     AcademicTermCreate, AcademicTermResponse, 
-    ActiveContextSummary, TermWithSessionResponse
+    ActiveContextSummary, TermWithSessionResponse,
+    ClassCreate, ClassUpdate, ClassGroupCreate, ClassGroupUpdate,
+    ClassGroupResponse, GroupSubjectCreate, GroupSubjectUpdate,
+    GroupSubjectResponse, ClassSubjectResponse,
+)
+from backend.app.services.curriculum_service import (
+    get_class_group,
+    get_subjects_for_class,
+    validate_academic_context,
 )
 
 router = APIRouter(prefix="/academics", tags=["Academic Setup"])
@@ -36,9 +42,9 @@ router = APIRouter(prefix="/academics", tags=["Academic Setup"])
 # CLASSES ENDPOINTS
 # ==========================================
 
-@router.post("/classes", response_model=AcademicEntityResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/classes", response_model=ClassWithTeacherResponse, status_code=status.HTTP_201_CREATED)
 def create_class(
-    payload: AcademicEntityCreate, 
+    payload: ClassCreate,
     # 👇 2. Inject Gatekeeper and check permissions
     context: CurrentContext = Depends(require_permission("class:write")),
     session: Session = Depends(get_session)
@@ -47,19 +53,36 @@ def create_class(
     
     # 👇 3. Check for duplicates WITHIN this specific school only
     existing = session.exec(
-        select(SchoolClass).where(SchoolClass.name == payload.name, SchoolClass.school_id == context.school_id)
+        select(SchoolClass).where(SchoolClass.name == payload.name.strip(), SchoolClass.school_id == context.school_id)
     ).first()
     
     if existing:
         raise HTTPException(status_code=400, detail=f"Class '{payload.name}' already exists in your school.")
     
     # 👇 4. Hard-wire the school_id programmatically
-    new_class = SchoolClass(name=payload.name, school_id=context.school_id)
+    if payload.group_id:
+        group = session.exec(select(ClassGroup).where(
+            ClassGroup.id == payload.group_id,
+            ClassGroup.school_id == context.school_id,
+            ClassGroup.is_active.is_(True),
+        )).first()
+        if not group:
+            raise HTTPException(status_code=400, detail="Curriculum group not found or inactive.")
+
+    new_class = SchoolClass(name=payload.name.strip(), group_id=payload.group_id, school_id=context.school_id)
     
     session.add(new_class)
     session.commit()
     session.refresh(new_class)
-    return new_class
+    return ClassWithTeacherResponse(
+        id=new_class.id,
+        name=new_class.name,
+        form_teacher_id=None,
+        form_teacher_name="Unassigned",
+        group_id=new_class.group_id,
+        group_name=group.name if payload.group_id else None,
+        curriculum_configured=bool(payload.group_id),
+    )
 
 
 @router.get("/classes", response_model=List[ClassWithTeacherResponse])
@@ -70,8 +93,9 @@ def list_classes(
     """Fetch all available classes along with their assigned form teacher."""
     
     statement = (
-        select(SchoolClass, TeacherProfile)
+        select(SchoolClass, TeacherProfile, ClassGroup)
         .join(TeacherProfile, SchoolClass.form_teacher_id == TeacherProfile.id, isouter=True)
+        .join(ClassGroup, SchoolClass.group_id == ClassGroup.id, isouter=True)
         # 👇 5. Isolate data so schools cannot see each other's classes
         .where(SchoolClass.school_id == context.school_id)
         .order_by(SchoolClass.name)
@@ -80,24 +104,27 @@ def list_classes(
     results = session.exec(statement).all()
     
     response_data = []
-    for cls, teacher in results:
+    for cls, teacher, group in results:
         teacher_name = f"{teacher.first_name} {teacher.last_name}" if teacher else "Unassigned"
         response_data.append(
             ClassWithTeacherResponse(
                 id=cls.id,
                 name=cls.name,
                 form_teacher_id=cls.form_teacher_id,
-                form_teacher_name=teacher_name
+                form_teacher_name=teacher_name,
+                group_id=cls.group_id,
+                group_name=group.name if group else None,
+                curriculum_configured=bool(group and group.is_active),
             )
         )
         
     return response_data
 
 
-@router.patch("/classes/{class_id}", response_model=AcademicEntityResponse)
+@router.patch("/classes/{class_id}", response_model=ClassWithTeacherResponse)
 def update_class(
     class_id: UUID,
-    payload: AcademicEntityUpdate,
+    payload: ClassUpdate,
     context: CurrentContext = Depends(require_permission("class:write")),
     session: Session = Depends(get_session),
 ):
@@ -112,24 +139,41 @@ def update_class(
     if not db_class:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found.")
 
-    duplicate = session.exec(
-        select(SchoolClass).where(
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="At least one class field is required.")
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        duplicate = session.exec(select(SchoolClass).where(
             SchoolClass.school_id == context.school_id,
-            SchoolClass.name == payload.name,
+            SchoolClass.name == update_data["name"],
             SchoolClass.id != class_id,
-        )
-    ).first()
-    if duplicate:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Class '{payload.name}' already exists in your school.",
-        )
-
-    db_class.name = payload.name
+        )).first()
+        if duplicate:
+            raise HTTPException(status_code=400, detail=f"Class '{update_data['name']}' already exists in your school.")
+    if "group_id" in update_data and update_data["group_id"] is not None:
+        group = session.exec(select(ClassGroup).where(
+            ClassGroup.id == update_data["group_id"],
+            ClassGroup.school_id == context.school_id,
+            ClassGroup.is_active.is_(True),
+        )).first()
+        if not group:
+            raise HTTPException(status_code=400, detail="Curriculum group not found or inactive.")
+    for field, value in update_data.items():
+        setattr(db_class, field, value)
     session.add(db_class)
     session.commit()
     session.refresh(db_class)
-    return db_class
+    group = session.get(ClassGroup, db_class.group_id) if db_class.group_id else None
+    return ClassWithTeacherResponse(
+        id=db_class.id,
+        name=db_class.name,
+        form_teacher_id=db_class.form_teacher_id,
+        form_teacher_name="Unassigned",
+        group_id=db_class.group_id,
+        group_name=group.name if group else None,
+        curriculum_configured=bool(group and group.is_active),
+    )
 
 
 @router.patch("/classes/{class_id}/form-teacher")
@@ -181,51 +225,263 @@ def assign_form_teacher(
     }
 
 
-@router.delete("/classes/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_class(
-    class_id: UUID, 
-    context: CurrentContext = Depends(require_permission("class:delete")),
-    session: Session = Depends(get_session)
+# ==========================================
+# CLASS GROUP AND CURRICULUM ENDPOINTS
+# ==========================================
+
+def _group_subject_response(group_subject: GroupSubject, subject: Subject) -> GroupSubjectResponse:
+    return GroupSubjectResponse(
+        id=group_subject.id,
+        group_id=group_subject.group_id,
+        subject_id=subject.id,
+        subject_name=subject.name,
+        subject_code=subject.code,
+        academic_session_id=group_subject.academic_session_id,
+        academic_term_id=group_subject.academic_term_id,
+        is_required=group_subject.is_required,
+        is_active=group_subject.is_active,
+    )
+
+
+@router.post("/class-groups", response_model=ClassGroupResponse, status_code=status.HTTP_201_CREATED)
+def create_class_group(
+    payload: ClassGroupCreate,
+    context: CurrentContext = Depends(require_permission("class:write")),
+    session: Session = Depends(get_session),
 ):
-    """Delete an unused class and explain when historical records block it."""
-    
-    # 👇 8. SECURE FETCH: Ensure they don't delete another school's class
-    db_class = session.exec(
-        select(SchoolClass).where(SchoolClass.id == class_id, SchoolClass.school_id == context.school_id)
-    ).first()
-    
-    if not db_class:
-        raise HTTPException(status_code=404, detail="Class not found.")
+    name = payload.name.strip()
+    existing = session.exec(select(ClassGroup).where(
+        ClassGroup.school_id == context.school_id,
+        ClassGroup.name == name,
+    )).first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Class group '{name}' already exists in your school.")
+    group = ClassGroup(school_id=context.school_id, name=name, description=payload.description)
+    session.add(group)
+    session.commit()
+    session.refresh(group)
+    return group
 
-    dependencies = []
-    dependency_queries = [
-        (StudentEnrollment, "student enrollments"),
-        (TeacherAssignment, "teacher assignments"),
-        (TimetableEntry, "timetable entries"),
-        (AttendanceSession, "attendance sessions"),
-    ]
-    for model, label in dependency_queries:
-        if session.exec(
-            select(model.id).where(
-                model.class_id == class_id,
-                model.school_id == context.school_id,
-            )
-        ).first():
-            dependencies.append(label)
 
-    if dependencies:
-        dependency_list = ", ".join(dependencies)
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Class cannot be deleted because it has {dependency_list}. "
-                "Edit the class instead or archive it after an archive workflow is added."
-            ),
-        )
-    
-    session.delete(db_class)
+@router.get("/class-groups", response_model=List[ClassGroupResponse])
+def list_class_groups(
+    context: CurrentContext = Depends(require_permission("class:read")),
+    session: Session = Depends(get_session),
+):
+    return session.exec(select(ClassGroup).where(
+        ClassGroup.school_id == context.school_id
+    ).order_by(ClassGroup.name)).all()
+
+
+@router.get("/class-groups/{group_id}", response_model=ClassGroupResponse)
+def get_class_group_endpoint(
+    group_id: UUID,
+    context: CurrentContext = Depends(require_permission("class:read")),
+    session: Session = Depends(get_session),
+):
+    group = session.exec(select(ClassGroup).where(
+        ClassGroup.id == group_id,
+        ClassGroup.school_id == context.school_id,
+    )).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Class group not found.")
+    return group
+
+
+@router.patch("/class-groups/{group_id}", response_model=ClassGroupResponse)
+def update_class_group(
+    group_id: UUID,
+    payload: ClassGroupUpdate,
+    context: CurrentContext = Depends(require_permission("class:write")),
+    session: Session = Depends(get_session),
+):
+    group = session.exec(select(ClassGroup).where(
+        ClassGroup.id == group_id,
+        ClassGroup.school_id == context.school_id,
+    )).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Class group not found.")
+    values = payload.model_dump(exclude_unset=True)
+    if not values:
+        raise HTTPException(status_code=400, detail="At least one class group field is required.")
+    if "name" in values:
+        values["name"] = values["name"].strip()
+        duplicate = session.exec(select(ClassGroup).where(
+            ClassGroup.school_id == context.school_id,
+            ClassGroup.name == values["name"],
+            ClassGroup.id != group_id,
+        )).first()
+        if duplicate:
+            raise HTTPException(status_code=409, detail=f"Class group '{values['name']}' already exists in your school.")
+    for field, value in values.items():
+        setattr(group, field, value)
+    session.add(group)
+    session.commit()
+    session.refresh(group)
+    return group
+
+
+@router.post("/class-groups/{group_id}/subjects", response_model=GroupSubjectResponse, status_code=status.HTTP_201_CREATED)
+def assign_group_subject(
+    group_id: UUID,
+    payload: GroupSubjectCreate,
+    context: CurrentContext = Depends(require_permission("subject:write")),
+    session: Session = Depends(get_session),
+):
+    group = session.exec(select(ClassGroup).where(
+        ClassGroup.id == group_id,
+        ClassGroup.school_id == context.school_id,
+        ClassGroup.is_active.is_(True),
+    )).first()
+    subject = session.exec(select(Subject).where(
+        Subject.id == payload.subject_id,
+        Subject.school_id == context.school_id,
+    )).first()
+    if not group or not subject:
+        raise HTTPException(status_code=404, detail="Class group or subject not found in your school.")
+    validate_academic_context(
+        context.school_id,
+        payload.academic_session_id,
+        payload.academic_term_id,
+        session,
+    )
+    duplicate = session.exec(select(GroupSubject).where(
+        GroupSubject.school_id == context.school_id,
+        GroupSubject.group_id == group_id,
+        GroupSubject.subject_id == payload.subject_id,
+        GroupSubject.academic_session_id == payload.academic_session_id,
+        GroupSubject.academic_term_id == payload.academic_term_id,
+    )).first()
+    if duplicate:
+        raise HTTPException(status_code=409, detail="This subject is already assigned to the group for this term.")
+    group_subject = GroupSubject(
+        school_id=context.school_id,
+        group_id=group_id,
+        subject_id=payload.subject_id,
+        academic_session_id=payload.academic_session_id,
+        academic_term_id=payload.academic_term_id,
+        is_required=payload.is_required,
+    )
+    session.add(group_subject)
+    session.commit()
+    session.refresh(group_subject)
+    return _group_subject_response(group_subject, subject)
+
+
+@router.get("/class-groups/{group_id}/subjects", response_model=List[GroupSubjectResponse])
+def list_group_subjects(
+    group_id: UUID,
+    academic_session_id: UUID,
+    academic_term_id: UUID,
+    context: CurrentContext = Depends(require_permission("subject:read")),
+    session: Session = Depends(get_session),
+):
+    group = session.exec(select(ClassGroup).where(
+        ClassGroup.id == group_id,
+        ClassGroup.school_id == context.school_id,
+    )).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Class group not found.")
+    validate_academic_context(context.school_id, academic_session_id, academic_term_id, session)
+    rows = session.exec(select(GroupSubject, Subject).join(
+        Subject, GroupSubject.subject_id == Subject.id
+    ).where(
+        GroupSubject.school_id == context.school_id,
+        GroupSubject.group_id == group_id,
+        GroupSubject.academic_session_id == academic_session_id,
+        GroupSubject.academic_term_id == academic_term_id,
+        GroupSubject.is_active.is_(True),
+    ).order_by(Subject.name)).all()
+    return [_group_subject_response(item, subject) for item, subject in rows]
+
+
+@router.patch("/group-subjects/{group_subject_id}", response_model=GroupSubjectResponse)
+def update_group_subject(
+    group_subject_id: UUID,
+    payload: GroupSubjectUpdate,
+    context: CurrentContext = Depends(require_permission("subject:write")),
+    session: Session = Depends(get_session),
+):
+    row = session.exec(select(GroupSubject).where(
+        GroupSubject.id == group_subject_id,
+        GroupSubject.school_id == context.school_id,
+    )).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Group subject assignment not found.")
+    values = payload.model_dump(exclude_unset=True)
+    if not values:
+        raise HTTPException(status_code=400, detail="At least one group subject field is required.")
+    for field, value in values.items():
+        setattr(row, field, value)
+    row.updated_at = datetime.now(timezone.utc)
+    session.add(row)
+    session.commit()
+    subject = session.get(Subject, row.subject_id)
+    return _group_subject_response(row, subject)
+
+
+@router.delete("/group-subjects/{group_subject_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deactivate_group_subject(
+    group_subject_id: UUID,
+    context: CurrentContext = Depends(require_permission("subject:write")),
+    session: Session = Depends(get_session),
+):
+    row = session.exec(select(GroupSubject).where(
+        GroupSubject.id == group_subject_id,
+        GroupSubject.school_id == context.school_id,
+    )).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Group subject assignment not found.")
+    row.is_active = False
+    row.updated_at = datetime.now(timezone.utc)
+    session.add(row)
     session.commit()
     return
+
+
+@router.get("/classes/{class_id}/subjects", response_model=ClassSubjectResponse)
+def list_class_subjects(
+    class_id: UUID,
+    academic_session_id: Optional[UUID] = None,
+    academic_term_id: Optional[UUID] = None,
+    context: CurrentContext = Depends(require_permission("subject:read")),
+    session: Session = Depends(get_session),
+):
+    school_class, group = get_class_group(class_id, context.school_id, session)
+    if not group:
+        return ClassSubjectResponse(
+            class_id=school_class.id,
+            class_name=school_class.name,
+            group_id=None,
+            group_name=None,
+            curriculum_configured=False,
+            subjects=[],
+        )
+    if not academic_session_id or not academic_term_id:
+        active_session = session.exec(select(AcademicSession).where(
+            AcademicSession.school_id == context.school_id,
+            AcademicSession.is_current.is_(True),
+        )).first()
+        active_term = session.exec(select(AcademicTerm).where(
+            AcademicTerm.school_id == context.school_id,
+            AcademicTerm.session_id == active_session.id if active_session else False,
+            AcademicTerm.is_current.is_(True),
+        )).first()
+        if not active_session or not active_term:
+            raise HTTPException(status_code=400, detail="Academic session and term are required when no active context exists.")
+        academic_session_id = active_session.id
+        academic_term_id = active_term.id
+    _, _, rows = get_subjects_for_class(
+        class_id, context.school_id, academic_session_id, academic_term_id, session
+    )
+    return ClassSubjectResponse(
+        class_id=school_class.id,
+        class_name=school_class.name,
+        group_id=group.id,
+        group_name=group.name,
+        curriculum_configured=True,
+        subjects=[_group_subject_response(item, subject) for item, subject in rows],
+    )
 
 
 # ==========================================

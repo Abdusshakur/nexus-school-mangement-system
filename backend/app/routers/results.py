@@ -83,6 +83,10 @@ from backend.app.schemas.results import (
 )
 from backend.app.routers.teacher_context import get_active_term_and_session, get_current_teacher_profile
 from backend.app.routers.attendance import verify_teacher_class_access
+from backend.app.services.curriculum_service import (
+    get_subjects_for_class,
+    validate_class_subject_access,
+)
 
 
 configuration_router = APIRouter(prefix="/results", tags=["Results Configuration"])
@@ -165,6 +169,14 @@ def _get_scheme_context(payload: AssessmentSchemeCreate, school_id: UUID, sessio
         raise HTTPException(status_code=404, detail="Class not found.")
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found.")
+    validate_class_subject_access(
+        class_id=school_class.id,
+        subject_id=subject.id,
+        academic_session_id=academic_session.id,
+        academic_term_id=academic_term.id,
+        school_id=school_id,
+        session=session,
+    )
     return academic_session, academic_term, school_class, subject
 
 
@@ -852,11 +864,19 @@ def apply_scheme_template(
         raise HTTPException(status_code=404, detail="Academic term not found for this session.")
 
     classes = session.exec(select(SchoolClass).where(SchoolClass.school_id == context.school_id)).all()
-    subjects = session.exec(select(Subject).where(Subject.school_id == context.school_id)).all()
     created = 0
     skipped = 0
     for school_class in classes:
-        for subject in subjects:
+        _, group, class_subjects = get_subjects_for_class(
+            school_class.id,
+            context.school_id,
+            academic_session.id,
+            academic_term.id,
+            session,
+        )
+        if not group:
+            continue
+        for _, subject in class_subjects:
             existing = session.exec(select(AssessmentScheme).where(
                 AssessmentScheme.school_id == context.school_id,
                 AssessmentScheme.academic_session_id == academic_session.id,

@@ -18,6 +18,7 @@ from backend.app.schemas.timetable import (
     TimetableEntryResponse,
     BulkTimetableRequest,
 )
+from backend.app.services.curriculum_service import validate_class_subject_access
 
 router = APIRouter(prefix="/timetable", tags=["Timetable Engine"])
 
@@ -60,6 +61,15 @@ def create_timetable_entry(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail=f"Cannot schedule: {db_teacher.last_name} is not actively assigned to teach {db_subject.name} to {db_class.name} this term."
         )
+
+    validate_class_subject_access(
+        class_id=request.class_id,
+        subject_id=request.subject_id,
+        academic_session_id=assignment_contract.session_id,
+        academic_term_id=request.term_id,
+        school_id=context.school_id,
+        session=session,
+    )
 
     # 3. CLASS CLASH DETECTION (Isolated to Tenant)
     class_clash = session.exec(
@@ -175,6 +185,15 @@ def update_timetable_entry(
             status_code=403,
             detail=f"Cannot schedule: {db_teacher.last_name} is not actively assigned to teach {db_subject.name} to {db_class.name} this term.",
         )
+
+    validate_class_subject_access(
+        class_id=values["class_id"],
+        subject_id=values["subject_id"],
+        academic_session_id=assignment.session_id,
+        academic_term_id=values["term_id"],
+        school_id=context.school_id,
+        session=session,
+    )
 
     overlap_filters = [
         TimetableEntry.school_id == context.school_id,
@@ -307,6 +326,15 @@ def create_bulk_timetable(
                 status_code=status.HTTP_403_FORBIDDEN, 
                 detail=f"Cannot schedule: Teacher is not actively assigned to teach this subject to {class_name}."
             )
+
+        validate_class_subject_access(
+            class_id=entry_data.class_id,
+            subject_id=entry_data.subject_id,
+            academic_session_id=assignment_contract.session_id,
+            academic_term_id=request.term_id,
+            school_id=context.school_id,
+            session=session,
+        )
 
         # 🧠 TEACHER CLASH DETECTION (Across the entire school)
         teacher_clash = session.exec(
