@@ -16,13 +16,14 @@ from backend.app.db.database import get_session
 from backend.app.models import (
     AcademicSession, AcademicTerm, AssignmentStatus, EnrollmentStatus,
     SchoolClass, StudentEnrollment, StudentProfile,  Subject, TeacherAssignment,
-    TeacherProfile,  User, TeacherDailyAttendance, TeacherAttendanceEvent, AttendanceQRSession, 
+    TeacherProfile,  User, UserSchoolLink, TeacherDailyAttendance, TeacherAttendanceEvent, AttendanceQRSession, 
     QRType, StaffAttendanceStatus, AttendanceMethod, StaffAttendanceEventType
 )
 from backend.app.schemas.teacher import (
     TeacherAssignmentContextResponse, TeacherContextResponse, TeacherStudentContextResponse,
 )
 from backend.app.core.qr_utils import hash_token, is_token_expired
+from backend.app.services.membership_service import user_active_in_school_clause
 from backend.app.schemas.attendance import (
     AttendanceScanRequest,
     TeacherAttendanceHistoryItem,
@@ -47,10 +48,11 @@ def get_current_teacher_profile(
     result = session.exec(
         select(TeacherProfile, User)
         .join(User, TeacherProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             TeacherProfile.user_id == context.user_id,
             TeacherProfile.school_id == context.school_id,
-            User.school_id == context.school_id,
+            user_active_in_school_clause(context.school_id),
         )
     ).first()
     if not result:

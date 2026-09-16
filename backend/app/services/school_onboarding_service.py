@@ -61,7 +61,6 @@ def submit_school_application(
     user = User(
         email=owner_email,
         password_hash=hash_password(payload.owner_password),
-        role_id=admin_role.id,
         status=UserStatus.PENDING_ACTIVATION,
         is_active=False,
     )

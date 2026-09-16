@@ -11,10 +11,11 @@ from backend.app.core.auth_utils import CurrentContext, require_permission, hash
 from backend.app.models import (
     User, StudentProfile, ParentProfile, ParentStudentLink, 
     SchoolClass, AcademicSession, AcademicTerm, StudentEnrollment, SchoolSettings, EnrollmentStatus,
-    Role, UserRole, School
+    AssignmentStatus, TeacherAssignment, TeacherProfile, Role, UserRole, School
 )
 
 from backend.app.services.parent_relationship_service import build_parent_student_link
+from backend.app.services.resource_authorization import verify_student_resource_access
 from backend.app.schemas.student import (
     UnifiedStudentOnboardingCreate, StudentResponse, StudentProfileUpdate, 
     LinkedParentResponse, StudentDetailResponse, TransferStudentRequest, BulkTransferStudentRequest, StudentEnrollmentHistoryResponse
@@ -141,11 +142,14 @@ def create_student_with_parent_onboarding(
         student_user = User(
             email=str(request.email),
             password_hash=hash_password(request.password),
-            role_id=student_role.id,
-            school_id=context.school_id
         )
         session.add(student_user)
         session.flush()
+        session.add(UserSchoolLink(
+            user_id=student_user.id,
+            school_id=context.school_id,
+            role_id=student_role.id,
+        ))
 
         student_profile = StudentProfile(
             user_id=student_user.id,
@@ -182,11 +186,19 @@ def create_student_with_parent_onboarding(
                 parent_user = User(
                     email=str(parent_data.email),
                     password_hash=hash_password("WelcomeNexus2026!"), 
-                    role_id=parent_role.id,
-                    school_id=context.school_id
                 )
                 session.add(parent_user)
                 session.flush()
+
+            if not session.exec(select(UserSchoolLink).where(
+                UserSchoolLink.user_id == parent_user.id,
+                UserSchoolLink.school_id == context.school_id,
+            )).first():
+                session.add(UserSchoolLink(
+                    user_id=parent_user.id,
+                    school_id=context.school_id,
+                    role_id=parent_role.id,
+                ))
 
             # Ensure this parent has a profile SPECIFIC to this school
             parent_profile = session.exec(
@@ -320,6 +332,35 @@ def list_students(
     
     results = session.exec(query.order_by(StudentProfile.created_at.desc())).all()
 
+    # Teachers only see students enrolled in classes they actively teach.
+    role = session.get(Role, context.role_id)
+    if role and role.name.lower() == "teacher":
+        teacher = session.exec(select(TeacherProfile).where(
+            TeacherProfile.user_id == context.user_id,
+            TeacherProfile.school_id == context.school_id,
+        )).first()
+        assigned_class_ids = {
+            assignment.class_id
+            for assignment in session.exec(select(TeacherAssignment).where(
+                TeacherAssignment.teacher_id == teacher.id if teacher else False,
+                TeacherAssignment.school_id == context.school_id,
+                TeacherAssignment.status == AssignmentStatus.ACTIVE,
+            )).all()
+        } if teacher else set()
+        results = [
+            item for item in results
+            if item[2] is not None and any(
+                enrollment.class_id in assigned_class_ids
+                for enrollment in session.exec(select(StudentEnrollment).where(
+                    StudentEnrollment.student_id == item[0].id,
+                    StudentEnrollment.school_id == context.school_id,
+                    StudentEnrollment.session_id == academic_session_id,
+                    StudentEnrollment.term_id == academic_term_id,
+                    StudentEnrollment.status == EnrollmentStatus.ACTIVE,
+                )).all()
+            )
+        ]
+
     # 5. Build Response
     return [
         StudentResponse(
@@ -366,6 +407,8 @@ def get_student_linked_parents(
             detail="Student not found in your school.",
         )
 
+    verify_student_resource_access(context, student.id, session)
+
     return fetch_linked_parents(student.id, context.school_id, session)
 
 
@@ -401,6 +444,7 @@ def get_student_by_admission_number(
         )
         
     profile, student_user = student_result
+    verify_student_resource_access(context, profile.id, session)
 
     # 2. Dynamically Resolve Current Class using Contextual Enrollments
     current_session = session.exec(

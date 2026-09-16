@@ -20,7 +20,9 @@ from backend.app.models import (
     StudentProfile,
     TeacherProfile,
     User,
+    UserSchoolLink,
 )
+from backend.app.services.membership_service import user_active_in_school_clause
 from backend.app.schemas.dashboard import (
     DashboardSummaryResponse, AttendanceTodaySummary, 
     AttendanceTrendResponse
@@ -64,9 +66,10 @@ def get_dashboard_metrics_summary(
     student_count = session.exec(
         select(func.count(StudentProfile.id))
         .join(User, StudentProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             StudentProfile.school_id == school_id,
-            User.school_id == school_id,
+            user_active_in_school_clause(school_id),
             User.is_active.is_(True),
         )
     ).one()
@@ -74,9 +77,10 @@ def get_dashboard_metrics_summary(
     parent_count = session.exec(
         select(func.count(ParentProfile.id))
         .join(User, ParentProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             ParentProfile.school_id == school_id,
-            User.school_id == school_id,
+            user_active_in_school_clause(school_id),
             User.is_active.is_(True),
         )
     ).one()
@@ -84,9 +88,10 @@ def get_dashboard_metrics_summary(
     teacher_count = session.exec(
         select(func.count(TeacherProfile.id))
         .join(User, TeacherProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             TeacherProfile.school_id == school_id,
-            User.school_id == school_id,
+            user_active_in_school_clause(school_id),
             User.is_active.is_(True),
         )
     ).one()

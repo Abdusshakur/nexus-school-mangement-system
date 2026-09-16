@@ -18,12 +18,14 @@ from backend.app.models import (
     Permission,
     Role,
     RolePermissionLink,
+    RoleScope,
     School,
     SchoolStatus,
     User,
     UserSchoolLink,
     UserStatus,
 )
+from backend.app.core.permissions import validate_permission_name
 
 load_dotenv()
 
@@ -120,8 +122,10 @@ def get_active_context(
 def require_permission(required_permission: str):
     """
     RBAC Gatekeeper: Checks if the user's current role has the required permission.
-    Usage: @router.post("/data", dependencies=[Depends(require_permission("data:write"))])
+    Usage: @router.post("/data", dependencies=[Depends(require_permission(permission_name))])
     """
+    validate_permission_name(required_permission)
+
     def permission_checker(
         context: CurrentContext = Depends(get_current_context),
         session: Session = Depends(get_session)
@@ -156,6 +160,8 @@ def require_permission(required_permission: str):
 
 def require_super_admin(required_permission: str = "global_template:manage"):
     """Allow platform-level actions only to a super-admin with the permission."""
+    validate_permission_name(required_permission)
+
     def super_admin_checker(
         context: CurrentContext = Depends(get_current_context),
         session: Session = Depends(get_session),
@@ -216,4 +222,16 @@ def _ensure_active_membership(context: CurrentContext, session: Session) -> None
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="School membership is not active.",
+        )
+
+    role = session.get(Role, membership.role_id)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Membership role is not configured.",
+        )
+    if role.scope == RoleScope.SCHOOL and role.school_id != context.school_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Membership role does not belong to the active school.",
         )

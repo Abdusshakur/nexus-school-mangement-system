@@ -10,7 +10,7 @@ from backend.app.db.database import get_session
 from backend.app.core.auth_utils import CurrentContext, require_permission, hash_password
 
 from backend.app.models import (
-    User, Role, TeacherProfile, SchoolClass, Subject, 
+    User, UserSchoolLink, Role, TeacherProfile, SchoolClass, Subject, 
     TeacherAssignment, AssignmentStatus, AcademicSession, AcademicTerm
 )
 from backend.app.schemas.teacher import (
@@ -120,12 +120,16 @@ def create_teacher(
     new_user = User(
         email=payload.email,
         password_hash=hash_password(temp_password),
-        role_id=teacher_role.id,
-        school_id=context.school_id, # 👈 Tenant Isolation
         is_active=True
     )
     session.add(new_user)
     session.flush()
+
+    session.add(UserSchoolLink(
+        user_id=new_user.id,
+        school_id=context.school_id,
+        role_id=teacher_role.id,
+    ))
 
     # 5. Create Teacher Profile scoped to the Tenant
     teacher_profile = TeacherProfile(

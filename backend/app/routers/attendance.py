@@ -12,7 +12,7 @@ from backend.app.models import (
     TeacherProfile, TeacherAssignment, SchoolClass, StudentEnrollment,
     StudentProfile, AttendanceSession, AttendanceRecord, AssignmentStatus,
     EnrollmentStatus, AcademicSession, AcademicTerm, SessionStatus, AttendanceStatus,
-    ActivityLog
+    ActivityLog, Role
 )
 from backend.app.schemas.attendance import (
     ClassRosterResponse, AttendanceBatchSubmit, StudentAttendanceItem,
@@ -20,42 +20,12 @@ from backend.app.schemas.attendance import (
     AttendanceDecisionRequest, AttendanceWorkflowResponse
 )
 from backend.app.routers.teacher_context import get_current_teacher_profile, get_active_term_and_session
+from backend.app.services.resource_authorization import verify_teacher_class_access
 
 router = APIRouter(
     prefix="/attendance",
     tags=["Student Attendance Workflow"]
 )
-
-# ==========================================
-# SECURITY GATEKEEPER
-# ==========================================
-def verify_teacher_class_access(teacher_id: UUID, class_id: UUID, school_id: UUID, session: Session, active_session_id: UUID, active_term_id: UUID):
-    """Validates if a teacher is a form teacher or subject teacher for a given class."""
-    school_class = session.exec(
-        select(SchoolClass).where(SchoolClass.id == class_id, SchoolClass.school_id == school_id)
-    ).first()
-
-    if not school_class:
-        raise HTTPException(status_code=404, detail="Class not found.")
-
-    if school_class.form_teacher_id == teacher_id:
-        return school_class
-
-    assignment = session.exec(
-        select(TeacherAssignment).where(
-            TeacherAssignment.teacher_id == teacher_id,
-            TeacherAssignment.school_id == school_id,
-            TeacherAssignment.class_id == class_id,
-            TeacherAssignment.session_id == active_session_id,
-            TeacherAssignment.term_id == active_term_id,
-            TeacherAssignment.status == AssignmentStatus.ACTIVE
-        )
-    ).first()
-
-    if not assignment:
-        raise HTTPException(status_code=403, detail="You are not authorized to manage attendance for this class.")
-
-    return school_class
 
 # ==========================================
 # TEACHER WORKFLOW ENDPOINTS
@@ -112,13 +82,19 @@ def get_class_roster_for_attendance(
 
     # Teachers may only review classes assigned to them. Other users with
     # attendance:read, such as admins, may review any class in their school.
+    role = session.get(Role, context.role_id)
+    role_name = role.name.lower() if role else None
     teacher = session.exec(
         select(TeacherProfile).where(
             TeacherProfile.user_id == context.user_id,
             TeacherProfile.school_id == context.school_id,
         )
     ).first()
-    if teacher:
+    # The profile fallback supports legacy test contexts that predate persisted
+    # role rows; authenticated production requests always have a role.
+    if role_name == "teacher" or (role_name is None and teacher):
+        if not teacher:
+            raise HTTPException(status_code=404, detail="Teacher profile not found in your school.")
         school_class = verify_teacher_class_access(
             teacher.id,
             class_id,
@@ -126,6 +102,11 @@ def get_class_roster_for_attendance(
             session,
             active_session.id,
             active_term.id,
+        )
+    elif role_name not in {None, "admin", "super_admin", "superadmin"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators or assigned teachers can review attendance.",
         )
 
     att_session = session.exec(
@@ -307,6 +288,25 @@ def get_daily_attendance_summary(
         .join(TeacherProfile, SchoolClass.form_teacher_id == TeacherProfile.id, isouter=True)
         .where(SchoolClass.school_id == context.school_id)
     )
+    role = session.get(Role, context.role_id)
+    if role and role.name.lower() == "teacher":
+        teacher, _ = get_current_teacher_profile(context, session)
+        assigned_class_ids = session.exec(
+            select(TeacherAssignment.class_id).where(
+                TeacherAssignment.teacher_id == teacher.id,
+                TeacherAssignment.school_id == context.school_id,
+                TeacherAssignment.term_id == academic_term_id,
+                TeacherAssignment.status == AssignmentStatus.ACTIVE,
+            )
+        ).all()
+        form_class_ids = session.exec(
+            select(SchoolClass.id).where(
+                SchoolClass.form_teacher_id == teacher.id,
+                SchoolClass.school_id == context.school_id,
+            )
+        ).all()
+        visible_class_ids = list(set(assigned_class_ids + form_class_ids))
+        classes_query = classes_query.where(SchoolClass.id.in_(visible_class_ids))
     class_results = session.exec(classes_query).all()
 
     # 3. Fetch student counts using the NEW Contextual Enrollment table!
