@@ -82,10 +82,14 @@ from backend.app.schemas.results import (
     TermResultResponse,
 )
 from backend.app.routers.teacher_context import get_active_term_and_session, get_current_teacher_profile
-from backend.app.routers.attendance import verify_teacher_class_access
 from backend.app.services.curriculum_service import (
     get_subjects_for_class,
     validate_class_subject_access,
+)
+from backend.app.services.resource_authorization import (
+    verify_student_resource_access,
+    verify_teacher_class_access,
+    verify_teacher_class_resource,
 )
 
 
@@ -1971,6 +1975,7 @@ def get_student_results(
     context: CurrentContext = Depends(require_permission("result:read")),
     session: Session = Depends(get_session),
 ):
+    verify_student_resource_access(context, student_id, session)
     results = session.exec(select(TermResult).where(
         TermResult.student_id == student_id,
         TermResult.school_id == context.school_id,
@@ -1994,6 +1999,13 @@ def get_student_term_result(
     )).first()
     if not result:
         raise HTTPException(status_code=404, detail="Published term result not found.")
+    verify_student_resource_access(
+        context,
+        student_id,
+        session,
+        class_id=result.class_id,
+        term_id=result.academic_term_id,
+    )
     return _published_term_detail(result, context.school_id, session)
 
 
@@ -2004,6 +2016,7 @@ def get_class_term_results(
     context: CurrentContext = Depends(require_permission("result:read")),
     session: Session = Depends(get_session),
 ):
+    verify_teacher_class_resource(context, class_id, term_id, session)
     results = session.exec(select(TermResult).where(
         TermResult.class_id == class_id,
         TermResult.academic_term_id == term_id,

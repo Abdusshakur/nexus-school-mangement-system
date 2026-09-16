@@ -19,6 +19,7 @@ from backend.app.models import (
     TeacherDailyAttendance,
     TeacherProfile,
     User,
+    UserSchoolLink,
     TeacherAttendanceSettings,
 )
 from backend.app.schemas.attendance import (
@@ -33,6 +34,7 @@ from backend.app.schemas.attendance import (
     MissedAttendanceResponse,
 )
 from backend.app.core.qr_utils import generate_secure_qr_token
+from backend.app.services.membership_service import user_active_in_school_clause
 from backend.app.services.teacher_attendance_service import (
     attendance_duration_minutes,
     get_attendance_settings,
@@ -80,10 +82,11 @@ def list_teacher_attendance(
         select(TeacherDailyAttendance, TeacherProfile, User)
         .join(TeacherProfile, TeacherDailyAttendance.teacher_id == TeacherProfile.id)
         .join(User, TeacherProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             TeacherDailyAttendance.school_id == context.school_id,
             TeacherProfile.school_id == context.school_id,
-            User.school_id == context.school_id,
+            user_active_in_school_clause(context.school_id),
         )
     )
     if attendance_date:
@@ -186,10 +189,10 @@ def correct_teacher_attendance(
     ))
     teacher_user = session.exec(select(TeacherProfile, User).join(
         User, TeacherProfile.user_id == User.id
-    ).where(
+    ).join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True).where(
         TeacherProfile.id == record.teacher_id,
         TeacherProfile.school_id == context.school_id,
-        User.school_id == context.school_id,
+        user_active_in_school_clause(context.school_id),
     )).first()
     if not teacher_user:
         raise HTTPException(status_code=404, detail="Teacher not found.")
@@ -218,9 +221,9 @@ def process_missed_attendance(
 
     teachers = session.exec(select(TeacherProfile, User).join(
         User, TeacherProfile.user_id == User.id
-    ).where(
+    ).join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True).where(
         TeacherProfile.school_id == context.school_id,
-        User.school_id == context.school_id,
+        user_active_in_school_clause(context.school_id),
         User.is_active.is_(True),
     )).all()
     existing = {
@@ -296,10 +299,11 @@ def get_teacher_attendance(
     teacher_user = session.exec(
         select(TeacherProfile, User)
         .join(User, TeacherProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             TeacherProfile.id == teacher_id,
             TeacherProfile.school_id == context.school_id,
-            User.school_id == context.school_id,
+            user_active_in_school_clause(context.school_id),
         )
     ).first()
     if not teacher_user:

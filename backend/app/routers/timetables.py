@@ -19,6 +19,7 @@ from backend.app.schemas.timetable import (
     BulkTimetableRequest,
 )
 from backend.app.services.curriculum_service import validate_class_subject_access
+from backend.app.services.resource_authorization import verify_teacher_class_resource
 
 router = APIRouter(prefix="/timetable", tags=["Timetable Engine"])
 
@@ -417,6 +418,8 @@ def get_class_timetable(
     if not db_class:
         raise HTTPException(status_code=404, detail="Class not found in your school.")
 
+    verify_teacher_class_resource(context, class_id, term_id, session)
+
     # 2. SECURE FETCH: Run the join query locked to the tenant
     statement = (
         select(TimetableEntry, SchoolClass, Subject, TeacherProfile, AcademicTerm) 
@@ -516,6 +519,7 @@ from backend.app.services.parent_relationship_service import (
     get_current_parent_profile,
     verify_parent_child_access,
 )
+from backend.app.services.resource_authorization import verify_student_resource_access
 
 @router.get("/student/{student_id}", response_model=List[TimetableEntryResponse])
 def get_student_schedule(
@@ -536,6 +540,10 @@ def get_student_schedule(
     
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in your school.")
+
+    role = session.get(Role, context.role_id)
+    if role and role.name.lower() == "teacher":
+        verify_student_resource_access(context, student_id, session, term_id=term_id)
         
     # 2. DYNAMIC AUTHORIZATION (Parent & Student Boundaries)
     # Check if the caller is a parent by looking for a ParentProfile in this tenant

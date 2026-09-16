@@ -15,6 +15,11 @@ class UserRole(str, Enum):
     STUDENT = "student"
 
 
+class RoleScope(str, Enum):
+    PLATFORM = "PLATFORM"
+    SCHOOL = "SCHOOL"
+
+
 class SchoolStatus(str, Enum):
     PENDING_APPROVAL = "PENDING_APPROVAL"
     ACTIVE = "ACTIVE"
@@ -209,13 +214,10 @@ class SchoolSettings(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class User(SQLModel, table=True):
-    """Global user identity. Notice there is no 'role' or 'school_id' here."""
+    """Global user identity; school membership is stored in UserSchoolLink."""
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     email: str = Field(index=True, unique=True)
     password_hash: str
-    role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
-    school_id: Optional[UUID] = Field(default=None, foreign_key="school.id")
-    
     is_active: bool = True
     status: UserStatus = Field(default=UserStatus.ACTIVE, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -439,8 +441,21 @@ class Permission(SQLModel, table=True):
 
 class Role(SQLModel, table=True):
     """A collection of permissions."""
+    __table_args__ = (
+        Index(
+            "uq_platform_role_name",
+            "name",
+            unique=True,
+            postgresql_where=text("school_id IS NULL"),
+            sqlite_where=text("school_id IS NULL"),
+        ),
+    )
+
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    name: str = Field(unique=True, index=True)
+    name: str = Field(index=True)
+    description: Optional[str] = None
+    scope: RoleScope = Field(default=RoleScope.PLATFORM, index=True)
+    school_id: Optional[UUID] = Field(default=None, foreign_key="school.id", index=True)
 
     permissions: List[Permission] = Relationship(
         back_populates="roles",

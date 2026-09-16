@@ -2,7 +2,8 @@ from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import and_, or_
 from sqlmodel import Session, select
 
 from backend.app.core.auth_utils import (
@@ -18,7 +19,7 @@ from backend.app.db.database import get_session
 from backend.app.models import (
     MembershipStatus, School, SchoolStatus, UserStatus,
     User, UserSchoolLink, Role, 
-    StudentProfile, ParentProfile, TeacherProfile, AdminProfile
+    StudentProfile, ParentProfile, TeacherProfile, AdminProfile, RoleScope
 )
 from backend.app.schemas_events import BaseEvent
 from backend.app.services.publisher import publish_event
@@ -48,12 +49,27 @@ class UserSummary(BaseModel):
     role: str
     first_name: str
     last_name: str
-    school_id: UUID  
+    school_id: Optional[UUID] = None
+
+
+class WorkspaceSummary(BaseModel):
+    school_id: UUID
+    school_name: str
+    role_id: UUID
+    role: str
+
+
+class WorkspaceSelectionRequest(BaseModel):
+    email: EmailStr
+    password: str
+    school_id: UUID
 
 class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str
+    access_token: Optional[str] = None
+    token_type: str = "bearer"
     user: UserSummary
+    requires_school_selection: bool = False
+    workspaces: list[WorkspaceSummary] = Field(default_factory=list)
 
 
 # --- ENDPOINTS ---
@@ -78,7 +94,15 @@ def register_user(
         )
     
     # 1. Verify the Role exists in the DB
-    role = session.exec(select(Role).where(Role.name == request.role_name.lower())).first()
+    role = session.exec(
+        select(Role).where(
+            Role.name == request.role_name.lower(),
+            or_(
+                Role.scope == RoleScope.PLATFORM,
+                and_(Role.scope == RoleScope.SCHOOL, Role.school_id == context.school_id),
+            ),
+        )
+    ).first()
     if not role:
         raise HTTPException(status_code=400, detail=f"Role '{request.role_name}' does not exist.")
 
@@ -91,8 +115,6 @@ def register_user(
     new_user = User(
         email=request.email,
         password_hash=hash_password(request.password),
-        role_id=role.id,
-        school_id=context.school_id,
         status=UserStatus.ACTIVE,
         is_active=True,
     )
@@ -148,91 +170,143 @@ def register_user(
     )
 
 
-@router.post("/login", response_model=LoginResponse)
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    session: Session = Depends(get_session),
-):
-    """Authenticates a global user, selects their workspace, and returns a rich profile payload."""
-    
-    # 1. Authenticate the Global User
-    user = session.exec(select(User).where(User.email == form_data.username)).first()
-
-    if not user or not verify_password(form_data.password, user.password_hash):
+def _authenticate_user(email: str, password: str, session: Session) -> User:
+    user = session.exec(select(User).where(User.email == email)).first()
+    if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     if not user.is_active or user.status != UserStatus.ACTIVE:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is not active.",
-        )
+        raise HTTPException(status_code=403, detail="Your account is not active.")
+    return user
 
-    # 2. Find their School Workspaces & Role Link
-    active_link = session.exec(
-        select(UserSchoolLink).where(
-            UserSchoolLink.user_id == user.id,
+
+def _active_workspaces(user_id: UUID, session: Session):
+    rows = session.exec(
+        select(UserSchoolLink, School, Role)
+        .join(School, UserSchoolLink.school_id == School.id)
+        .join(Role, UserSchoolLink.role_id == Role.id)
+        .where(
+            UserSchoolLink.user_id == user_id,
             UserSchoolLink.is_active.is_(True),
             UserSchoolLink.status == MembershipStatus.ACTIVE,
+            School.is_active.is_(True),
+            School.status == SchoolStatus.ACTIVE,
+            or_(
+                Role.scope == RoleScope.PLATFORM,
+                and_(Role.scope == RoleScope.SCHOOL, Role.school_id == UserSchoolLink.school_id),
+            ),
         )
-    ).first()
+    ).all()
+    return rows
 
-    if not active_link:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is not linked to any school. Please contact support."
+
+def _workspace_options(rows) -> list[WorkspaceSummary]:
+    return [
+        WorkspaceSummary(
+            school_id=link.school_id,
+            school_name=school.name,
+            role_id=role.id,
+            role=role.name.lower(),
         )
+        for link, school, role in rows
+    ]
 
-    school = session.get(School, active_link.school_id)
-    if not school or not school.is_active or school.status != SchoolStatus.ACTIVE:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="School access is not active.",
-        )
-        
-    # Fetch the actual Role object to get its string name
-    role = session.exec(select(Role).where(Role.id == active_link.role_id)).first()
-    role_name = role.name.lower() if role else "unknown"
 
-    # 3. Create the Multi-Tenant JWT Token
-    access_token = create_access_token(
-        user_id=str(user.id),
-        school_id=str(active_link.school_id),
-        role_id=str(active_link.role_id)
-    )
-    
-    # 4. Handle relational profile lookups (Scoping to BOTH user_id and school_id)
-    first_name = "Campus"
-    last_name = "User"
+def _profile_names(user: User, role_name: str, school_id: UUID, session: Session):
     profile = None
+    profile_model = {
+        "student": StudentProfile,
+        "parent": ParentProfile,
+        "teacher": TeacherProfile,
+        "admin": AdminProfile,
+    }.get(role_name)
+    if profile_model:
+        profile = session.exec(
+            select(profile_model).where(
+                profile_model.user_id == user.id,
+                profile_model.school_id == school_id,
+            )
+        ).first()
+    return (
+        getattr(profile, "first_name", "Campus") if profile else "Campus",
+        getattr(profile, "last_name", "User") if profile else "User",
+    )
 
-    if role_name == "student":
-        profile = session.exec(select(StudentProfile).where(StudentProfile.user_id == user.id, StudentProfile.school_id == active_link.school_id)).first()
-    elif role_name == "parent":
-        profile = session.exec(select(ParentProfile).where(ParentProfile.user_id == user.id, ParentProfile.school_id == active_link.school_id)).first()
-    elif role_name == "teacher":
-        profile = session.exec(select(TeacherProfile).where(TeacherProfile.user_id == user.id, TeacherProfile.school_id == active_link.school_id)).first()
-    elif role_name == "admin":
-        profile = session.exec(select(AdminProfile).where(AdminProfile.user_id == user.id, AdminProfile.school_id == active_link.school_id)).first()
 
-    if profile:
-        first_name = getattr(profile, "first_name", first_name)
-        last_name = getattr(profile, "last_name", last_name)
-
+def _selected_login_response(user: User, link: UserSchoolLink, role: Role, session: Session, rows):
+    role_name = role.name.lower()
+    first_name, last_name = _profile_names(user, role_name, link.school_id, session)
     return LoginResponse(
-        access_token=access_token,
+        access_token=create_access_token(
+            user_id=str(user.id),
+            school_id=str(link.school_id),
+            role_id=str(link.role_id),
+        ),
         token_type="bearer",
         user=UserSummary(
-            id=user.id, 
+            id=user.id,
             role=role_name,
             first_name=first_name,
             last_name=last_name,
-            school_id=active_link.school_id
-        )
+            school_id=link.school_id,
+        ),
+        workspaces=_workspace_options(rows),
     )
+
+
+@router.post("/login", response_model=LoginResponse)
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session),
+):
+    """Authenticate a user and issue a token when one active workspace exists."""
+    user = _authenticate_user(form_data.username, form_data.password, session)
+    rows = _active_workspaces(user.id, session)
+    if not rows:
+        raise HTTPException(
+            status_code=403,
+            detail="Your account is not linked to an active school. Please contact support.",
+        )
+    if len(rows) > 1:
+        return LoginResponse(
+            user=UserSummary(
+                id=user.id,
+                role="multiple",
+                first_name="Campus",
+                last_name="User",
+            ),
+            requires_school_selection=True,
+            workspaces=_workspace_options(rows),
+        )
+    link, _, role = rows[0]
+    return _selected_login_response(user, link, role, session, rows)
+
+
+@router.post("/select-school", response_model=LoginResponse)
+def select_school_workspace(
+    request: WorkspaceSelectionRequest,
+    session: Session = Depends(get_session),
+):
+    """Authenticate again and issue a token for the selected school workspace."""
+    user = _authenticate_user(str(request.email), request.password, session)
+    rows = _active_workspaces(user.id, session)
+    selected = next((row for row in rows if row[0].school_id == request.school_id), None)
+    if not selected:
+        raise HTTPException(status_code=403, detail="You do not have an active membership in that school.")
+    link, _, role = selected
+    return _selected_login_response(user, link, role, session, rows)
+
+
+@router.get("/workspaces", response_model=list[WorkspaceSummary])
+def list_my_workspaces(
+    context: CurrentContext = Depends(get_active_context),
+    session: Session = Depends(get_session),
+):
+    """List the authenticated user's active school memberships."""
+    return _workspace_options(_active_workspaces(context.user_id, session))
 
 
 @router.get("/me")

@@ -26,6 +26,7 @@ from backend.app.services.parent_relationship_service import (
     get_current_parent_profile,
     verify_parent_child_access,
 )
+from backend.app.services.membership_service import user_active_in_school_clause
 
 router = APIRouter(
     prefix="/parents",
@@ -159,8 +160,6 @@ def create_parent(
     new_user = User(
         email=str(payload.email),
         password_hash=hash_password(temp_password),
-        role_id=parent_role.id,
-        school_id=context.school_id # 👈 Tenant Isolation
     )
     session.add(new_user)
     session.flush()
@@ -198,10 +197,11 @@ def _get_current_child(
     result = session.exec(
         select(StudentProfile, User)
         .join(User, StudentProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             StudentProfile.id == student_id,
             StudentProfile.school_id == context.school_id,
-            User.school_id == context.school_id,
+            user_active_in_school_clause(context.school_id),
         )
     ).first()
     if not result:
@@ -246,7 +246,9 @@ def get_my_parent_profile(
 ):
     parent = get_current_parent_profile(context, session)
     user = session.exec(
-        select(User).where(User.id == parent.user_id, User.school_id == context.school_id)
+        select(User)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
+        .where(User.id == parent.user_id, user_active_in_school_clause(context.school_id))
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Parent user account not found in the active school.")
@@ -415,8 +417,9 @@ def update_parent_profile(
     user = session.exec(
         select(User).where(
             User.id == profile.user_id,
-            User.school_id == context.school_id,
         )
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
+        .where(user_active_in_school_clause(context.school_id))
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Parent user account not found in your school.")
@@ -443,12 +446,13 @@ def get_parent(
     query = (
         select(ParentProfile, User)
         .join(User, ParentProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(
             ParentProfile.id == parent_id,
             ParentProfile.school_id == context.school_id # 👈 Tenant Isolation
         )
     )
-    query = query.where(User.school_id == context.school_id)
+    query = query.where(user_active_in_school_clause(context.school_id))
     result = session.exec(query).first()
     
     if not result:
@@ -494,10 +498,11 @@ def list_parents(
     query = (
         select(ParentProfile, User)
         .join(User, ParentProfile.user_id == User.id)
+        .join(UserSchoolLink, UserSchoolLink.user_id == User.id, isouter=True)
         .where(ParentProfile.school_id == context.school_id) # 👈 Tenant Isolation Boundary
     )
     
-    query = query.where(User.school_id == context.school_id)
+    query = query.where(user_active_in_school_clause(context.school_id))
 
     # 2. Apply Smart Search (Only searches within the tenant)
     if search:

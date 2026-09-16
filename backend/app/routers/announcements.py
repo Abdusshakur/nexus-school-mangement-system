@@ -49,8 +49,6 @@ def announcement_response(announcement: Announcement, session: Session) -> Annou
         )).first()
         if link:
             role = link[1]
-        elif user.role_id:
-            role = session.get(Role, user.role_id)
 
     role_name = role.name if role else None
     profile_types = {
