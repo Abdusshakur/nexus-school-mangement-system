@@ -17,6 +17,10 @@ from backend.app.models import (
     ParentStudentLink,
     PriorityEnum,
     Role,
+    AcademicTerm,
+    EnrollmentStatus,
+    SchoolClass,
+    StudentEnrollment,
     StudentProfile,
     TeacherProfile,
     User,
@@ -174,19 +178,41 @@ def get_smart_announcement_feed(
                     StudentProfile.school_id == context.school_id
                 )
             ).first()
-            if student and student.class_name:
-                allowed_audiences.append(student.class_name)
+            if student:
+                student_class_name = session.exec(
+                    select(SchoolClass.name)
+                    .join(StudentEnrollment, StudentEnrollment.class_id == SchoolClass.id)
+                    .join(AcademicTerm, AcademicTerm.id == StudentEnrollment.term_id)
+                    .where(
+                        StudentEnrollment.student_id == student.id,
+                        StudentEnrollment.school_id == context.school_id,
+                        StudentEnrollment.status == EnrollmentStatus.ACTIVE,
+                        StudentEnrollment.school_id == SchoolClass.school_id,
+                        AcademicTerm.school_id == context.school_id,
+                        AcademicTerm.is_current.is_(True),
+                    )
+                ).first()
+                if student_class_name:
+                    allowed_audiences.append(student_class_name)
                 
         elif role_name == "parent":
             allowed_audiences.append("ALL_PARENTS")
             parent_profile = get_current_parent_profile(context, session)
             children_classes = session.exec(
-                select(StudentProfile.class_name)
+                select(SchoolClass.name)
+                .select_from(StudentProfile)
                 .join(ParentStudentLink, ParentStudentLink.student_id == StudentProfile.id)
+                .join(StudentEnrollment, StudentEnrollment.student_id == StudentProfile.id)
+                .join(SchoolClass, SchoolClass.id == StudentEnrollment.class_id)
+                .join(AcademicTerm, AcademicTerm.id == StudentEnrollment.term_id)
                 .where(
                     ParentStudentLink.parent_id == parent_profile.id,
                     ParentStudentLink.school_id == context.school_id,
-                    StudentProfile.school_id == context.school_id # 👈 Tenant isolation
+                    StudentProfile.school_id == context.school_id,
+                    StudentEnrollment.school_id == context.school_id,
+                    StudentEnrollment.status == EnrollmentStatus.ACTIVE,
+                    AcademicTerm.school_id == context.school_id,
+                    AcademicTerm.is_current.is_(True),
                 )
             ).all()
             allowed_audiences.extend([cls for cls in children_classes if cls])
