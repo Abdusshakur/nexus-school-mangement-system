@@ -94,7 +94,7 @@ export const fetchStudentsList = async (
   return apiClient.get(path);
 };
 
-// GET: Fetch a single student's complete profile
+// GET: Fetch a single student complete profile
 export const fetchStudentById = async (
   id: string,
 ): Promise<StudentResponse> => {

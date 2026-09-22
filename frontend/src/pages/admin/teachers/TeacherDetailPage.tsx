@@ -21,7 +21,7 @@ import {
 } from "../../../utils/formatters";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
-import { DEPARTMENTS } from "./data";
+import { DEPARTMENTS } from "../../../config/constants";
 import { Modal, ClassSelector, TagSelector } from "./AddTeacher";
 
 export function TeacherDetailPage() {

@@ -1,6 +1,5 @@
-import axios from "axios";
 import type { LoginResponse } from "../types/auth";
-import { API_BASE } from "./client";
+import apiClient from "./client";
 
 export async function login(
   username: string,
@@ -10,19 +9,12 @@ export async function login(
   formData.append("username", username);
   formData.append("password", password);
 
-  try {
-    const response = await axios.post<LoginResponse>(`${API_BASE}/auth/login`, formData, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
-    return response.data;
-  } catch (error: any) {
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.detail ?? "Incorrect email or password");
-    }
-    throw new Error("A network error occurred during login.");
-  }
+  
+  return apiClient.post<any, LoginResponse>("/auth/login", formData, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
 }
 
 export async function registerSchoolAdmin(payload: {
@@ -36,18 +28,10 @@ export async function registerSchoolAdmin(payload: {
   motto?: string;
   address?: string;
 }): Promise<any> {
-  try {
-    const response = await axios.post(`${API_BASE}/auth/register`, {
-      ...payload,
-      role_name: "admin", // They are registering a school, so they get admin role
-    });
-    return response.data;
-  } catch (error: any) {
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.detail ?? "Registration failed");
-    }
-    throw new Error("A network error occurred during registration.");
-  }
+  return apiClient.post("/auth/register", {
+    ...payload,
+    role_name: "admin", // They are registering a school, so they get admin role
+  });
 }
 
 export async function getCurrentUser(): Promise<any> {

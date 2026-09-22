@@ -2,7 +2,7 @@ import { STATUS_STYLES, type AttStatus } from "../utils";
 
 interface AttendanceTableProps {
   childName: string;
-  records: Array<{ date: string; status: AttStatus; checkIn: string }>;
+  records: Array<{ date: string; status: AttStatus }>;
 }
 
 export function AttendanceTable({ childName, records }: AttendanceTableProps) {
@@ -20,7 +20,7 @@ export function AttendanceTable({ childName, records }: AttendanceTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100">
-              {["Date", "Status", "Check-in Time"].map((h) => (
+              {["Date", "Status"].map((h) => (
                 <th
                   key={h}
                   className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400"
@@ -53,9 +53,6 @@ export function AttendanceTable({ childName, records }: AttendanceTableProps) {
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
-                    {r.checkIn}
-                  </td>
                 </tr>
               );
             })}
@@ -75,9 +72,6 @@ export function AttendanceTable({ childName, records }: AttendanceTableProps) {
               <div>
                 <p className="text-sm font-medium text-slate-700">
                   {r.date}
-                </p>
-                <p className="text-xs mt-0.5 text-slate-400">
-                  {r.checkIn}
                 </p>
               </div>
               <span

@@ -10,12 +10,13 @@ import {
   ClipboardList,
   Star,
   Archive,
-  // MessageSquare,
   UserCircle,
   Baby,
   Bell,
   TrendingUp,
   QrCode,
+  FileText,
+  CheckCircle,
 } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
@@ -66,6 +67,11 @@ const ADMIN_NAV_ITEMS = [
     icon: Archive,
   },
   {
+    label: "Results & Records",
+    href: ROUTES.ADMIN.RESULTS,
+    icon: FileText,
+  },
+  {
     label: "Settings",
     href: ROUTES.ADMIN.SETTINGS,
     icon: Settings,
@@ -93,6 +99,19 @@ export const ADMIN_ATTENDANCE_SUB_ITEMS = [
     label: "QR Scanner",
     href: ROUTES.ADMIN.ATTENDANCE_TEACHER_RECORDS,
     icon: QrCode,
+  },
+];
+
+export const ADMIN_RESULTS_SUB_ITEMS = [
+  {
+    label: "Score Approvals",
+    href: ROUTES.ADMIN.RESULTS_APPROVALS,
+    icon: CheckCircle,
+  },
+  {
+    label: "Report Cards",
+    href: ROUTES.ADMIN.RESULTS_REPORTS,
+    icon: FileText,
   },
 ];
 

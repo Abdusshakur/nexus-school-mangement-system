@@ -1,4 +1,4 @@
-import { getGrade } from "../utils";
+import { getGradeStyles } from "../utils";
 
 interface ResultRow {
   subject: string;
@@ -17,6 +17,7 @@ interface ResultsTableProps {
   term: string;
   results: ResultRow[];
   avg: number;
+  termGrade: string;
 }
 
 export function ResultsTable({
@@ -25,8 +26,9 @@ export function ResultsTable({
   term,
   results,
   avg,
+  termGrade,
 }: ResultsTableProps) {
-  const avgGrade = getGrade(avg);
+  const avgGradeStyles = getGradeStyles(termGrade);
 
   return (
     <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
@@ -85,9 +87,9 @@ export function ResultsTable({
               </td>
               <td className="px-4 py-3">
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-bold ${avgGrade.bg} ${avgGrade.text}`}
+                  className={`px-2 py-0.5 rounded text-xs font-bold ${avgGradeStyles.bg} ${avgGradeStyles.text}`}
                 >
-                  {avgGrade.grade}
+                  {termGrade}
                 </span>
               </td>
               <td />

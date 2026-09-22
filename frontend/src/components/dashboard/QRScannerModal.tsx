@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { X } from "lucide-react";
 import { Scanner } from "@yudiel/react-qr-scanner";
+import { toast } from "sonner";
 
 interface QRScannerModalProps {
   action: "CHECK_IN" | "CHECK_OUT";
@@ -13,7 +14,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onScan,
 }) => {
-  const [error, setError] = useState<string | null>(null);
 
   React.useEffect(() => {
 
@@ -64,7 +64,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               }}
               onError={(err) => {
                 console.error("QR Scan Error:", err);
-                setError(
+                toast.error(
                   err instanceof Error ? err.message : "Failed to read camera",
                 );
               }}
@@ -80,11 +80,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             Center the {action === "CHECK_IN" ? "Check In" : "Check Out"} QR
             Code in the frame to scan.
           </p>
-          {error && (
-            <p className="text-center text-sm text-red-500 mt-2 font-medium">
-              Error: {error}
-            </p>
-          )}
         </div>
       </div>
     </div>

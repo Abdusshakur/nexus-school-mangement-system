@@ -14,7 +14,7 @@ import { type Teacher } from "../../../store/teacher.store";
 import { createTeacher, assignTeacherContexts } from "../../../api/teachers";
 import { useClassStore } from "../../../store/class.store";
 import { useSubjectStore } from "../../../store/subject.store";
-import { DEPARTMENTS, QUALIFICATIONS } from "./data";
+import { DEPARTMENTS, QUALIFICATIONS } from "../../../config/constants";
 import { formatParentInitials } from "../../../utils/formatters";
 
 interface ModalProps {

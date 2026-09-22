@@ -7,40 +7,22 @@ import {
   Hash,
   BookOpen,
 } from "lucide-react";
-import {
-  recentAttendance,
-  ATTENDANCE_STYLE,
-  PRIORITY_STYLES,
-  formatDate,
-} from "../utils";
+import { type LinkedStudentResponse } from "../../../../api/parentContext";
 
 export function ChildCard({
   child,
   expanded,
   onToggle,
-  assignments,
 }: {
-  child: { name: string; classId: string; className: string; admNo: string };
+  child: LinkedStudentResponse;
   expanded: boolean;
   onToggle: () => void;
-  assignments: any[];
 }) {
-  const childAssignments = assignments
-    .filter((a) => a.classId === child.classId && a.status === "published")
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt || b.dueDate).getTime() -
-        new Date(a.createdAt || a.dueDate).getTime()
-    )
-    .slice(0, 3);
+  const childName = `${child.first_name} ${child.last_name}`;
 
-  const attendanceDays = recentAttendance(child.name);
-
-  const initials = child.name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2);
+  const initials = child.first_name
+    ? child.first_name[0] + (child.last_name ? child.last_name[0] : "")
+    : "ST";
 
   return (
     <div className="bg-white rounded-xl overflow-hidden transition-all border border-slate-200">
@@ -52,22 +34,22 @@ export function ChildCard({
         {/* Avatar */}
         <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-indigo-600 to-indigo-500">
           <span className="text-white font-bold text-lg">
-            {initials}
+            {initials.toUpperCase()}
           </span>
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <p className="font-bold text-lg text-slate-900">
-            {child.name}
+            {childName}
           </p>
           <p className="text-sm mt-0.5 text-slate-500">
-            {child.className}
+            {child.class_name || "No Class Assigned"}
           </p>
           <div className="flex items-center gap-1.5 mt-1">
             <Hash size={11} className="text-slate-400" />
             <span className="text-xs text-slate-400">
-              {child.admNo}
+              {child.admission_number || "No Adm No."}
             </span>
           </div>
         </div>
@@ -77,19 +59,19 @@ export function ChildCard({
           {[
             {
               label: "Attendance",
-              value: "94%",
+              value: "--",
               icon: CalendarCheck,
               color: "text-indigo-500",
             },
             {
               label: "Avg Grade",
-              value: "78%",
+              value: "--",
               icon: TrendingUp,
               color: "text-teal-600",
             },
             {
               label: "Assignments",
-              value: childAssignments.length,
+              value: "N/A",
               icon: ClipboardList,
               color: "text-purple-500",
             },
@@ -101,118 +83,65 @@ export function ChildCard({
                   {value}
                 </span>
               </div>
-              <span className="text-xs text-slate-400">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
                 {label}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Expand toggle */}
-        <div
-          className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${expanded ? "bg-indigo-50" : "bg-slate-50"}`}
-        >
-          {expanded ? (
-            <ChevronUp size={16} className="text-indigo-500" />
-          ) : (
-            <ChevronDown size={16} className="text-slate-400" />
-          )}
+        <div className="text-slate-400 flex-shrink-0 ml-4">
+          {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </div>
       </button>
 
-      {/* Mobile stats */}
-      <div className="sm:hidden grid grid-cols-3 gap-0 px-5 pb-4">
-        {[
-          { label: "Attendance", value: "94%" },
-          { label: "Avg Grade", value: "78%" },
-          {
-            label: "Assignments",
-            value: childAssignments.length,
-          },
-        ].map(({ label, value }) => (
-          <div key={label} className="text-center">
-            <p className="font-bold text-sm text-slate-900">
-              {value}
-            </p>
-            <p className="text-xs text-slate-400">
-              {label}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Expanded detail */}
+      {/* Expanded content */}
       {expanded && (
-        <div className="px-5 pb-5 space-y-5 border-t border-slate-100">
-          {/* Recent attendance */}
-          <div className="pt-5">
-            <h4 className="font-semibold text-sm mb-3 text-slate-900">
-              Recent Attendance
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {attendanceDays.map((d, i) => {
-                const s = ATTENDANCE_STYLE[d.status];
-                return (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${s.bg} ${s.text}`}
-                  >
-                    <span>{d.date}</span>
-                    <span className="opacity-70">·</span>
-                    <span>{d.status}</span>
+        <div className="border-t border-slate-100 bg-slate-50 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Assignments section */}
+            <div className="bg-white p-5 rounded-xl border border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-purple-100 text-purple-600 rounded-lg">
+                    <ClipboardList size={16} />
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Recent assignments */}
-          <div>
-            <h4 className="font-semibold text-sm mb-3 text-slate-900">
-              Recent Assignments
-            </h4>
-            {childAssignments.length === 0 ? (
-              <p className="text-sm text-slate-400">
-                No published assignments for {child.className} yet.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {childAssignments.map((a) => {
-                  const ps = PRIORITY_STYLES[a.priority];
-                  const isOverdue = new Date(a.dueDate) < new Date();
-                  return (
-                    <div
-                      key={a.id}
-                      className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
-                    >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-indigo-50">
-                        <BookOpen size={14} className="text-indigo-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900">
-                          {a.title}
-                        </p>
-                        <p className="text-xs mt-0.5 text-slate-500">
-                          {a.subject} · {a.teacherName || "Teacher"}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded font-semibold ${ps.bg} ${ps.text}`}
-                          >
-                            {a.priority}
-                          </span>
-                          <span
-                            className={`text-xs ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}
-                          >
-                            Due {formatDate(a.dueDate)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                  <h3 className="font-bold text-sm text-slate-900">
+                    Recent Assignments
+                  </h3>
+                </div>
               </div>
-            )}
+              
+              <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                 <ClipboardList size={24} className="text-slate-300 mb-2" />
+                 <p className="text-sm font-medium text-slate-600">Coming Soon</p>
+                 <p className="text-xs text-slate-400 mt-1 max-w-[200px]">Assignment tracking is currently under development.</p>
+              </div>
+            </div>
+
+            {/* General Info / Subjects */}
+            <div className="bg-white p-5 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                  <BookOpen size={16} />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900">
+                  Student Details
+                </h3>
+              </div>
+              
+              <div className="space-y-3">
+                 <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                    <span className="text-sm text-slate-500">Relationship</span>
+                    <span className="text-sm font-medium text-slate-900 capitalize">{child.relationship_type?.toLowerCase() || "Parent/Guardian"}</span>
+                 </div>
+                 <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                    <span className="text-sm text-slate-500">Status</span>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">Active</span>
+                 </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

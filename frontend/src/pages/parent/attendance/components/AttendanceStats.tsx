@@ -5,7 +5,6 @@ interface AttendanceStatsProps {
   absent: number;
   late: number;
   totalDays: number;
-  recordsLength: number;
 }
 
 export function AttendanceStats({
@@ -13,30 +12,29 @@ export function AttendanceStats({
   absent,
   late,
   totalDays,
-  recordsLength,
 }: AttendanceStatsProps) {
-  const rate = Math.round(((totalDays - 2) / totalDays) * 100);
+  const rate = totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {[
         {
           label: "Attendance Rate",
-          value: `${rate}%`,
+          value: totalDays > 0 ? `${rate}%` : "--",
           icon: CalendarCheck,
           iconColor: "text-indigo-500",
           iconBg: "bg-indigo-50",
         },
         {
           label: "Days Present",
-          value: present + (totalDays - recordsLength),
+          value: present,
           icon: UserCheck,
           iconColor: "text-emerald-500",
           iconBg: "bg-emerald-100",
         },
         {
           label: "Days Absent",
-          value: absent + 1,
+          value: absent,
           icon: UserX,
           iconColor: "text-red-500",
           iconBg: "bg-red-100",

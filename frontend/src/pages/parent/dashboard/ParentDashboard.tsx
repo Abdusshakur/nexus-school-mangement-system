@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   CalendarCheck,
   BookOpen,
@@ -8,58 +7,93 @@ import {
   ClipboardList,
   Star,
 } from "lucide-react";
-import { mockProfile, mockAssignments, mockNotifications } from "./data";
+
+import { Link } from "react-router-dom";
 import { StatCard } from "../../../components/dashboard/StatCard";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(diff / 86400000);
-  return `${days}d ago`;
-}
-
-const PRIORITY_STYLES: Record<string, string> = {
-  High: "bg-red-100 text-red-800",
-  Medium: "bg-amber-100 text-amber-800",
-  Low: "bg-indigo-100 text-indigo-800",
-};
+import { useParentContextStore } from "../../../store/parentContext.store";
+import { useEffect } from "react";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function ParentDashboard() {
-  const profile = mockProfile;
-  const children = profile.children;
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const selectedChild = children[selectedIdx];
+  const {
+    profile,
+    children,
+    selectedChildId,
+    childResults,
+    childAttendance,
+    loadingProfile,
+    loadingChildren,
+    loadProfile,
+    loadChildren,
+    loadChildAttendance,
+    selectChild,
+    error,
+  } = useParentContextStore();
+
+  useEffect(() => {
+    loadProfile();
+    loadChildren();
+  }, [loadProfile, loadChildren]);
+
+  useEffect(() => {
+    if (selectedChildId && !childAttendance[selectedChildId]) {
+      loadChildAttendance(selectedChildId);
+    }
+  }, [selectedChildId, childAttendance, loadChildAttendance]);
+
+  if (loadingProfile || loadingChildren) {
+    return (
+      <div className="space-y-6">
+        {/* Banner Skeleton */}
+        <Skeleton className="h-32 w-full rounded-2xl" />
+
+        {/* Child Selector Skeleton */}
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-28 rounded-full" />
+          <Skeleton className="h-10 w-28 rounded-full" />
+        </div>
+
+        {/* Stat Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+        </div>
+
+        {/* Quick Links Skeleton */}
+        <div>
+          <Skeleton className="h-6 w-32 mb-3" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+        </div>
+
+        {/* Recent Results Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex h-[50vh] flex-col items-center justify-center text-slate-500 gap-2">
+        <p>Profile not found or you do not have parent access.</p>
+        {error && <p className="text-red-500 text-sm">Error: {error}</p>}
+      </div>
+    );
+  }
+
+  const selectedChild = children.find((c) => c.id === selectedChildId);
 
   // Stats for selected child
-  const childAssignments = mockAssignments.filter(
-    (a) => a.classId === selectedChild?.classId && a.status === "published",
-  );
-  const recentAssignments = [...childAssignments]
-    .sort(
-      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
-    )
-    .slice(0, 3);
-
-  // Notifications for this parent
-  const myNotifications = mockNotifications
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-    .slice(0, 3);
+  const results = selectedChild ? childResults[selectedChild.id] || [] : [];
 
   const hour = new Date().getHours();
   const greeting =
@@ -71,7 +105,7 @@ export function ParentDashboard() {
       <div className="rounded-2xl p-6 flex items-center justify-between bg-indigo-600 shadow-sm">
         <div>
           <p className="font-bold text-white text-xl">
-            {greeting}, {profile.name} 👋
+            {greeting}, {profile.first_name || "Parent"} 👋
           </p>
           <p className="mt-2 text-sm text-indigo-100">
             Here&apos;s what&apos;s happening with your children today.
@@ -93,19 +127,18 @@ export function ParentDashboard() {
       {/* Child selector */}
       {children.length > 1 && (
         <div className="flex gap-2 flex-wrap">
-          {children.map((child, i) => (
+          {children.map((child) => (
             <button
-              key={child.admNo}
-              onClick={() => setSelectedIdx(i)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all border ${
-                i === selectedIdx
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-              }`}
+              key={child.id}
+              onClick={() => selectChild(child.id)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all border ${child.id === selectedChildId
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                }`}
             >
-              {child.name}
+              {child.first_name} {child.last_name}
               <span className="ml-1.5 text-xs opacity-80">
-                ({child.className})
+                ({child.class_name})
               </span>
             </button>
           ))}
@@ -113,113 +146,132 @@ export function ParentDashboard() {
       )}
 
       {/* Stat cards */}
-      {selectedChild && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Attendance Rate"
-            value="94%"
-            sub="This term"
-            icon={CalendarCheck}
-            iconColor="text-indigo-600"
-            iconBg="bg-indigo-50"
-          />
-          <StatCard
-            label="Assignments"
-            value={childAssignments.length}
-            sub="Published this term"
-            icon={ClipboardList}
-            iconColor="text-violet-600"
-            iconBg="bg-violet-50"
-          />
-          <StatCard
-            label="Current Average"
-            value="78%"
-            sub="Across all subjects"
-            icon={TrendingUp}
-            iconColor="text-emerald-600"
-            iconBg="bg-emerald-50"
-          />
-          <StatCard
-            label="Class"
-            value={selectedChild.className}
-            sub={`Adm: ${selectedChild.admNo}`}
-            icon={BookOpen}
-            iconColor="text-amber-600"
-            iconBg="bg-amber-50"
-          />
-        </div>
-      )}
+      {selectedChild && (() => {
+        const attendance = childAttendance[selectedChild.id] || [];
+        const presentDays = attendance.filter(a => a.status === "PRESENT").length;
+        const totalDays = attendance.length;
+        const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) + "%" : "--";
+
+        const currentAvg = results.length > 0 ? Math.round(results[0].term_result.average_score) + "%" : "--";
+
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Attendance Rate"
+              value={attendanceRate}
+              sub="This term"
+              icon={CalendarCheck}
+              iconColor="text-indigo-600"
+              iconBg="bg-indigo-50"
+            />
+            <StatCard
+              label="Results"
+              value={results.length}
+              sub="Terms published"
+              icon={ClipboardList}
+              iconColor="text-violet-600"
+              iconBg="bg-violet-50"
+            />
+            <StatCard
+              label="Current Average"
+              value={currentAvg}
+              sub="Most recent term"
+              icon={TrendingUp}
+              iconColor="text-emerald-600"
+              iconBg="bg-emerald-50"
+            />
+            <StatCard
+              label="Class"
+              value={selectedChild.class_name}
+              sub={`Adm: ${selectedChild.admission_number || "N/A"}`}
+              icon={BookOpen}
+              iconColor="text-amber-600"
+              iconBg="bg-amber-50"
+            />
+          </div>
+        );
+      })()}
 
       {/* Quick Links */}
       <div>
         <h3 className="font-semibold text-slate-900 mb-3">Quick Links</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
+          <Link
+            to="/parent/attendance"
+            className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group"
+          >
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <CalendarCheck size={20} className="text-indigo-600" />
             </div>
             <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
               Attendance
             </span>
-          </button>
+          </Link>
 
-          <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
+          <div className="relative flex flex-col items-center justify-center p-4 bg-white/60 rounded-xl border border-slate-200 shadow-sm opacity-60">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3">
               <ClipboardList size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+            <span className="text-sm font-medium text-slate-700">
               Assignments
             </span>
-          </button>
+            <span className="absolute -top-2 right-2 text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+              Soon
+            </span>
+          </div>
 
-          <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
+          <Link
+            to="/parent/results"
+            className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group"
+          >
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <Star size={20} className="text-indigo-600" />
             </div>
             <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
               Results
             </span>
-          </button>
+          </Link>
 
-          <button className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
+          <div className="relative flex flex-col items-center justify-center p-4 bg-white/60 rounded-xl border border-slate-200 shadow-sm opacity-60">
+            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3">
               <Bell size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+            <span className="text-sm font-medium text-slate-700">
               Notifications
             </span>
-          </button>
+            <span className="absolute -top-2 right-2 text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+              Soon
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Recent Assignments Notification */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Assignments */}
+      {/* Recent Results / Activity Notification */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Recent Results */}
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h3 className="font-semibold text-slate-900">Recent Assignments</h3>
+            <h3 className="font-semibold text-slate-900">Recent Results</h3>
             <span className="text-sm font-medium flex items-center gap-1 text-indigo-600 cursor-not-allowed opacity-50">
               View all
             </span>
           </div>
           <div className="divide-y divide-slate-50">
-            {recentAssignments.length === 0 ? (
+            {results.length === 0 ? (
               <div className="px-5 py-8 text-center">
-                <ClipboardList
+                <Star
                   size={28}
                   className="mx-auto mb-2 text-slate-300"
                 />
                 <p className="text-sm text-slate-400">
-                  No assignments yet for {selectedChild?.className}
+                  No published results for {selectedChild?.first_name}
                 </p>
               </div>
             ) : (
-              recentAssignments.map((a) => {
-                const ps = PRIORITY_STYLES[a.priority];
-                const isOverdue = new Date(a.dueDate) < new Date();
+              results.slice(0, 3).map((r) => {
                 return (
                   <div
-                    key={a.id}
+                    key={r.term_result.id}
                     className="flex items-start gap-3 px-5 py-3.5"
                   >
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-indigo-50">
@@ -227,22 +279,14 @@ export function ParentDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-900">
-                        {a.title}
+                        {r.term_result.academic_term_name}
                       </p>
                       <p className="text-xs mt-0.5 text-slate-500">
-                        {a.subject}
+                        Session: {r.term_result.academic_session_name}
                       </p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${ps}`}
-                        >
-                          {a.priority}
-                        </span>
-                        <span
-                          className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-slate-400"}`}
-                        >
-                          Due {formatDate(a.dueDate)}
-                          {isOverdue ? " · Overdue" : ""}
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                          {r.term_result.status}
                         </span>
                       </div>
                     </div>
@@ -264,44 +308,11 @@ export function ParentDashboard() {
             </span>
           </div>
           <div className="divide-y divide-slate-50">
-            {myNotifications.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <Bell size={28} className="mx-auto mb-2 text-slate-300" />
-                <p className="text-sm text-slate-400">No notifications yet</p>
-              </div>
-            ) : (
-              myNotifications.map((n) => (
-                <div
-                  key={n.id}
-                  className="flex items-start gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors"
-                >
-                  {!n.read && (
-                    <div className="w-2 h-2 rounded-full shrink-0 mt-2 bg-indigo-500" />
-                  )}
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${n.read ? "bg-slate-100" : "bg-indigo-50"}`}
-                  >
-                    <Bell
-                      size={14}
-                      className={n.read ? "text-slate-400" : "text-indigo-600"}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-sm ${n.read ? "text-slate-600" : "text-slate-900 font-medium"}`}
-                    >
-                      {n.title}
-                    </p>
-                    <p className="text-xs mt-0.5 line-clamp-2 text-slate-500">
-                      {n.message}
-                    </p>
-                    <p className="text-[11px] mt-1 text-slate-400 font-medium">
-                      {timeAgo(n.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
+            {/* Empty state for notifications since it's not wired yet */}
+            <div className="px-5 py-8 text-center">
+              <Bell size={28} className="mx-auto mb-2 text-slate-300" />
+              <p className="text-sm text-slate-400">No notifications yet</p>
+            </div>
           </div>
         </div>
       </div>

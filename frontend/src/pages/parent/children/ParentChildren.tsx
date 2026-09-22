@@ -1,14 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChildCard } from "./components/ChildCard";
-import { mockProfile, mockAssignments } from "../dashboard/data";
+import { useParentContextStore } from "../../../store/parentContext.store";
 
 export function ParentChildren() {
-  const profile = mockProfile;
-  const assignments = mockAssignments;
-
+  const { children, loadingChildren, loadChildren } = useParentContextStore();
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
-  const children = profile?.children ?? [];
+  useEffect(() => {
+    if (children.length === 0) {
+      loadChildren();
+    }
+  }, [children.length, loadChildren]);
+
+  if (loadingChildren) {
+    return (
+      <div className="space-y-5 max-w-5xl pb-10 animate-pulse">
+        <div className="h-10 w-48 bg-slate-200 rounded"></div>
+        <div className="h-32 w-full bg-slate-200 rounded-xl"></div>
+        <div className="h-32 w-full bg-slate-200 rounded-xl"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-5xl pb-10">
@@ -33,11 +45,10 @@ export function ParentChildren() {
         <div className="space-y-4">
           {children.map((child, i) => (
             <ChildCard
-              key={child.admNo}
+              key={child.id}
               child={child}
               expanded={expandedIdx === i}
               onToggle={() => setExpandedIdx(expandedIdx === i ? null : i)}
-              assignments={assignments}
             />
           ))}
         </div>

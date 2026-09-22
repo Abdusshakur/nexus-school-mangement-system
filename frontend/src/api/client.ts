@@ -2,11 +2,13 @@ import axios from "axios";
 import { useAuthStore } from "../store/auth";
 import { toast } from "sonner";
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-export const API_BASE = RAW_BASE.includes("/api/v1")
-  ? RAW_BASE
-  : `${RAW_BASE.replace(/\/$/, "")}/api/v1`;
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL;
+
+// Safely construct the API base without risking duplicate slashes
+export const API_BASE = RAW_BASE.replace(/\/+$/, "").endsWith("/api/v1")
+  ? RAW_BASE.replace(/\/+$/, "")
+  : `${RAW_BASE.replace(/\/+$/, "")}/api/v1`;
 
 const apiClient = axios.create({
   baseURL: API_BASE,
@@ -15,13 +17,18 @@ const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+apiClient.interceptors.request.use(
+  (config) => {
+
+    const token = useAuthStore.getState().token;
+    if (token) {
+
+      config.headers.set("Authorization", `Bearer ${token}`);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 apiClient.interceptors.response.use(
   (response) => {

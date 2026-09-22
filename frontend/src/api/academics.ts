@@ -160,3 +160,14 @@ export async function fetchAllTermsAndSessions(): Promise<any> {
 export async function fetchActiveSummary(): Promise<any> {
   return apiClient.get("/academics/active-summary");
 }
+export async function getClassSubjects(
+  classId: string,
+  sessionId?: string,
+  termId?: string
+): Promise<{ subjects: GroupSubject[] }> {
+  let url = `/academics/classes/${classId}/subjects`;
+  if (sessionId && termId) {
+    url += `?academic_session_id=${sessionId}&academic_term_id=${termId}`;
+  }
+  return apiClient.get(url);
+}

@@ -6,7 +6,6 @@ import { Skeleton } from "../../../../components/ui/Skeleton";
 export function EnrollmentsTab({ studentId }: { studentId: string }) {
   const [enrollments, setEnrollments] = useState<StudentEnrollmentHistoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -15,8 +14,8 @@ export function EnrollmentsTab({ studentId }: { studentId: string }) {
       .then((data) => {
         if (mounted) setEnrollments(data);
       })
-      .catch((err) => {
-        if (mounted) setError(err.message || "Failed to load enrollment history.");
+      .catch(() => {
+
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -41,14 +40,6 @@ export function EnrollmentsTab({ studentId }: { studentId: string }) {
           <Skeleton className="h-20 w-full rounded-xl" />
           <Skeleton className="h-20 w-full rounded-xl" />
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm text-center">
-        {error}
       </div>
     );
   }
