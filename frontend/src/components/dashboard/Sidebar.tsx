@@ -5,13 +5,14 @@ import {
   ChevronDown,
   LogOut,
 } from "lucide-react";
-import { getNavItems, ADMIN_ATTENDANCE_SUB_ITEMS } from "./navItems";
+import { getNavItems, ADMIN_ATTENDANCE_SUB_ITEMS, ADMIN_RESULTS_SUB_ITEMS } from "./navItems";
 import { useUIStore } from "../../store/ui";
 import { useAuthStore } from "../../store/auth";
 import { ROUTES } from "../../config/routes";
 
 export function Sidebar() {
   const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
   const location = useLocation();
   const { sidebarCollapsed: collapsed } = useUIStore();
   const { user, logout } = useAuthStore();
@@ -19,6 +20,7 @@ export function Sidebar() {
   const NAV_ITEMS = getNavItems(role);
 
   const ATTENDANCE_SUB_ITEMS = ADMIN_ATTENDANCE_SUB_ITEMS;
+  const RESULTS_SUB_ITEMS = ADMIN_RESULTS_SUB_ITEMS;
 
   const theme = {
     sidebar: "bg-indigo-950",
@@ -71,18 +73,27 @@ export function Sidebar() {
             ROUTES.ADMIN.ATTENDANCE,
           );
 
+          const isResultsParent = item.label === "Results & Records" && role === "admin";
+          const isResultsSubroute = location.pathname.startsWith(ROUTES.ADMIN.RESULTS);
+
+          const isParentItem = isAttendanceParent || isResultsParent;
+          const isParentSubroute = (isAttendanceParent && isAttendanceSubroute) || (isResultsParent && isResultsSubroute);
+
           return (
             <div key={item.href} className="w-full">
               <Link
-                to={isAttendanceParent ? "#" : item.href}
+                to={isParentItem ? "#" : item.href}
                 title={item.label}
                 onClick={(e) => {
                   if (isAttendanceParent) {
                     e.preventDefault();
                     setAttendanceOpen(!attendanceOpen);
+                  } else if (isResultsParent) {
+                    e.preventDefault();
+                    setResultsOpen(!resultsOpen);
                   }
                 }}
-                className={`flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded-lg transition-colors duration-150 ${active || (isAttendanceParent && isAttendanceSubroute)
+                className={`flex items-center gap-3 mx-3 mb-1 px-3 py-2.5 rounded-lg transition-colors duration-150 ${active || isParentSubroute
                     ? `${theme.activeLink} text-white`
                     : `${theme.inactiveText} ${theme.hoverLink}`
                   }`}
@@ -95,6 +106,12 @@ export function Sidebar() {
                     </span>
                     {isAttendanceParent ? (
                       attendanceOpen ? (
+                        <ChevronDown size={14} className="opacity-60" />
+                      ) : (
+                        <ChevronRight size={14} className="opacity-60" />
+                      )
+                    ) : isResultsParent ? (
+                      resultsOpen ? (
                         <ChevronDown size={14} className="opacity-60" />
                       ) : (
                         <ChevronRight size={14} className="opacity-60" />
@@ -116,6 +133,46 @@ export function Sidebar() {
 
                   {ATTENDANCE_SUB_ITEMS.map((sub, idx) => {
                     const isLast = idx === ATTENDANCE_SUB_ITEMS.length - 1;
+                    const subActive = location.pathname === sub.href;
+                    return (
+                      <div
+                        key={sub.href + sub.label}
+                        className="relative flex items-center"
+                      >
+                        {/* T - connector  */}
+                        <div
+                          className={`absolute left-4 top-1/2 w-3 border-l border-b border-indigo-500/35 ${isLast
+                              ? "h-[50%] -translate-y-full rounded-bl-[3px]"
+                              : "h-[1px] -translate-y-1/2"
+                            }`}
+                        />
+                        <Link
+                          to={sub.href}
+                          title={sub.label}
+                          className={`flex items-center gap-2 rounded-md transition-colors duration-150 ml-8 mb-0.5 px-2.5 py-1.5 flex-1 ${subActive
+                              ? "bg-indigo-500/20 text-white"
+                              : "text-indigo-200 hover:bg-white/10 hover:text-white"
+                            }`}
+                        >
+                          <sub.icon size={13} className="shrink-0 opacity-85" />
+                          <span className="text-xs font-medium">
+                            {sub.label}
+                          </span>
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Tree-view dropdown for Results & Records */}
+              {isResultsParent && resultsOpen && !collapsed && (
+                <div className="relative ml-6 mr-3 mb-1">
+                  {/* Vertical guide line of the subtree */}
+                  <div className="absolute left-[15px] top-0 bottom-2.5 w-px bg-indigo-500/35 rounded-[1px]" />
+
+                  {RESULTS_SUB_ITEMS.map((sub, idx) => {
+                    const isLast = idx === RESULTS_SUB_ITEMS.length - 1;
                     const subActive = location.pathname === sub.href;
                     return (
                       <div

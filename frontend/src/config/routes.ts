@@ -25,6 +25,10 @@ export const ROUTES = {
     ACADEMICS: "/admin/academics",
     TIMETABLE: "/admin/timetable",
     SESSIONS: "/admin/sessions",
+    RESULTS: "/admin/results",
+    RESULTS_APPROVALS: "/admin/results/approvals",
+    RESULTS_REPORTS: "/admin/results/reports",
+    ROLES: "/admin/roles",
     SETTINGS: "/admin/settings",
   },
   TEACHER: {

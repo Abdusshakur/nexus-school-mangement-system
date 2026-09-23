@@ -9,7 +9,7 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import { SESSIONS, type Student } from "./data";
+import { type Student } from "./data";
 import {
   fetchStudentById,
   fetchStudentsList,
@@ -27,6 +27,7 @@ import { useAuthStore } from "../../../store/auth";
 import { UserRole } from "../../../types/roles";
 import { useTeacherContextStore } from "../../../store/teacherContext.store";
 import { useClassStore } from "../../../store/class.store";
+import { useSessionStore } from "../../../store/session.store";
 
 type ProfileTab =
   | "profile"
@@ -40,12 +41,31 @@ export function StudentDetailPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState<boolean>(!student);
   const [tab, setTab] = useState<ProfileTab>("profile");
-  const [session, setSession] = useState(SESSIONS[0]);
+  const { user } = useAuthStore();
+  const [session, setSession] = useState("");
   const [sessionOpen, setSessionOpen] = useState(false);
   const [dbUuid, setDbUuid] = useState<string | null>(null);
-  const { user } = useAuthStore();
   const { myProfile, myAssignments } = useTeacherContextStore();
   const { classes } = useClassStore();
+  const { academicSessions, fetchSessions } = useSessionStore();
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  const dynamicSessions = academicSessions.length > 0 
+    ? [...new Set(academicSessions.map(s => s.name))] 
+    : [];
+
+
+  useEffect(() => {
+    if (dynamicSessions.length > 0 && !session) {
+      // Default to active session if available, otherwise first
+      const active = academicSessions.find(s => s.status === "active");
+      setSession(active ? active.name : dynamicSessions[0]);
+    }
+  }, [dynamicSessions, academicSessions, session]);
+
   const backLink = user?.role === UserRole.TEACHER ? ROUTES.TEACHER.STUDENTS : ROUTES.ADMIN.STUDENTS;
 
   const studentClass = student ? classes.find(c => formatClassName(c.name) === student.grade) : null;
@@ -296,7 +316,7 @@ export function StudentDetailPage() {
           </button>
           {sessionOpen && (
             <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl overflow-hidden z-20 border border-slate-200 shadow-xl">
-              {SESSIONS.map((s) => (
+              {dynamicSessions.map((s) => (
                 <button
                   key={s}
                   onClick={() => {
@@ -339,7 +359,7 @@ export function StudentDetailPage() {
       {/* Content */}
       {isSubjectTeacherOnly ? (
         <ResultsTab
-          studentId={student.id}
+          studentId={dbUuid!}
           grade={student.grade}
           session={session}
           allowedSubjects={allowedSubjects}
@@ -349,7 +369,7 @@ export function StudentDetailPage() {
           {tab === "profile" && <ProfileTab s={student} />}
           {tab === "results" && (
             <ResultsTab
-              studentId={student.id}
+              studentId={dbUuid!}
               grade={student.grade}
               session={session}
             />
@@ -357,7 +377,7 @@ export function StudentDetailPage() {
           {tab === "attendance" && (
             <AttendanceTab studentId={student.id} session={session} />
           )}
-          {tab === "courses" && <CoursesTab grade={student.grade} />}
+          {tab === "courses" && <CoursesTab grade={student.grade} classId={studentClass?.id} />}
           {tab === "enrollments" && dbUuid && <EnrollmentsTab studentId={dbUuid} />}
         </>
       )}

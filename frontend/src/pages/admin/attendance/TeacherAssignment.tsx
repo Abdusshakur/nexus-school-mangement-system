@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, AlertTriangle, UserCheck, Trash2, X } from "lucide-react";
+import { AlertTriangle, UserCheck, Trash2, X } from "lucide-react";
 import { useClassStore } from "../../../store/class.store";
 import { useTeacherStore } from "../../../store/teacher.store";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { Spinner } from "../../../components/ui/Spinner";
+import { toast } from "sonner";
 
 function Modal({
   title,
@@ -57,7 +58,6 @@ export function TeacherAssignment() {
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
 
   const activeTeachers = teachers.filter((t) => t.status === "Active");
 
@@ -70,10 +70,7 @@ export function TeacherAssignment() {
       setSelectedTeacher("");
       const cls = classes.find((c) => c.id === assignModal.classId);
       const teacher = teachers.find((t) => t.id === selectedTeacher);
-      setSuccessMsg(
-        `${teacher?.name} assigned as Class Teacher for ${cls?.name}.`,
-      );
-      setTimeout(() => setSuccessMsg(""), 4000);
+      toast.success(`${teacher?.name} assigned as Class Teacher for ${cls?.name}.`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -87,8 +84,7 @@ export function TeacherAssignment() {
       await removeClassTeacher(classId);
       setConfirmRemove(null);
       const cls = classes.find((c) => c.id === classId);
-      setSuccessMsg(`Class teacher removed from ${cls?.name}.`);
-      setTimeout(() => setSuccessMsg(""), 3000);
+      toast.success(`Class teacher removed from ${cls?.name}.`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -121,13 +117,6 @@ export function TeacherAssignment() {
           <UserCheck size={15} /> Assign Teacher
         </button>
       </div>
-
-      {successMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-100 border border-emerald-300">
-          <CheckCircle size={18} className="text-emerald-500" />
-          <p className="text-sm font-semibold text-emerald-800">{successMsg}</p>
-        </div>
-      )}
 
       {unassigned.length > 0 && (
         <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-100">
@@ -306,11 +295,20 @@ export function TeacherAssignment() {
                 className="w-full px-3 py-2.5 rounded-lg text-sm bg-white border border-slate-200 outline-none focus:border-indigo-500 transition-colors"
               >
                 <option value=""> Select Teacher </option>
-                {activeTeachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} - {t.dept}
-                  </option>
-                ))}
+                {activeTeachers.map((t) => {
+                  const assignedClass = classes.find(c => c.form_teacher_id === t.id);
+                  const isAlreadyAssigned = !!assignedClass && assignedClass.id !== assignModal?.classId;
+                  
+                  return (
+                    <option 
+                      key={t.id} 
+                      value={t.id} 
+                      disabled={isAlreadyAssigned}
+                    >
+                      {t.name} {isAlreadyAssigned ? `(Assigned to ${assignedClass.name})` : `- ${t.dept}`}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             {assignModal.replace && assignModal.classId && (
@@ -322,24 +320,6 @@ export function TeacherAssignment() {
                 </p>
               </div>
             )}
-            {(() => {
-              const alreadyAssignedClassId = classes.find(
-                (c) => c.form_teacher_id === selectedTeacher && c.id !== assignModal?.classId
-              )?.id;
-
-              if (alreadyAssignedClassId) {
-                const alreadyAssignedClassName = classes.find((c) => c.id === alreadyAssignedClassId)?.name;
-                return (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50">
-                    <AlertTriangle size={13} className="text-amber-800 mt-0.5 shrink-0" />
-                    <p className="text-xs text-amber-800">
-                      This teacher is already assigned to <strong>{alreadyAssignedClassName}</strong>. Assigning them here will remove them from that class.
-                    </p>
-                  </div>
-                );
-              }
-              return null;
-            })()}
             <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
               <button
                 type="button"

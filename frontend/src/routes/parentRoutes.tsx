@@ -7,6 +7,9 @@ import { ParentChildren } from "../pages/parent/children/ParentChildren";
 import { ParentAttendance } from "../pages/parent/attendance/ParentAttendance";
 import { ParentResults } from "../pages/parent/results/ParentResults";
 
+import { ParentAnnouncements } from "../pages/parent/announcements/ParentAnnouncements";
+import { ParentProfile } from "../pages/parent/profile/ParentProfile";
+
 import { ParentPlaceholder } from "../pages/parent/dashboard/ParentPlaceholder";
 export const parentRoutes = (
   <Route
@@ -19,8 +22,8 @@ export const parentRoutes = (
     <Route path="attendance" element={<ParentAttendance />} />
     <Route path="assignments" element={<ParentPlaceholder title="Assignments" />} />
     <Route path="results" element={<ParentResults />} />
-    <Route path="announcements" element={<ParentPlaceholder title="Announcements" />} />
+    <Route path="announcements" element={<ParentAnnouncements />} />
     <Route path="notifications" element={<ParentPlaceholder title="Notifications" />} />
-    <Route path="profile" element={<ParentPlaceholder title="Profile" />} />
+    <Route path="profile" element={<ParentProfile />} />
   </Route>
 );

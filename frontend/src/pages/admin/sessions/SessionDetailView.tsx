@@ -6,7 +6,6 @@ import {
   Users,
   BookOpen,
   Calendar,
-  FileText,
   BarChart2,
   ClipboardList,
 } from "lucide-react";
@@ -17,7 +16,6 @@ import { OverviewTab } from "./tabs/OverviewTab";
 import { TermsTab } from "./tabs/TermsTab";
 import { ClassesTab } from "./tabs/ClassesTab";
 import { StudentsTab } from "./tabs/StudentsTab";
-import { ReportsTab } from "./tabs/ReportsTab";
 import { AnalyticsTab } from "./tabs/AnalyticsTab";
 import { AuditLogTab } from "./tabs/AuditLogTab";
 
@@ -34,7 +32,6 @@ type DetailTab =
   | "terms"
   | "classes"
   | "students"
-  | "reports"
   | "analytics"
   | "audit";
 
@@ -61,7 +58,6 @@ export function SessionDetailView({
     { id: "terms", label: "Terms", icon: Calendar },
     { id: "classes", label: "Classes", icon: BookOpen },
     { id: "students", label: "Students", icon: Users },
-    { id: "reports", label: "Reports", icon: FileText },
     { id: "analytics", label: "Analytics", icon: BarChart2 },
     { id: "audit", label: "Audit Log", icon: ClipboardList },
   ];
@@ -143,7 +139,6 @@ export function SessionDetailView({
       )}
       {tab === "classes" && <ClassesTab classes={classes} />}
       {tab === "students" && <StudentsTab />}
-      {tab === "reports" && <ReportsTab />}
       {tab === "analytics" && <AnalyticsTab />}
       {tab === "audit" && <AuditLogTab />}
     </div>

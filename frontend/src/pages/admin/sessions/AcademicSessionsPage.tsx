@@ -14,6 +14,7 @@ import { SessionDetailView } from "./SessionDetailView";
 import { StatusBadge } from "./components/StatusBadge";
 import { ActionMenu } from "./components/ActionMenu";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import { toast } from "sonner";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-NG", {
@@ -38,7 +39,6 @@ export function AcademicSessionsPage() {
     );
   }, [fetchSessions]);
   const [showModal, setShowModal] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
@@ -62,10 +62,9 @@ export function AcademicSessionsPage() {
   }) => {
     startNewSession(data);
     setShowModal(false);
-    setSuccessMsg(
+    toast.success(
       `Academic Session ${data.name} started successfully. Previous session is now locked.`,
     );
-    setTimeout(() => setSuccessMsg(""), 5000);
   };
 
   return (
@@ -87,13 +86,6 @@ export function AcademicSessionsPage() {
           <Plus size={15} /> Start New Session
         </button>
       </div>
-
-      {successMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-          <CheckCircle size={18} className="text-emerald-500" />
-          <p className="text-sm font-semibold text-emerald-800">{successMsg}</p>
-        </div>
-      )}
 
       {/* Active session */}
       {loading ? (

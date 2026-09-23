@@ -6,6 +6,7 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { useAnnouncementStore } from "../../../store/announcement.store";
 import { useClassStore } from "../../../store/class.store";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 export function CreateAnnouncement() {
   const navigate = useNavigate();
@@ -45,8 +46,10 @@ export function CreateAnnouncement() {
         category: form.category,
         audience: form.audience,
       });
+      toast.success("Announcement published successfully!");
       navigate(ROUTES.ADMIN.ANNOUNCEMENTS);
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(err.message || "Failed to publish announcement.");
       console.error(err);
     } finally {
       setSaving(false);
@@ -116,9 +119,9 @@ export function CreateAnnouncement() {
                   <option value="">Select…</option>
                   <optgroup label="General">
                     <option value="ALL">All Users</option>
-                    <option value="TEACHERS">All Teachers</option>
-                    <option value="STUDENTS">All Students</option>
-                    <option value="PARENTS">All Parents</option>
+                    <option value="ALL_TEACHERS">All Teachers</option>
+                    <option value="ALL_STUDENTS">All Students</option>
+                    <option value="ALL_PARENTS">All Parents</option>
                   </optgroup>
                   <optgroup label="Specific Classes">
                     {classes.map((cls) => (

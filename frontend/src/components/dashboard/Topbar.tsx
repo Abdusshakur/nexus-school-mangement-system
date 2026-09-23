@@ -36,7 +36,7 @@ export function Topbar() {
   const profile = {
     initials,
     name: fullName,
-    role: user?.role === "teacher" ? "Teacher" : "Administrator",
+    role: user?.role === "parent" ? "Parent" : user?.role === "teacher" ? "Teacher" : "Administrator",
   };
 
   const currentLabel =

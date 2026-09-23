@@ -1,5 +1,35 @@
 import client from "./client";
 
+export interface TermResultResponse {
+  id: string;
+  student_id: string;
+  student_name: string;
+  admission_number: string;
+  class_name: string;
+  academic_session_name: string;
+  academic_term_name: string;
+  total_score: number;
+  average_score: number;
+  grade: string;
+  status: "DRAFT" | "PUBLISHED" | "LOCKED";
+}
+
+export interface SubjectResultResponse {
+  id: string;
+  subject_name: string;
+  ca_score?: number;
+  exam_score?: number;
+  total_score: number;
+  percentage: number;
+  grade: string;
+}
+
+export interface TermResultDetailResponse {
+  term_result: TermResultResponse;
+  subject_results: SubjectResultResponse[];
+}
+
+
 export interface StudentScoreSubmission {
   student_id: string;
   admission_number: string;
@@ -56,27 +86,63 @@ export interface SubmissionDetailsResponse {
 export const adminResultsApi = {
   // List all score submissions across the school
   fetchSubmissions: async (): Promise<ScoreSubmission[]> => {
-    const response = await client.get("/results/submissions");
-    return response.data;
+    return client.get("/results/submissions");
   },
 
   // Get details of all student scores for a specific submission
   fetchSubmissionDetails: async (submissionId: string): Promise<SubmissionDetailsResponse> => {
-    const response = await client.get(`/results/submissions/${submissionId}`);
-    return response.data;
+    return client.get(`/results/submissions/${submissionId}`);
   },
 
   // Approve score submission
   approveSubmission: async (submissionId: string): Promise<ScoreSubmission> => {
-    const response = await client.post(`/results/submissions/${submissionId}/approve`);
-    return response.data;
+    return client.post(`/results/submissions/${submissionId}/approve`);
   },
 
   // Reject score submission
   rejectSubmission: async (submissionId: string, reason: string): Promise<ScoreSubmission> => {
-    const response = await client.post(`/results/submissions/${submissionId}/reject`, {
+    return client.post(`/results/submissions/${submissionId}/reject`, {
       reason,
     });
-    return response.data;
+  },
+
+  getTermPublicationStatus: async (
+    termId: string,
+  ): Promise<{ status: "DRAFT" | "PUBLISHED" | "LOCKED" }> => {
+    try {
+      const response = await client.get(`/results/terms/${termId}/publication-status`);
+      return response as any;
+    } catch (e: any) {
+      if (e?.response?.status === 404 || e?.message?.includes("404")) {
+        return { status: "DRAFT" };
+      }
+      return { status: "DRAFT" };
+    }
+  },
+
+  publishTermResults: async (
+    termId: string,
+  ): Promise<{ message: string }> => {
+    return client.post(`/results/terms/${termId}/publish`);
+  },
+
+  lockTermResults: async (
+    termId: string,
+  ): Promise<{ message: string }> => {
+    return client.post(`/results/terms/${termId}/lock`);
+  },
+
+  getClassTermResults: async (
+    classId: string,
+    termId: string,
+  ): Promise<TermResultDetailResponse[]> => {
+    return client.get(`/results/classes/${classId}/terms/${termId}`);
   },
 };
+
+export async function fetchStudentResults(
+  studentId: string
+): Promise<TermResultDetailResponse[]> {
+  const response = await client.get(`/results/students/${studentId}`);
+  return response as unknown as TermResultDetailResponse[];
+}

@@ -26,6 +26,9 @@ import { Settings } from "../pages/admin/settings/Settings";
 import { AcademicsSetup } from "../pages/admin/academics/AcademicsSetup";
 import { AdminTimetable } from "../pages/admin/timetable/AdminTimetable";
 import { AcademicSessionsPage } from "../pages/admin/sessions/AcademicSessionsPage";
+import { ScoreApprovalsPage } from "../pages/admin/results/ScoreApprovalsPage";
+import { ReportCardsPage } from "../pages/admin/results/ReportCardsPage";
+import { SchoolRoles } from "../pages/admin/roles/SchoolRoles";
 
 export const adminRoutes = (
   <Route path="/admin" element={<RoleRoute allowedRoles={[UserRole.ADMIN]} />}>
@@ -51,6 +54,9 @@ export const adminRoutes = (
     <Route path="academics" element={<AcademicsSetup />} />
     <Route path="timetable" element={<AdminTimetable />} />
     <Route path="sessions" element={<AcademicSessionsPage />} />
+    <Route path="results/approvals" element={<ScoreApprovalsPage />} />
+    <Route path="results/reports" element={<ReportCardsPage />} />
+    <Route path="roles" element={<SchoolRoles />} />
     <Route path="settings" element={<Settings />} />
   </Route>
 );

@@ -1,14 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChildCard } from "./components/ChildCard";
-import { mockProfile, mockAssignments } from "../dashboard/data";
+import { useParentContextStore } from "../../../store/parentContext.store";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function ParentChildren() {
-  const profile = mockProfile;
-  const assignments = mockAssignments;
-
+  const { children, loadingChildren, loadChildren } = useParentContextStore();
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
-  const children = profile?.children ?? [];
+  useEffect(() => {
+    if (children.length === 0) {
+      loadChildren();
+    }
+  }, [children.length, loadChildren]);
+
+  if (loadingChildren) {
+    return (
+      <div className="space-y-5 max-w-5xl pb-10">
+        <div>
+           <Skeleton className="h-8 w-48 mb-2" />
+           <Skeleton className="h-4 w-32" />
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-5xl pb-10">
@@ -33,11 +49,10 @@ export function ParentChildren() {
         <div className="space-y-4">
           {children.map((child, i) => (
             <ChildCard
-              key={child.admNo}
+              key={child.id}
               child={child}
               expanded={expandedIdx === i}
               onToggle={() => setExpandedIdx(expandedIdx === i ? null : i)}
-              assignments={assignments}
             />
           ))}
         </div>
