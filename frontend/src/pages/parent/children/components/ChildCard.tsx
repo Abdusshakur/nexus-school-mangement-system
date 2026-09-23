@@ -40,9 +40,7 @@ export function ChildCard({
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-lg text-slate-900">
-            {childName}
-          </p>
+          <p className="font-bold text-lg text-slate-900">{childName}</p>
           <p className="text-sm mt-0.5 text-slate-500">
             {child.class_name || "No Class Assigned"}
           </p>
@@ -99,7 +97,6 @@ export function ChildCard({
       {expanded && (
         <div className="border-t border-slate-100 bg-slate-50 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
             {/* Assignments section */}
             <div className="bg-white p-5 rounded-xl border border-slate-200">
               <div className="flex items-center justify-between mb-4">
@@ -112,11 +109,12 @@ export function ChildCard({
                   </h3>
                 </div>
               </div>
-              
+
               <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                 <ClipboardList size={24} className="text-slate-300 mb-2" />
-                 <p className="text-sm font-medium text-slate-600">Coming Soon</p>
-                 <p className="text-xs text-slate-400 mt-1 max-w-[200px]">Assignment tracking is currently under development.</p>
+                <ClipboardList size={24} className="text-slate-300 mb-2" />
+                <p className="text-sm font-medium text-slate-600">
+                  Coming Soon
+                </p>
               </div>
             </div>
 
@@ -130,16 +128,21 @@ export function ChildCard({
                   Student Details
                 </h3>
               </div>
-              
+
               <div className="space-y-3">
-                 <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                    <span className="text-sm text-slate-500">Relationship</span>
-                    <span className="text-sm font-medium text-slate-900 capitalize">{child.relationship_type?.toLowerCase() || "Parent/Guardian"}</span>
-                 </div>
-                 <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                    <span className="text-sm text-slate-500">Status</span>
-                    <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">Active</span>
-                 </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                  <span className="text-sm text-slate-500">Relationship</span>
+                  <span className="text-sm font-medium text-slate-900 capitalize">
+                    {child.relationship_type?.toLowerCase() ||
+                      "Parent/Guardian"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                  <span className="text-sm text-slate-500">Status</span>
+                  <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">
+                    Active
+                  </span>
+                </div>
               </div>
             </div>
           </div>

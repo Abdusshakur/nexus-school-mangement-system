@@ -3,11 +3,14 @@ import { useParentContextStore } from "../../../store/parentContext.store";
 import { getGradeStyles } from "./utils";
 import { ResultsTable } from "./components/ResultsTable";
 
+import { Skeleton } from "../../../components/ui/Skeleton";
+
 export function ParentResults() {
-  const { children, childResults, loadChildResults, loadChildren } = useParentContextStore();
+  const { children, childResults, loadChildResults, loadChildren, loadingChildren, loadingResults } = useParentContextStore();
 
   const [childIdx, setChildIdx] = useState(0);
   const child = children[childIdx];
+  const isLoadingRecords = child ? loadingResults[child.id] : false;
 
   const [selectedResultId, setSelectedResultId] = useState<string>("");
 
@@ -54,6 +57,28 @@ export function ParentResults() {
   const avg = selectedData ? Math.round(selectedData.term_result.average_score) : 0;
   const termGrade = selectedData?.term_result?.grade || "N/A";
 
+  if (loadingChildren) {
+    return (
+      <div className="space-y-5 max-w-5xl pb-10">
+        <div>
+          <Skeleton className="h-8 w-40 mb-2" />
+          <Skeleton className="h-4 w-60" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24 rounded-full" />
+          <Skeleton className="h-10 w-24 rounded-full" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 max-w-5xl pb-10">
       <div>
@@ -83,8 +108,8 @@ export function ParentResults() {
                 key={c.id}
                 onClick={() => setChildIdx(i)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors border-2 ${childIdx === i
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                   }`}
               >
                 {c.first_name}
@@ -96,7 +121,9 @@ export function ParentResults() {
           </div>
 
           {/* Session + term selector (Based on available results) */}
-          {rawResults.length > 0 && (
+          {isLoadingRecords ? (
+            <Skeleton className="h-10 w-48 rounded-lg" />
+          ) : rawResults.length > 0 && (
             <div className="flex items-center gap-3 flex-wrap">
               <select
                 value={selectedResultId}
@@ -105,7 +132,7 @@ export function ParentResults() {
               >
                 {rawResults.map((r) => (
                   <option key={r.term_result.id} value={r.term_result.id}>
-                    {r.term_result.academic_session_name} — {r.term_result.academic_term_name}
+                    {r.term_result.academic_session_name} {r.term_result.academic_term_name}
                   </option>
                 ))}
               </select>
@@ -113,7 +140,15 @@ export function ParentResults() {
           )}
 
           {/* Results table */}
-          {child && selectedData ? (
+          {isLoadingRecords ? (
+            <div className="space-y-4 mt-6">
+              <div className="flex justify-between items-end mb-4">
+                <Skeleton className="h-20 w-48 rounded-xl" />
+                <Skeleton className="h-20 w-24 rounded-xl" />
+              </div>
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          ) : child && selectedData ? (
             <ResultsTable
               childName={child.first_name}
               className={child.class_name}
@@ -128,9 +163,11 @@ export function ParentResults() {
             </div>
           )}
 
-          <p className="text-xs text-slate-400">
-            * Results are for viewing only. Contact the school for any discrepancies.
-          </p>
+          {!isLoadingRecords && (
+            <p className="text-xs text-slate-400">
+              * Results are for viewing only. Contact the school for any discrepancies.
+            </p>
+          )}
         </>
       )}
     </div>

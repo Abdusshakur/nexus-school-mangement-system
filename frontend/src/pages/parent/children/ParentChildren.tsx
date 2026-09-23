@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChildCard } from "./components/ChildCard";
 import { useParentContextStore } from "../../../store/parentContext.store";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 export function ParentChildren() {
   const { children, loadingChildren, loadChildren } = useParentContextStore();
@@ -14,10 +15,13 @@ export function ParentChildren() {
 
   if (loadingChildren) {
     return (
-      <div className="space-y-5 max-w-5xl pb-10 animate-pulse">
-        <div className="h-10 w-48 bg-slate-200 rounded"></div>
-        <div className="h-32 w-full bg-slate-200 rounded-xl"></div>
-        <div className="h-32 w-full bg-slate-200 rounded-xl"></div>
+      <div className="space-y-5 max-w-5xl pb-10">
+        <div>
+           <Skeleton className="h-8 w-48 mb-2" />
+           <Skeleton className="h-4 w-32" />
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
       </div>
     );
   }

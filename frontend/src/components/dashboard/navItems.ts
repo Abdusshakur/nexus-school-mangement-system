@@ -17,6 +17,7 @@ import {
   QrCode,
   FileText,
   CheckCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
@@ -70,6 +71,11 @@ const ADMIN_NAV_ITEMS = [
     label: "Results & Records",
     href: ROUTES.ADMIN.RESULTS,
     icon: FileText,
+  },
+  {
+    label: "Roles & Permissions",
+    href: ROUTES.ADMIN.ROLES,
+    icon: ShieldCheck,
   },
   {
     label: "Settings",

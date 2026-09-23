@@ -11,8 +11,12 @@ import {
 import { Link } from "react-router-dom";
 import { StatCard } from "../../../components/dashboard/StatCard";
 import { useParentContextStore } from "../../../store/parentContext.store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import {
+  fetchAnnouncements,
+  type AnnouncementResponse,
+} from "../../../api/announcements";
 
 export function ParentDashboard() {
   const {
@@ -30,6 +34,9 @@ export function ParentDashboard() {
     error,
   } = useParentContextStore();
 
+  const [announcements, setAnnouncements] = useState<AnnouncementResponse[]>([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+
   useEffect(() => {
     loadProfile();
     loadChildren();
@@ -40,6 +47,13 @@ export function ParentDashboard() {
       loadChildAttendance(selectedChildId);
     }
   }, [selectedChildId, childAttendance, loadChildAttendance]);
+
+  useEffect(() => {
+    fetchAnnouncements("PUBLISHED")
+      .then((data) => setAnnouncements(data.slice(0, 3))) // Only show 3 ann on dashboard
+      .catch((err) => console.error("Failed to load announcements", err))
+      .finally(() => setLoadingAnnouncements(false));
+  }, []);
 
   if (loadingProfile || loadingChildren) {
     return (
@@ -232,17 +246,17 @@ export function ParentDashboard() {
             </span>
           </Link>
 
-          <div className="relative flex flex-col items-center justify-center p-4 bg-white/60 rounded-xl border border-slate-200 shadow-sm opacity-60">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3">
+          <Link
+            to="/parent/announcements"
+            className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow hover:border-indigo-300 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
               <Bell size={20} className="text-indigo-600" />
             </div>
-            <span className="text-sm font-medium text-slate-700">
-              Notifications
+            <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-700">
+              Announcements
             </span>
-            <span className="absolute -top-2 right-2 text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
-              Soon
-            </span>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -301,18 +315,46 @@ export function ParentDashboard() {
         <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="font-semibold text-slate-900">
-              Recent Notifications
+              Recent Announcements
             </h3>
-            <span className="text-sm font-medium flex items-center gap-1 text-indigo-600 cursor-not-allowed opacity-50">
+            <Link
+              to="/parent/announcements"
+              className="text-sm font-medium flex items-center gap-1 text-indigo-600 hover:text-indigo-700"
+            >
               View all
-            </span>
+            </Link>
           </div>
           <div className="divide-y divide-slate-50">
-            {/* Empty state for notifications since it's not wired yet */}
-            <div className="px-5 py-8 text-center">
-              <Bell size={28} className="mx-auto mb-2 text-slate-300" />
-              <p className="text-sm text-slate-400">No notifications yet</p>
-            </div>
+            {loadingAnnouncements ? (
+              <div className="p-5 space-y-4">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            ) : announcements.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <Bell size={28} className="mx-auto mb-2 text-slate-300" />
+                <p className="text-sm text-slate-400">No recent announcements</p>
+              </div>
+            ) : (
+              announcements.map((ann) => (
+                <div key={ann.id} className="p-4 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      {ann.audience}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {new Date(ann.created_at).toLocaleDateString("en-NG", {
+                        day: "numeric",
+                        month: "short"
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-slate-900 mb-1">{ann.title}</p>
+                  <p className="text-xs text-slate-500 line-clamp-1">{ann.content}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

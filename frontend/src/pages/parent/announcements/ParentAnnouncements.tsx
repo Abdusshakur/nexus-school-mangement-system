@@ -148,7 +148,7 @@ export function ParentAnnouncements() {
                 {selected.content}
               </p>
               <p className="text-xs mt-5 text-slate-400">
-                — {selected.author_name || "School Administration"}
+                {selected.author_name || "School Administration"}
               </p>
             </div>
           </div>

@@ -3,13 +3,15 @@ import { Info } from "lucide-react";
 import { useParentContextStore } from "../../../store/parentContext.store";
 import { AttendanceStats } from "./components/AttendanceStats";
 import { AttendanceTable } from "./components/AttendanceTable";
+import { Skeleton } from "../../../components/ui/Skeleton";
 import { type AttStatus } from "./utils";
 
 export function ParentAttendance() {
-  const { children, childAttendance, loadChildAttendance, loadChildren } = useParentContextStore();
+  const { children, childAttendance, loadChildAttendance, loadChildren, loadingChildren, loadingAttendance } = useParentContextStore();
   const [selectedIdx, setSelectedIdx] = useState(0);
   
   const selectedChild = children[selectedIdx];
+  const isLoadingRecords = selectedChild ? loadingAttendance[selectedChild.id] : false;
 
   useEffect(() => {
     if (children.length === 0) {
@@ -47,6 +49,29 @@ export function ParentAttendance() {
   const late = rawRecords.filter((r) => r.status === "LATE").length;
   const totalDays = rawRecords.length;
 
+  if (loadingChildren) {
+    return (
+      <div className="space-y-5 max-w-5xl pb-10">
+        <div>
+          <Skeleton className="h-8 w-40 mb-2" />
+          <Skeleton className="h-4 w-60" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24 rounded-full" />
+          <Skeleton className="h-10 w-24 rounded-full" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+        </div>
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 max-w-5xl pb-10">
       {/* Page header */}
@@ -81,26 +106,43 @@ export function ParentAttendance() {
 
       {selectedChild && (
         <>
-          <AttendanceStats
-            present={present}
-            absent={absent}
-            late={late}
-            totalDays={totalDays}
-          />
+          {isLoadingRecords ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Skeleton className="h-28 rounded-xl" />
+              <Skeleton className="h-28 rounded-xl" />
+              <Skeleton className="h-28 rounded-xl" />
+              <Skeleton className="h-28 rounded-xl" />
+            </div>
+          ) : (
+            <AttendanceStats
+              present={present}
+              absent={absent}
+              late={late}
+              totalDays={totalDays}
+            />
+          )}
 
           {/* Info notice */}
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl text-sm bg-blue-50 border border-blue-200 text-blue-800">
-            <Info size={16} className="flex-shrink-0 mt-0.5" />
-            <p>
-              Absences are only confirmed after admin verification. You will
-              receive a notification for each confirmed absence.
-            </p>
-          </div>
+          {isLoadingRecords ? (
+            <Skeleton className="h-12 w-full rounded-xl" />
+          ) : (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-xl text-sm bg-blue-50 border border-blue-200 text-blue-800">
+              <Info size={16} className="flex-shrink-0 mt-0.5" />
+              <p>
+                Absences are only confirmed after admin verification. You will
+                receive a notification for each confirmed absence.
+              </p>
+            </div>
+          )}
 
-          <AttendanceTable
-            childName={selectedChild.first_name}
-            records={records}
-          />
+          {isLoadingRecords ? (
+            <Skeleton className="h-64 w-full rounded-xl" />
+          ) : (
+            <AttendanceTable
+              childName={selectedChild.first_name}
+              records={records}
+            />
+          )}
         </>
       )}
     </div>
