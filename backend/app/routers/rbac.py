@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, not_, or_
 from typing import List
 from uuid import UUID
 
@@ -67,26 +67,24 @@ def list_permissions(
     context: CurrentContext = Depends(require_permission("admin:read")),
     session: Session = Depends(get_session)
 ):
-    """List all available system permissions."""
-    return session.exec(select(Permission)).all()
+    """List permissions assignable by the current administrator."""
+    role = session.get(Role, context.role_id)
+    is_super_admin = bool(role and role.name.lower() in {"super_admin", "superadmin"})
+    statement = select(Permission).order_by(Permission.name)
+    if not is_super_admin:
+        statement = statement.where(not_(Permission.name.in_(PLATFORM_ONLY_PERMISSIONS)))
+    return session.exec(statement).all()
 
-@router.post("/permissions", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/permissions", include_in_schema=False)
 def create_permission(
-    payload: PermissionCreate,
     context: CurrentContext = Depends(require_super_admin()),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
-    """Create a new granular permission (e.g., 'timetable:write')."""
-    existing = session.exec(select(Permission).where(Permission.name == payload.name)).first()
-    if existing:
-        raise HTTPException(status_code=400, detail=f"Permission '{payload.name}' already exists.")
-    
-    new_permission = Permission(name=payload.name, description=payload.description)
-    session.add(new_permission)
-    session.commit()
-    session.refresh(new_permission)
-    
-    return new_permission
+    """Deprecated: application permissions are managed in code and migrations."""
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Permission creation is managed through the application registry and Alembic migrations.",
+    )
 
 # ==========================================
 # ROLES MANAGEMENT
@@ -237,6 +235,17 @@ def assign_permissions_to_role(
     return role
 
 
+@router.put("/roles/{role_id}/permissions", response_model=RoleWithPermissionsResponse)
+def update_platform_role_permissions(
+    role_id: UUID,
+    payload: AssignPermissionsRequest,
+    context: CurrentContext = Depends(require_super_admin()),
+    session: Session = Depends(get_session),
+):
+    """Replace the complete permission set for a platform role."""
+    return assign_permissions_to_role(role_id, payload, context, session)
+
+
 @router.post("/school-roles/{role_id}/permissions", response_model=RoleWithPermissionsResponse)
 def assign_permissions_to_school_role(
     role_id: UUID,
@@ -268,3 +277,14 @@ def assign_permissions_to_school_role(
     session.commit()
     session.refresh(role)
     return role
+
+
+@router.put("/school-roles/{role_id}/permissions", response_model=RoleWithPermissionsResponse)
+def update_school_role_permissions(
+    role_id: UUID,
+    payload: AssignPermissionsRequest,
+    context: CurrentContext = Depends(require_permission("admin:write")),
+    session: Session = Depends(get_session),
+):
+    """Replace the complete permission set for a school-owned role."""
+    return assign_permissions_to_school_role(role_id, payload, context, session)
