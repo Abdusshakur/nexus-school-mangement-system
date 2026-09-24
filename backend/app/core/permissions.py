@@ -9,6 +9,7 @@ SYSTEM_PERMISSIONS: frozenset[str] = frozenset({
     "admin:read",
     "admin:write",
     "announcement:delete",
+    "announcement:read",
     "announcement:write",
     "attendance:approve",
     "attendance:read",
